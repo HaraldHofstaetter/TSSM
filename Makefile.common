@@ -1,0 +1,654 @@
+all: $(TSSM)
+
+OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
+       tssm_splitting_schemes.o \
+       tssm_grid.o tssm_hdf5.o \
+       tssm_fourier_common.o \
+       tssm_fourier_1d.o tssm_fourier_2d.o tssm_fourier_3d.o \
+       tssm_fourier_real_1d.o tssm_fourier_real_2d.o tssm_fourier_real_3d.o \
+       tssm_multicomponent_fourier_1d.o tssm_multicomponent_fourier_2d.o tssm_multicomponent_fourier_3d.o \
+       tssm_multicomponent_fourier_real_1d.o tssm_multicomponent_fourier_real_2d.o tssm_multicomponent_fourier_real_3d.o \
+       tssm_fourier.o \
+       c_tssm_fourier_1d.o c_tssm_fourier_2d.o c_tssm_fourier_3d.o \
+       c_tssm_fourier_real_1d.o c_tssm_fourier_real_2d.o c_tssm_fourier_real_3d.o \
+       c_tssm.o c_tssm_fourier.o \
+       lapack_dsterf.o \
+       tssm_hermite_common.o \
+       tssm_hermite_1d.o tssm_hermite_2d.o tssm_hermite_3d.o \
+       tssm_hermite_real_1d.o tssm_hermite_real_2d.o tssm_hermite_real_3d.o \
+       tssm_hermite.o \
+       tssm_polar_2d.o tssm_cylindrical_3d.o \
+       tssm_polar_real_2d.o tssm_cylindrical_real_3d.o tssm_polar.o \
+       tssm_generalized_laguerre_common.o tssm_generalized_laguerre_2d.o tssm_generalized_laguerre_hermite_3d.o \
+       tssm_generalized_laguerre_real_2d.o tssm_generalized_laguerre_hermite_real_3d.o \
+       tssm_generalized_laguerre.o \
+       tssm_fourier_bessel_common.o tssm_fourier_bessel_2d.o tssm_fourier_bessel_real_2d.o tssm_fourier_bessel.o    \
+       tssm_schroedinger_1d.o tssm_schroedinger_2d.o tssm_schroedinger_3d.o \
+       tssm_schroedinger_real_1d.o tssm_schroedinger_real_2d.o tssm_schroedinger_real_3d.o \
+       tssm_schroedinger_hermite_1d.o tssm_schroedinger_hermite_2d.o tssm_schroedinger_hermite_3d.o \
+       tssm_schroedinger_hermite_real_1d.o tssm_schroedinger_hermite_real_2d.o tssm_schroedinger_hermite_real_3d.o \
+       tssm_schroedinger.o \
+       c_tssm_schroedinger_1d.o c_tssm_schroedinger_2d.o c_tssm_schroedinger_3d.o \
+       c_tssm_schroedinger_real_1d.o c_tssm_schroedinger_real_2d.o c_tssm_schroedinger_real_3d.o \
+       c_tssm_schroedinger_hermite_1d.o c_tssm_schroedinger_hermite_2d.o c_tssm_schroedinger_hermite_3d.o \
+       c_tssm_schroedinger_hermite_real_1d.o c_tssm_schroedinger_hermite_real_2d.o c_tssm_schroedinger_hermite_real_3d.o \
+       c_tssm_generalized_laguerre_2d.o c_tssm_generalized_laguerre_hermite_3d.o \
+       c_tssm_generalized_laguerre_real_2d.o c_tssm_generalized_laguerre_hermite_real_3d.o \
+       c_tssm_fourier_bessel_real_2d.o c_tssm_fourier_bessel_2d.o \
+       tssm_disorder_potential.o
+
+
+$(TSSM): $(OBJS)
+	ar r $(TSSM) $(OBJS)
+
+
+lapack_dsterf.o: ../lapack_dsterf.f
+	$(FC) $(FOPTS) -c ../lapack_dsterf.f -o lapack_dsterf.o
+
+
+tssm_common.o: ../tssm_common.F90
+	$(FC) $(FOPTS) -c ../tssm_common.F90  -o tssm_common.o
+
+tssm_splitting_schemes.o: ../tssm_splitting_schemes.F90
+	$(FC) $(FOPTS) -c ../tssm_splitting_schemes.F90  -o tssm_splitting_schemes.o
+
+tssm_complex.f90: ../tssm_CPP.F90
+	$(CPP)  ../tssm_CPP.F90 > tssm_complex.f90
+
+tssm_complex.o: tssm_complex.f90
+	$(FC) $(FOPTS) -c tssm_complex.f90  -o tssm_complex.o
+
+tssm_real.f90: ../tssm_CPP.F90
+	$(CPP) -D_REAL_ ../tssm_CPP.F90 > tssm_real.f90
+
+tssm_real.o: tssm_real.f90
+	$(FC) $(FOPTS) -c tssm_real.f90  -o tssm_real.o
+
+tssm.o: ../tssm.F90
+	$(FC) $(FOPTS) -c ../tssm.F90  -o tssm.o
+
+tssm_grid.o: ../tssm_grid.F90
+	$(FC) $(FOPTS) -c ../tssm_grid.F90 -o tssm_grid.o
+
+tssm_hdf5.o: ../tssm_hdf5.F90
+	$(FC) $(FOPTS) -c ../tssm_hdf5.F90 -I$(HDF5_INCLUDE) -o tssm_hdf5.o
+
+tssm_fourier_common.o: ../tssm_fourier_common.F90
+	$(FC) $(FOPTS) -c ../tssm_fourier_common.F90 -I$(FFTW_INCLUDE) -o tssm_fourier_common.o
+
+
+tssm_fourier_1d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=1 ../tssm_fourier_CPP.F90 > tssm_fourier_1d.f90
+
+tssm_fourier_1d.o: tssm_fourier_1d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_1d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_1d.o
+
+tssm_fourier_2d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_fourier_CPP.F90 > tssm_fourier_2d.f90
+
+tssm_fourier_2d.o: tssm_fourier_2d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_2d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_2d.o
+
+tssm_fourier_3d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_fourier_CPP.F90 > tssm_fourier_3d.f90
+
+tssm_fourier_3d.o: tssm_fourier_3d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_3d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_3d.o
+
+tssm_fourier_real_1d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../tssm_fourier_CPP.F90 > tssm_fourier_real_1d.f90
+
+tssm_fourier_real_1d.o: tssm_fourier_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_real_1d.o
+
+tssm_fourier_real_2d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../tssm_fourier_CPP.F90 > tssm_fourier_real_2d.f90
+
+tssm_fourier_real_2d.o: tssm_fourier_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_real_2d.o
+
+tssm_fourier_real_3d.f90: ../tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../tssm_fourier_CPP.F90 > tssm_fourier_real_3d.f90
+
+tssm_fourier_real_3d.o: tssm_fourier_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_real_3d.o
+
+tssm_multicomponent_fourier_1d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_DIM_=1 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_1d.f90
+
+tssm_multicomponent_fourier_1d.o: tssm_multicomponent_fourier_1d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_1d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_1d.o
+
+tssm_multicomponent_fourier_2d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_2d.f90
+
+tssm_multicomponent_fourier_2d.o: tssm_multicomponent_fourier_2d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_2d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_2d.o
+
+tssm_multicomponent_fourier_3d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_3d.f90
+
+tssm_multicomponent_fourier_3d.o: tssm_multicomponent_fourier_3d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_3d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_3d.o
+
+tssm_multicomponent_fourier_real_1d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_real_1d.f90
+
+tssm_multicomponent_fourier_real_1d.o: tssm_multicomponent_fourier_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_real_1d.o
+
+tssm_multicomponent_fourier_real_2d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_real_2d.f90
+
+tssm_multicomponent_fourier_real_2d.o: tssm_multicomponent_fourier_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_real_2d.o
+
+tssm_multicomponent_fourier_real_3d.f90: ../tssm_multicomponent_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../tssm_multicomponent_fourier_CPP.F90 > tssm_multicomponent_fourier_real_3d.f90
+
+tssm_multicomponent_fourier_real_3d.o: tssm_multicomponent_fourier_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_real_3d.o
+
+tssm_fourier.o: ../tssm_fourier.F90
+	$(FC) $(FOPTS) -c ../tssm_fourier.F90 -o tssm_fourier.o
+
+
+tssm_hermite_common.o: ../tssm_hermite_common.F90
+	$(FC) $(FOPTS) -c ../tssm_hermite_common.F90 -I$(FFTW_INCLUDE) -o tssm_hermite_common.o
+
+tssm_hermite_1d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_DIM_=1 ../tssm_hermite_CPP.F90 > tssm_hermite_1d.f90
+
+tssm_hermite_1d.o: tssm_hermite_1d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_1d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_1d.o
+
+tssm_hermite_2d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_hermite_CPP.F90 > tssm_hermite_2d.f90
+
+tssm_hermite_2d.o: tssm_hermite_2d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_2d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_2d.o
+
+tssm_hermite_3d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_hermite_CPP.F90 > tssm_hermite_3d.f90
+
+tssm_hermite_3d.o: tssm_hermite_3d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_3d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_3d.o
+
+tssm_hermite_real_1d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../tssm_hermite_CPP.F90 > tssm_hermite_real_1d.f90
+
+tssm_hermite_real_1d.o: tssm_hermite_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_real_1d.o
+
+tssm_hermite_real_2d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../tssm_hermite_CPP.F90 > tssm_hermite_real_2d.f90
+
+tssm_hermite_real_2d.o: tssm_hermite_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_real_2d.o
+
+tssm_hermite_real_3d.f90: ../tssm_hermite_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../tssm_hermite_CPP.F90 > tssm_hermite_real_3d.f90
+
+tssm_hermite_real_3d.o: tssm_hermite_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_hermite_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_hermite_real_3d.o
+
+tssm_hermite.o: ../tssm_hermite.F90
+	$(FC) $(FOPTS) -c ../tssm_hermite.F90 -o tssm_hermite.o
+
+##
+tssm_generalized_laguerre_common.o: ../tssm_generalized_laguerre_common.F90
+	$(FC) $(FOPTS) -c ../tssm_generalized_laguerre_common.F90 -I$(FFTW_INCLUDE) -o tssm_generalized_laguerre_common.o
+
+tssm_generalized_laguerre_2d.f90: ../tssm_generalized_laguerre_CPP.F90
+	$(CPP)  ../tssm_generalized_laguerre_CPP.F90 > tssm_generalized_laguerre_2d.f90
+
+tssm_generalized_laguerre_2d.o: tssm_generalized_laguerre_2d.f90
+	$(FC) $(FOPTS) -c tssm_generalized_laguerre_2d.f90 -I$(HDF5_INCLUDE) -o tssm_generalized_laguerre_2d.o
+
+tssm_generalized_laguerre_hermite_3d.f90: ../tssm_generalized_laguerre_CPP.F90
+	$(CPP)  -D_HERMITE_ ../tssm_generalized_laguerre_CPP.F90 > tssm_generalized_laguerre_hermite_3d.f90
+
+tssm_generalized_laguerre_hermite_3d.o: tssm_generalized_laguerre_hermite_3d.f90
+	$(FC) $(FOPTS) -c tssm_generalized_laguerre_hermite_3d.f90 -I$(HDF5_INCLUDE) -o tssm_generalized_laguerre_hermite_3d.o
+
+tssm_generalized_laguerre_real_2d.f90: ../tssm_generalized_laguerre_CPP.F90
+	$(CPP)  -D_REAL_ ../tssm_generalized_laguerre_CPP.F90 > tssm_generalized_laguerre_real_2d.f90
+
+tssm_generalized_laguerre_real_2d.o: tssm_generalized_laguerre_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_generalized_laguerre_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_generalized_laguerre_real_2d.o
+
+tssm_generalized_laguerre_hermite_real_3d.f90: ../tssm_generalized_laguerre_CPP.F90
+	$(CPP) -D_REAL_ -D_HERMITE_ ../tssm_generalized_laguerre_CPP.F90 > tssm_generalized_laguerre_hermite_real_3d.f90
+
+tssm_generalized_laguerre_hermite_real_3d.o: tssm_generalized_laguerre_hermite_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_generalized_laguerre_hermite_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_generalized_laguerre_hermite_real_3d.o
+
+tssm_generalized_laguerre.o: ../tssm_generalized_laguerre.F90
+	$(FC) $(FOPTS) -c ../tssm_generalized_laguerre.F90 -o tssm_generalized_laguerre.o
+
+##
+c_tssm_generalized_laguerre_2d.f90: ../c_tssm_generalized_laguerre_CPP.F90
+	$(CPP)  ../c_tssm_generalized_laguerre_CPP.F90 > c_tssm_generalized_laguerre_2d.f90
+
+c_tssm_generalized_laguerre_2d.o: c_tssm_generalized_laguerre_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_generalized_laguerre_2d.f90 -o c_tssm_generalized_laguerre_2d.o
+
+c_tssm_generalized_laguerre_hermite_3d.f90: ../c_tssm_generalized_laguerre_CPP.F90
+	$(CPP)  -D_HERMITE_ ../c_tssm_generalized_laguerre_CPP.F90 > c_tssm_generalized_laguerre_hermite_3d.f90
+
+c_tssm_generalized_laguerre_hermite_3d.o: c_tssm_generalized_laguerre_hermite_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_generalized_laguerre_hermite_3d.f90  -o c_tssm_generalized_laguerre_hermite_3d.o
+
+c_tssm_generalized_laguerre_real_2d.f90: ../c_tssm_generalized_laguerre_CPP.F90
+	$(CPP)  -D_REAL_ ../c_tssm_generalized_laguerre_CPP.F90 > c_tssm_generalized_laguerre_real_2d.f90
+
+c_tssm_generalized_laguerre_real_2d.o: c_tssm_generalized_laguerre_real_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_generalized_laguerre_real_2d.f90  -o c_tssm_generalized_laguerre_real_2d.o
+
+c_tssm_generalized_laguerre_hermite_real_3d.f90: ../c_tssm_generalized_laguerre_CPP.F90
+	$(CPP) -D_REAL_ -D_HERMITE_ ../c_tssm_generalized_laguerre_CPP.F90 > c_tssm_generalized_laguerre_hermite_real_3d.f90
+
+c_tssm_generalized_laguerre_hermite_real_3d.o: c_tssm_generalized_laguerre_hermite_real_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_generalized_laguerre_hermite_real_3d.f90  -o c_tssm_generalized_laguerre_hermite_real_3d.o
+
+c_tssm_generalized_laguerre.o: ../c_tssm_generalized_laguerre.F90
+	$(FC) $(FOPTS) -c ../c_tssm_generalized_laguerre.F90 -o c_tssm_generalized_laguerre.o
+
+##
+
+tssm_polar_2d.f90: ../tssm_polar_CPP.F90
+	$(CPP)  ../tssm_polar_CPP.F90 > tssm_polar_2d.f90
+
+tssm_polar_2d.o: tssm_polar_2d.f90
+	$(FC) $(FOPTS) -c tssm_polar_2d.f90 -I$(HDF5_INCLUDE) -o tssm_polar_2d.o
+
+tssm_cylindrical_3d.f90: ../tssm_polar_CPP.F90
+	$(CPP)  -D_CYLINDRICAL_ ../tssm_polar_CPP.F90 > tssm_cylindrical_3d.f90
+
+tssm_cylindrical_3d.o: tssm_cylindrical_3d.f90
+	$(FC) $(FOPTS) -c tssm_cylindrical_3d.f90 -I$(HDF5_INCLUDE) -o tssm_cylindrical_3d.o
+
+
+tssm_polar_real_2d.f90: ../tssm_polar_CPP.F90
+	$(CPP)  -D_REAL_ ../tssm_polar_CPP.F90 > tssm_polar_real_2d.f90
+
+tssm_polar_real_2d.o: tssm_polar_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_polar_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_polar_real_2d.o
+
+tssm_cylindrical_real_3d.f90: ../tssm_polar_CPP.F90
+	$(CPP) -D_REAL_ -D_CYLINDRICAL_ ../tssm_polar_CPP.F90 > tssm_cylindrical_real_3d.f90
+
+tssm_cylindrical_real_3d.o: tssm_cylindrical_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_cylindrical_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_cylindrical_real_3d.o
+
+tssm_polar.o: ../tssm_polar.F90
+	$(FC) $(FOPTS) -c ../tssm_polar.F90 -o tssm_polar.o
+
+##
+
+tssm_schroedinger_1d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=1 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_1d.f90
+
+tssm_schroedinger_1d.o: tssm_schroedinger_1d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_1d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_1d.o
+
+tssm_schroedinger_2d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_2d.f90
+
+tssm_schroedinger_2d.o: tssm_schroedinger_2d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_2d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_2d.o
+
+tssm_schroedinger_3d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_3d.f90
+
+tssm_schroedinger_3d.o: tssm_schroedinger_3d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_3d.f90 -I$(HDF5_INCLUDE)  -o tssm_schroedinger_3d.o
+
+tssm_schroedinger.o: ../tssm_schroedinger.F90
+	$(FC) $(FOPTS) -c ../tssm_schroedinger.F90  -o tssm_schroedinger.o
+
+tssm_schroedinger_real_1d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_real_1d.f90
+
+tssm_schroedinger_real_1d.o: tssm_schroedinger_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_real_1d.o
+
+tssm_schroedinger_real_2d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_real_2d.f90
+
+tssm_schroedinger_real_2d.o: tssm_schroedinger_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_real_2d.o
+
+tssm_schroedinger_real_3d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_real_3d.f90
+
+tssm_schroedinger_real_3d.o: tssm_schroedinger_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_real_3d.f90  -I$(HDF5_INCLUDE) -o tssm_schroedinger_real_3d.o
+
+##
+
+tssm_schroedinger_hermite_1d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=1 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_1d.f90
+
+tssm_schroedinger_hermite_1d.o: tssm_schroedinger_hermite_1d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_1d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_hermite_1d.o
+
+tssm_schroedinger_hermite_2d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=2 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_2d.f90
+
+tssm_schroedinger_hermite_2d.o: tssm_schroedinger_hermite_2d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_2d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_hermite_2d.o
+
+tssm_schroedinger_hermite_3d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=3 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_3d.f90
+
+tssm_schroedinger_hermite_3d.o: tssm_schroedinger_hermite_3d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_3d.f90 -I$(HDF5_INCLUDE)  -o tssm_schroedinger_hermite_3d.o
+
+tssm_schroedinger_hermite_real_1d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=1 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_real_1d.f90
+
+tssm_schroedinger_hermite_real_1d.o: tssm_schroedinger_hermite_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_hermite_real_1d.o
+
+tssm_schroedinger_hermite_real_2d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=2 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_real_2d.f90
+
+tssm_schroedinger_hermite_real_2d.o: tssm_schroedinger_hermite_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_hermite_real_2d.o
+
+tssm_schroedinger_hermite_real_3d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=3 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_real_3d.f90
+
+tssm_schroedinger_hermite_real_3d.o: tssm_schroedinger_hermite_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_hermite_real_3d.f90 -I$(HDF5_INCLUDE)  -o tssm_schroedinger_hermite_real_3d.o
+
+##
+
+tssm_fourier_bessel_common.o: ../tssm_fourier_bessel_common.F90
+	$(FC) $(FOPTS) -c ../tssm_fourier_bessel_common.F90 -I$(FFTW_INCLUDE) -o tssm_fourier_bessel_common.o
+
+tssm_fourier_bessel_2d.f90: ../tssm_fourier_bessel_CPP.F90
+	$(CPP)  ../tssm_fourier_bessel_CPP.F90 > tssm_fourier_bessel_2d.f90
+
+tssm_fourier_bessel_2d.o: tssm_fourier_bessel_2d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_bessel_2d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_bessel_2d.o
+
+tssm_fourier_bessel_real_2d.f90: ../tssm_fourier_bessel_CPP.F90
+	$(CPP) -D_REAL_  ../tssm_fourier_bessel_CPP.F90 > tssm_fourier_bessel_real_2d.f90
+
+tssm_fourier_bessel_real_2d.o: tssm_fourier_bessel_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_bessel_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_bessel_real_2d.o
+
+tssm_fourier_bessel.o: ../tssm_fourier_bessel.F90
+
+	$(FC) $(FOPTS) -c ../tssm_fourier_bessel.F90 -o tssm_fourier_bessel.o
+
+c_tssm_fourier_bessel_2d.f90: ../c_tssm_fourier_bessel_CPP.F90
+	$(CPP)  ../c_tssm_fourier_bessel_CPP.F90 > c_tssm_fourier_bessel_2d.f90
+
+c_tssm_fourier_bessel_2d.o: c_tssm_fourier_bessel_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_bessel_2d.f90 -o c_tssm_fourier_bessel_2d.o
+
+c_tssm_fourier_bessel_real_2d.f90: ../c_tssm_fourier_bessel_CPP.F90
+	$(CPP) -D_REAL_ ../c_tssm_fourier_bessel_CPP.F90 > c_tssm_fourier_bessel_real_2d.f90
+
+c_tssm_fourier_bessel_real_2d.o: c_tssm_fourier_bessel_real_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_bessel_real_2d.f90 -o c_tssm_fourier_bessel_real_2d.o
+
+##
+
+tssm_disorder_potential.o: ../tssm_disorder_potential.F90
+	$(FC) $(FOPTS) -c ../tssm_disorder_potential.F90  -o tssm_disorder_potential.o
+##
+
+c_tssm_fourier.o: ../c_tssm_fourier.F90
+	$(FC) $(FOPTS) -c ../c_tssm_fourier.F90  -o c_tssm_fourier.o
+
+c_tssm.o: ../c_tssm.F90
+	$(FC) $(FOPTS) -c ../c_tssm.F90  -o c_tssm.o
+
+c_tssm_fourier_1d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=1 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_1d.f90
+
+c_tssm_fourier_1d.o: c_tssm_fourier_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_1d.f90 -o c_tssm_fourier_1d.o
+
+c_tssm_fourier_2d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=2 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_2d.f90
+
+c_tssm_fourier_2d.o: c_tssm_fourier_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_2d.f90 -o c_tssm_fourier_2d.o
+
+c_tssm_fourier_3d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_DIM_=3 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_3d.f90
+
+c_tssm_fourier_3d.o: c_tssm_fourier_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_3d.f90 -o c_tssm_fourier_3d.o
+
+c_tssm_fourier_real_1d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_real_1d.f90
+
+c_tssm_fourier_real_1d.o: c_tssm_fourier_real_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_real_1d.f90 -o c_tssm_fourier_real_1d.o
+
+c_tssm_fourier_real_2d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_real_2d.f90
+
+c_tssm_fourier_real_2d.o: c_tssm_fourier_real_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_real_2d.f90 -o c_tssm_fourier_real_2d.o
+
+c_tssm_fourier_real_3d.f90: ../c_tssm_fourier_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../c_tssm_fourier_CPP.F90 > c_tssm_fourier_real_3d.f90
+
+c_tssm_fourier_real_3d.o: c_tssm_fourier_real_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_fourier_real_3d.f90 -o c_tssm_fourier_real_3d.o
+
+##
+
+c_tssm_schroedinger_1d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=1 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_1d.f90
+
+c_tssm_schroedinger_1d.o: c_tssm_schroedinger_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_1d.f90  -o c_tssm_schroedinger_1d.o
+
+c_tssm_schroedinger_2d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=2 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_2d.f90
+
+c_tssm_schroedinger_2d.o: c_tssm_schroedinger_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_2d.f90 -o c_tssm_schroedinger_2d.o
+
+c_tssm_schroedinger_3d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_DIM_=3 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_3d.f90
+
+c_tssm_schroedinger_3d.o: c_tssm_schroedinger_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_3d.f90  -o c_tssm_schroedinger_3d.o
+
+c_tssm_schroedinger.o: ../c_tssm_schroedinger.F90
+	$(FC) $(FOPTS) -c ../c_tssm_schroedinger.F90  -o c_tssm_schroedinger.o
+
+c_tssm_schroedinger_real_1d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_real_1d.f90
+
+c_tssm_schroedinger_real_1d.o: c_tssm_schroedinger_real_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_real_1d.f90 -o c_tssm_schroedinger_real_1d.o
+
+c_tssm_schroedinger_real_2d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_real_2d.f90
+
+c_tssm_schroedinger_real_2d.o: c_tssm_schroedinger_real_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_real_2d.f90 -o c_tssm_schroedinger_real_2d.o
+
+c_tssm_schroedinger_real_3d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_real_3d.f90
+
+c_tssm_schroedinger_real_3d.o: c_tssm_schroedinger_real_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_real_3d.f90  -o c_tssm_schroedinger_real_3d.o
+
+##
+
+c_tssm_schroedinger_hermite_1d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=1 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_1d.f90
+
+c_tssm_schroedinger_hermite_1d.o: c_tssm_schroedinger_hermite_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_1d.f90 -o c_tssm_schroedinger_hermite_1d.o
+
+c_tssm_schroedinger_hermite_2d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=2 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_2d.f90
+
+c_tssm_schroedinger_hermite_2d.o: c_tssm_schroedinger_hermite_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_2d.f90 -o c_tssm_schroedinger_hermite_2d.o
+
+c_tssm_schroedinger_hermite_3d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_DIM_=3 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_3d.f90
+
+c_tssm_schroedinger_hermite_3d.o: c_tssm_schroedinger_hermite_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_3d.f90  -o c_tssm_schroedinger_hermite_3d.o
+
+c_tssm_schroedinger_hermite_real_1d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=1 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_real_1d.f90
+
+c_tssm_schroedinger_hermite_real_1d.o: c_tssm_schroedinger_hermite_real_1d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_real_1d.f90 -o c_tssm_schroedinger_hermite_real_1d.o
+
+c_tssm_schroedinger_hermite_real_2d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=2 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_real_2d.f90
+
+c_tssm_schroedinger_hermite_real_2d.o: c_tssm_schroedinger_hermite_real_2d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_real_2d.f90 -o c_tssm_schroedinger_hermite_real_2d.o
+
+c_tssm_schroedinger_hermite_real_3d.f90: ../c_tssm_schroedinger_CPP.F90
+	$(CPP) -D_HERMITE_ -D_REAL_ -D_DIM_=3 ../c_tssm_schroedinger_CPP.F90 > c_tssm_schroedinger_hermite_real_3d.f90
+
+c_tssm_schroedinger_hermite_real_3d.o: c_tssm_schroedinger_hermite_real_3d.f90
+	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_real_3d.f90  -o c_tssm_schroedinger_hermite_real_3d.o
+
+###############################
+
+test.o: ../test.F90
+	$(FC) $(FOPTS) -c ../test.F90  -o test.o
+
+test: test.o $(TSSM)
+	$(FC) $(FOPTS) test.o -o test \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+simulation_1D.o: ../simulation_1D.F90
+	$(FC) $(FOPTS) -c ../simulation_1D.F90  -I$(HDF5_INCLUDE) -o simulation_1D.o
+
+simulation_1D: simulation_1D.o $(TSSM)
+	$(FC) $(FOPTS) simulation_1D.o -o simulation_1D \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+simulation_2D.o: ../simulation_2D.F90
+	$(FC) $(FOPTS) -I$(HDF5_INCLUDE) -c ../simulation_2D.F90  -o simulation_2D.o
+
+simulation_2D: simulation_2D.o $(TSSM)
+	$(FC) $(FOPTS) simulation_2D.o -o simulation_2D \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+
+test_disordered_potential.o: ../test_disordered_potential.F90
+	$(FC) $(FOPTS) -c ../test_disordered_potential.F90  -o test_disordered_potential.o
+
+test_disordered_potential: test_disordered_potential.o $(TSSM)
+	$(FC) $(FOPTS) test_disordered_potential.o -o test_disordered_potential \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+
+test_adaptive.o: ../test_adaptive.F90
+	$(FC) $(FOPTS) -c ../test_adaptive.F90  -o test_adaptive.o
+
+test_adaptive: test_adaptive.o $(TSSM)
+	$(FC) $(FOPTS) test_adaptive.o -o test_adaptive \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+
+test_gross_pitaevskii.o: ../test_gross_pitaevskii.F90
+	$(FC) $(FOPTS) -c ../test_gross_pitaevskii.F90  -o test_gross_pitaevskii.o
+
+test_gross_pitaevskii: test_gross_pitaevskii.o $(TSSM)
+	$(FC) $(FOPTS) test_gross_pitaevskii.o -o test_gross_pitaevskii \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_imag_time.o: ../test_imag_time.F90
+	$(FC) $(FOPTS) -c ../test_imag_time.F90  -o test_imag_time.o
+
+test_imag_time: test_imag_time.o $(TSSM)
+	$(FC) $(FOPTS) test_imag_time.o -o test_imag_time \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_real.o: ../test_real.F90
+	$(FC) $(FOPTS) -c ../test_real.F90  -o test_real.o
+
+test_real: test_real.o $(TSSM)
+	$(FC) $(FOPTS) test_real.o -o test_real \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_gaussian.o: ../test_gaussian.F90
+	$(FC) $(FOPTS) -c ../test_gaussian.F90  -o test_gaussian.o
+
+test_gaussian: test_gaussian.o $(TSSM)
+	$(FC) $(FOPTS) test_gaussian.o -o test_gaussian \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_harmonic.o: ../test_harmonic.F90
+	$(FC) $(FOPTS) -c ../test_harmonic.F90  -o test_harmonic.o
+
+test_harmonic: test_harmonic.o $(TSSM)
+	$(FC) $(FOPTS) test_harmonic.o -o test_harmonic \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_soliton.o: ../test_soliton.F90
+	$(FC) $(FOPTS) -c ../test_soliton.F90  -o test_soliton.o
+
+test_soliton: test_soliton.o $(TSSM)
+	$(FC) $(FOPTS) test_soliton.o -o test_soliton \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_fisher.o: ../test_fisher.F90
+	$(FC) $(FOPTS) -c ../test_fisher.F90  -o test_fisher.o
+
+test_fisher: test_fisher.o $(TSSM)
+	$(FC) $(FOPTS) test_fisher.o -o test_fisher \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_gray_scott.o: ../test_gray_scott.F90 ../propagate_b_2components_real_2d.inc
+	$(FC) $(FOPTS) -c ../test_gray_scott.F90  -o test_gray_scott.o
+
+test_gray_scott: test_gray_scott.o $(TSSM)
+	$(FC) $(FOPTS) test_gray_scott.o -o test_gray_scott \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_gray_scott_complex.o: ../test_gray_scott_complex.F90 ../propagate_b_2components_complex_2d.inc
+	$(FC) $(FOPTS) -c ../test_gray_scott_complex.F90  -o test_gray_scott_complex.o
+
+test_gray_scott_complex: test_gray_scott_complex.o $(TSSM)
+	$(FC) $(FOPTS) test_gray_scott_complex.o -o test_gray_scott_complex \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_coupled_nonlin_schroe.o: ../test_coupled_nonlin_schroe.F90 
+	$(FC) $(FOPTS) -c ../test_coupled_nonlin_schroe.F90  -o test_coupled_nonlin_schroe.o
+
+test_coupled_nonlin_schroe: test_coupled_nonlin_schroe.o $(TSSM)
+	$(FC) $(FOPTS) test_coupled_nonlin_schroe.o -o test_coupled_nonlin_schroe \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_paper_fig_8.o: ../test_paper_fig_8.F90 
+	$(FC) $(FOPTS) -c ../test_paper_fig_8.F90  -o test_paper_fig_8.o
+
+test_paper_fig_8: test_paper_fig_8.o $(TSSM)
+	$(FC) $(FOPTS) test_paper_fig_8.o -o test_paper_fig_8 \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+test_compare_space_discretizations.o: ../test_compare_space_discretizations.F90 
+	$(FC) $(FOPTS) -c ../test_compare_space_discretizations.F90  -o test_compare_space_discretizations.o
+
+test_compare_space_discretizations: test_compare_space_discretizations.o $(TSSM)
+	$(FC) $(FOPTS) test_compare_space_discretizations.o -o test_compare_space_discretizations \
+              $(TSSM_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) 
+
+
+###############################
+
+clean:
+	rm -f *.f90 *.o *.mod 
