@@ -33,11 +33,12 @@ end function legendre
 
 
 
-subroutine legendre_deriv(n, x, L_k, Ld_k)
+subroutine legendre_deriv(n, x, L_k, Ld_k, forRadau)
     integer, intent(in) :: n
     real(kind=eprec), intent(in) :: x
     real(kind=eprec), intent(out) :: L_k
     real(kind=eprec), intent(out) :: Ld_k
+    logical, intent(in), optional :: forRadau
 
     real(kind=eprec) :: L_k_minus_1, L_k_plus_1
     real(kind=eprec) :: Ld_k_minus_1, Ld_k_plus_1
@@ -65,7 +66,116 @@ subroutine legendre_deriv(n, x, L_k, Ld_k)
         L_k = L_k_plus_1
         Ld_k = Ld_k_plus_1
     end do   
+    if (present(forRadau).and.forRadau) then
+       L_k = L_k +  L_k_minus_1 
+       Ld_k = Ld_k +  Ld_k_minus_1 
+    end if
 end subroutine legendre_deriv
+
+
+subroutine gauss(x, w, n)
+    real(kind=eprec), intent(out) :: x(0:n)
+    real(kind=eprec), intent(out) :: w(0:n)
+    integer, intent(in) :: n
+ 
+    real(kind=eprec), parameter :: EPS = 10000*epsilon(1.0_eprec)
+    real(kind=eprec), parameter :: EPS1 = 10*EPS
+    integer, parameter :: MAXIT = 100
+
+    integer :: info
+    integer j, k, its
+    real(kind=eprec) :: z, L, Lprime
+
+    real(kind=8), allocatable :: d(:), e(:)
+
+    allocate( d(n+1) )
+    allocate( e(n) )
+    d = 0.0d0
+    e = (/ (sqrt(real(j**2, kind=8)/real(4*j**2-1, kind=8)), j = 1,n ) /)
+
+    call DSTERF(n+1, d, e, info)
+
+    if (mod(n,2)==0) then
+        x(n/2) = 0.0_eprec
+        call legendre_deriv(n+1, 0.0_eprec, L, Lprime)
+        w(n/2) = 2.0_eprec/Lprime**2
+    end if 
+
+    do k=0, ceiling(0.5*n)-1
+        z = real(d(k+1), kind=eprec)
+        do its=1, MAXIT
+            call legendre_deriv(n+1, z, L, Lprime)
+            z = z - L/Lprime
+            if (abs(L) <= EPS) then 
+                exit
+            end if         
+        end do
+        x(k) = z
+        x(n-k) = -z
+        call legendre_deriv(n+1, z, L, Lprime)
+        w(n/2) = 2.0_eprec/((1.0_eprec-z**2)*Lprime**2)
+        w(n-k) = w(k)
+    end do   
+
+    deallocate( d )
+    deallocate( e )
+    
+    ! check that all nodes are distinct and increasing
+    do k=1,n
+        if(.not.((x(k)-x(k-1))>EPS1)) then
+            stop 'nodes not distinct in gauss_lobatto'
+        end if
+    end do    
+end subroutine gauss
+
+
+subroutine gauss_radau(x, w, n)
+    real(kind=eprec), intent(out) :: x(0:n)
+    real(kind=eprec), intent(out) :: w(0:n)
+    integer, intent(in) :: n
+ 
+    real(kind=eprec), parameter :: EPS = 10000*epsilon(1.0_eprec)
+    real(kind=eprec), parameter :: EPS1 = 10*EPS
+    integer, parameter :: MAXIT = 100
+
+    integer :: info
+    integer j, k, its
+    real(kind=eprec) :: z, L, Lprime
+
+    real(kind=8), allocatable :: d(:), e(:)
+
+    allocate( d(n) )
+    allocate( e(n-1) )
+    d = (/ (1.0_prec/real((2*j+1)*(2*j+3), kind=8), j=0,n-1 ) /)
+    e = (/ (sqrt(real(j*(j+1), kind=8)/real((2*j+1)**2, kind=8)), j = 1,n-1 ) /)
+
+    call DSTERF(n-1, d, e, info)
+
+    x(0) = -1.0_eprec
+    w(0) = 2.0_eprec/(real((n+1)**2, kind=eprec)*legendre(n, -1.0_eprec)**2)
+    do k=1,n 
+        z = real(d(k), kind=eprec)
+        do its=1, MAXIT
+            call legendre_deriv(n, z, L, Lprime, forRadau=.true.)
+            z = z - L/Lprime
+            if (abs(Lprime) <= EPS) then 
+                exit
+            end if         
+        end do
+        x(k) = z
+        w(k) = (1.0_eprec-z)/(real((n+1)**2, kind=eprec)*legendre(n, z)**2)
+    end do   
+
+    deallocate( d )
+    deallocate( e )
+    
+    ! check that all nodes are distinct and increasing
+    do k=1,n
+        if(.not.((x(k)-x(k-1))>EPS1)) then
+            stop 'nodes not distinct in gauss_radau'
+        end if
+    end do    
+end subroutine gauss_radau
 
 
 
@@ -93,7 +203,7 @@ subroutine gauss_lobatto(x, w, n)
 
     x(0) = -1.0_eprec
     x(n) = 1.0_eprec
-    w(n) = 2.0_eprec/(real(n*(n+1), kind=eprec)*legendre(n, 1.0_eprec))
+    w(n) = 2.0_eprec/(real(n*(n+1), kind=eprec)*legendre(n, 1.0_eprec)**2)
     w(0) = w(n)
     if (mod(n,2)==0) then
         x(n/2) = 0.0_eprec
@@ -104,10 +214,10 @@ subroutine gauss_lobatto(x, w, n)
         z = real(d(k), kind=eprec)
         do its=1, MAXIT
             call legendre_deriv(n, z, L, Lprime)
+            z = z - (1.0_eprec - z**2)*Lprime/(2.0_eprec*z*Lprime - real(n*(n+1),kind=eprec)*L)
             if (abs(Lprime) <= EPS) then 
                 exit
             end if         
-            z = z - (1.0_eprec - z**2)*Lprime/(2.0_eprec*z*Lprime - real(n*(n+1),kind=eprec)*L)
         end do
         x(k) = z
         x(n-k) = -z
