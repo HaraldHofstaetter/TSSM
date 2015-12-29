@@ -1,6 +1,11 @@
 module tssm_fourier_bessel_common
 use tssm
+use tssm_fourier_common, only: dirichlet, neumann
 implicit none
+
+integer, parameter :: gauss = 1
+integer, parameter :: radau = 2
+integer, parameter :: lobatto = 3
 
 integer, parameter :: eprec=selected_real_kind(p=30)
 
@@ -73,7 +78,7 @@ subroutine legendre_deriv(n, x, L_k, Ld_k, forRadau)
 end subroutine legendre_deriv
 
 
-subroutine gauss(x, w, n)
+subroutine quadrature_coefficients_gauss(x, w, n)
     real(kind=eprec), intent(out) :: x(0:n)
     real(kind=eprec), intent(out) :: w(0:n)
     integer, intent(in) :: n
@@ -126,10 +131,10 @@ subroutine gauss(x, w, n)
             stop 'nodes not distinct in gauss_lobatto'
         end if
     end do    
-end subroutine gauss
+end subroutine quadrature_coefficients_gauss
 
 
-subroutine gauss_radau(x, w, n)
+subroutine quadrature_coefficients_gauss_radau(x, w, n)
     real(kind=eprec), intent(out) :: x(0:n)
     real(kind=eprec), intent(out) :: w(0:n)
     integer, intent(in) :: n
@@ -175,11 +180,11 @@ subroutine gauss_radau(x, w, n)
             stop 'nodes not distinct in gauss_radau'
         end if
     end do    
-end subroutine gauss_radau
+end subroutine quadrature_coefficients_gauss_radau
 
 
 
-subroutine gauss_lobatto(x, w, n)
+subroutine quadrature_coefficients_gauss_lobatto(x, w, n)
     real(kind=eprec), intent(out) :: x(0:n)
     real(kind=eprec), intent(out) :: w(0:n)
     integer, intent(in) :: n
@@ -234,7 +239,7 @@ subroutine gauss_lobatto(x, w, n)
             stop 'nodes not distinct in gauss_lobatto'
         end if
     end do    
-end subroutine gauss_lobatto
+end subroutine quadrature_coefficients_gauss_lobatto
 
 
 function besselj_zero_approx(nu, m)
@@ -350,9 +355,11 @@ end function besseljprime_zero
 
 
 #ifdef _QUADPRECISION_
-subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax)
+subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+                                 boundary_conditions, quadrature_formula)
 #else
-subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax)
+subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+                                       boundary_conditions, quadrature_formula)
 #endif
     integer, intent(in) :: nr, kk, mm
     real(kind=eprec), intent(out) :: x(1:nr)
@@ -360,6 +367,8 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
     real(kind=eprec), intent(out) :: L(1:nr, 1:kk, 0:mm/2) 
     real(kind=eprec), intent(out) :: eigenvalues(1:kk, nfthetamin:nfthetamax)
     integer, intent(in) :: nfthetamin, nfthetamax 
+    integer, intent(in) :: boundary_conditions
+    integer, intent(in) :: quadrature_formula
 
     integer :: m, k, n
     real(kind=eprec) :: lambda
@@ -371,16 +380,37 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
 
     allocate( xx(0:nr+1) )
     allocate( ww(0:nr+1) )
-    call gauss_lobatto(xx, ww, nr+1)
 
-    x = 0.5_prec*xx(1:nr) + 0.5_prec ! transform [-1,1] -> [0,1]
-    w = 0.5_prec*ww(1:nr)*x
+    select case(quadrature_formula)
+    case (gauss) 
+        call quadrature_coefficients_gauss(xx, ww, nr-1)
+        x = 0.5_eprec*xx(0:nr-1) + 0.5_eprec ! transform [-1,1] -> [0,1]
+        w = 0.5_eprec*ww(0:nr-1)*x
+    case (radau) 
+        call quadrature_coefficients_gauss_radau(xx, ww, nr)
+        x = 0.5_eprec*xx(1:nr) + 0.5_eprec ! transform [-1,1] -> [0,1]
+        w = 0.5_eprec*ww(1:nr)*x
+    case (lobatto) 
+        select case(boundary_conditions)
+        case (dirichlet)
+            call quadrature_coefficients_gauss_lobatto(xx, ww, nr+1)
+        case (neumann)
+            call quadrature_coefficients_gauss_lobatto(xx, ww, nr)
+        end select    
+        x = 0.5_eprec*xx(1:nr) + 0.5_eprec ! transform [-1,1] -> [0,1]
+        w = 0.5_eprec*ww(1:nr)*x
+    end select
 
-    deallocate( xx, ww)
+    deallocate( xx, ww )
 
     do m=0,mm/2
         do k=1,kk
-           lambda = besselj_zero(m, k)
+           select case(boundary_conditions)
+           case (dirichlet)
+               lambda = besselj_zero(m, k)
+           case (neumann)
+               lambda = besseljprime_zero(m, k)
+           end select   
            lambda2 = lambda**2
            if ((m>nfthetamin).and.(m<nfthetamax)) then
                eigenvalues(k, m) = lambda2
@@ -388,7 +418,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
            if ((m>=1).and.(mm-m>nfthetamin).and.(mm-m<nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
            end if
-           f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, lambda)) 
+           f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, lambda)) !TODO: check for Neumann boundary conditions 
            do n = 1,nr
                L(n,k,m) = f*bessel_jn(m, lambda*x(n))
            end do
@@ -403,13 +433,16 @@ end subroutine fourier_bessel_coeffs_eprec
 
 
 #ifndef _QUADPRECISION_
-subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax)
+subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+                                 boundary_conditions, quadrature_formula)
     integer, intent(in) :: nr, kk, mm
     real(kind=prec), intent(out) :: x(1:nr)
     real(kind=prec), intent(out) :: w(1:nr)
     real(kind=prec), intent(out) :: L(1:nr, 1:kk, 0:mm/2) 
     real(kind=prec), intent(out) :: eigenvalues(1:kk, nfthetamin:nfthetamax)
     integer, intent(in) :: nfthetamin, nfthetamax 
+    integer, intent(in) :: boundary_conditions
+    integer, intent(in) :: quadrature_formula
 
     real(kind=eprec) :: x_eprec(1:nr)
     real(kind=eprec) :: w_eprec(1:nr)
@@ -420,7 +453,8 @@ subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, n
     allocate ( ev_eprec(1:kk, nfthetamin:nfthetamax) ) 
 
     call fourier_bessel_coeffs_eprec(nr, kk, mm, x_eprec, w_eprec, L_eprec, &
-                                     ev_eprec, nfthetamin, nfthetamax )
+                                     ev_eprec, nfthetamin, nfthetamax, &
+                                     boundary_conditions, quadrature_formula)
 
     x = real(x_eprec, kind=prec) ! conversion eprec->double should be done implicitely!!!
     w = real(w_eprec, kind=prec)

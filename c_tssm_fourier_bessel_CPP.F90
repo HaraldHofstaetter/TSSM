@@ -20,7 +20,7 @@ module _C_MODULE_
 
 contains
 
-    function S(c_new)(M, nr, nfr, r_max) &
+    function S(c_new)(M, nr, nfr, r_max, boundary_conditions, quadrature_formula) &
         result(this) bind(c)
         use iso_c_binding
         type(c_ptr) :: this 
@@ -28,10 +28,12 @@ contains
         integer, value ::nr 
         integer, value ::nfr 
         real(kind=prec),  value :: r_max 
+        integer, value :: boundary_conditions
+        integer, value :: quadrature_formula
 
         type(_METHOD_), pointer :: meth
         allocate( meth )
-        meth = _METHOD_( M, nr, nfr, r_max )
+        meth = _METHOD_( M, nr, nfr, r_max, boundary_conditions, quadrature_formula)
         this =  c_loc(meth)
     end function S(c_new)
 

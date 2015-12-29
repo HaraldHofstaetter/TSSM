@@ -27,7 +27,9 @@ module _MODULE_
     implicit none
 
     type, extends(_BASE_METHOD_) :: _METHOD_ 
-        real(kind=prec) :: r_max
+        real(kind=prec) :: r_max = 1.0_prec
+        integer :: boundary_conditions = dirichlet 
+        integer :: quadrature_formula = lobatto 
     contains    
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
@@ -54,24 +56,34 @@ module _MODULE_
 contains
 
 
-    function S(new)(M, nr, nfr, r_max) result(this)
+    function S(new)(M, nr, nfr, r_max, boundary_conditions, quadrature_formula) result(this)
         type(_METHOD_) :: this
         integer, intent(in) :: M
         integer, intent(in) :: nr 
         integer, intent(in) :: nfr 
         real(kind=prec), intent(in), optional :: r_max 
+        integer, intent(in), optional :: boundary_conditions
+        integer, intent(in), optional :: quadrature_formula
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
         if (present(r_max)) then
             this%r_max = r_max
-        else
-            this%r_max = 1.0_prec
         end if
+        if (present(boundary_conditions)) then
+            this%boundary_conditions = boundary_conditions
+            if (boundary_conditions==neumann) then
+                this%quadrature_formula = radau
+            endif     
+        end if
+        if (present(quadrature_formula)) then
+            this%quadrature_formula = quadrature_formula
+        endif     
 
         this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .false. ) ! not separated eigenvalues ...
 
         call fourier_bessel_coeffs(nr, nfr, M, this%g%nodes_r,  this%g%weights_r, this%L, &
-                                  this%eigenvalues_r_theta, this%nfthetamin, this%nfthetamax) 
+                                  this%eigenvalues_r_theta, this%nfthetamin, this%nfthetamax, &
+                                  this%boundary_conditions, this%quadrature_formula) 
 
     end function S(new)
 
