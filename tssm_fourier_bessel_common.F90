@@ -271,11 +271,11 @@ function besselj_zero_iter(nu, z0) result(z)
 
     do its = 1, MAXITER
         J = bessel_jn(nu, z)
+        Jprime = bessel_jn(nu-1, z) - real(nu, kind=eprec)*J/z
+        z = z - J/Jprime   
         if (abs(J) <= EPS) then
             exit
         end if       
-        Jprime = bessel_jn(nu-1, z) - real(nu, kind=eprec)*J/z
-        z = z - J/Jprime   
     end do
 end function besselj_zero_iter
 
@@ -287,6 +287,66 @@ function besselj_zero(nu, m)
 
     besselj_zero = besselj_zero_iter(nu, real(besselj_zero_approx(nu, m), kind=eprec))
 end function besselj_zero
+
+
+function besseljprime_zero_approx(nu, m)
+    integer, intent(in) :: nu
+    integer, intent(in) :: m
+    real(kind=prec) :: besseljprime_zero_approx
+
+    real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
+    real(kind=prec) :: mu, b
+    if ((nu==0).and.(m==0)) then
+        besseljprime_zero_approx = 0.0_prec
+    else        
+      mu = 4.0_prec*real(nu, kind=prec)**2
+      b = (real(m, kind=prec)+0.5_prec*real(nu, kind=prec)-0.75_prec)*pi
+
+      besseljprime_zero_approx = b - (mu+3)/(8.0_prec*b) &
+        -4.0_prec*(7.0_prec*mu**2+82.0_prec*mu-9)/(3.0_prec*(8.0_prec*b)**3) &
+        -32.0_prec*(83.0_prec*mu**3+2075.0_prec*mu**2-3039.0_prec*mu+3537.0_prec)/(15.0_prec*(8.0_prec*b)**5) &
+        -64.0_prec*(6949.0_prec*mu**4+296492.0_prec*mu**3-1248002.0_prec*mu**2+7414380.0_prec*mu-5853627) &
+            /(105.0_prec*(8.0_prec*b)**7) 
+    endif
+end function besseljprime_zero_approx
+
+
+function besseljprime_zero_iter(nu, z0) result(z)
+    integer, intent(in) :: nu
+    real(kind=eprec), intent(in) :: z0
+    real(kind=eprec) :: z
+
+    real(kind=eprec), parameter :: EPS = 10000*epsilon(1.0_eprec)
+    integer, parameter :: MAXITER = 100
+
+    integer :: its
+    real(kind=eprec) :: J, J1, J2
+
+    z = z0
+
+    do its = 1, MAXITER
+        J = bessel_jn(nu, z) 
+        J1 = bessel_jn(nu-1, z) - real(nu, kind=eprec)*J/z
+        J2 = -J1/z + ((nu/z)**2 - 1.0_eprec)*J
+        z = z - J1/J2
+        if (abs(J1) <= EPS) then
+            exit
+        end if       
+    end do
+end function besseljprime_zero_iter
+
+
+function besseljprime_zero(nu, m)
+    integer, intent(in) :: nu
+    integer, intent(in) :: m
+    real(kind=eprec) :: besseljprime_zero
+    if ((nu==0).and.(m==0)) then
+        besseljprime_zero = 0.0_eprec
+    else        
+        besseljprime_zero = besseljprime_zero_iter(nu, real(besseljprime_zero_approx(nu, m), kind=eprec))
+    endif        
+end function besseljprime_zero
+
 
 
 #ifdef _QUADPRECISION_
