@@ -311,6 +311,19 @@ function load!(psi::WfFourierBesselReal2D, filename::ASCIIString)
          (Ptr{Void}, Ptr{Uint8}, Int32,), psi.p, filename, length(filename))
 end    
 
+## method: eval ###################################################################################
+
+function eval(psi::WfFourierBessel2D, x::Real, y::Real)
+   ccall( dlsym(tssm_handle, "c_eval_wf_fourier_bessel_2d"), Complex64,
+         (Ptr{Void}, Float64, Float64), psi.p, x, y )
+end
+
+function eval(psi::WfFourierBesselReal2D, x::Real, y::Real)
+   ccall( dlsym(tssm_handle, "c_eval_wf_fourier_bessel_real_2d"), Float64,
+         (Ptr{Void}, Float64, Float64), psi.p, x, y )
+end
+
+
 ## method: norm ###################################################################################
 
 function norm(psi::WfFourierBessel2D)
