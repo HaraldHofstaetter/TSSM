@@ -246,6 +246,20 @@ contains
         call psip%load(fn)
     end subroutine S(c_load_wf)
 
+   function S(eval_wf)(psi, x, y) &
+        result(ans) bind(c)
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        real(kind=prec), value :: x 
+        real(kind=prec), value :: y 
+        type(_WF_), pointer :: psip
+        real(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%eval(x, y)
+    end function S(eval_wf)
+    
+
     function S(c_norm2_wf)(psi) &
         result(ans) bind(c)
         use iso_c_binding

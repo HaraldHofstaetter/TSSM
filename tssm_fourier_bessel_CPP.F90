@@ -46,6 +46,7 @@ module _MODULE_
     contains
         procedure :: save => S(save_wf)
         procedure :: load => S(load_wf)
+        procedure :: eval => S(eval_wf)
     end type _WF_ 
 
     interface _WF_ ! constructor
@@ -160,6 +161,59 @@ contains
        call this%_BASE_WF_%save(filename)
 #endif
     end subroutine S(load_wf)
+
+    function S(eval_wf)(this, x, y) result(z)
+        class(_WF_), intent(inout) :: this
+        real(kind=prec), intent(in) :: x, y
+        _COMPLEX_OR_REAL_(kind=prec) :: z
+        real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
+
+        real(kind=prec) :: r, r2, theta, f, lambda
+        complex(kind=prec) :: s
+        integer :: j, m
+
+        r2 = x**2 + y**2
+        z = 0.0_prec
+        select type (m=>this%m ); class is (_METHOD_)
+        if (r2 > m%r_max) then
+            return
+        end if
+        end select
+
+        r = sqrt(r2)
+        theta = atan2(y, x)
+        f = 2.0_prec*pi*theta/this%m%g%ntheta
+        call this%to_frequency_space
+
+#ifdef _REAL_                
+        do m = this%m%g%nthetamin, this%m%g%nthetamax
+            if (m==0) then
+                do j = this%m%nfrmin, this%m%nfrmax
+                    lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
+                    z = z + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%ufc(j, m)
+                end do    
+            else
+                s = 0.0_prec
+                do j = this%m%nfrmin, this%m%nfrmax
+                    lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
+                    s = s + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%ufc(j, m)
+                end do
+                z = z + 2.0_prec*real(exp(cmplx(0.0_prec, m*f)) * s, kind=prec)
+            end if
+        end do
+#else
+        do m = this%m%g%nthetamin, this%m%g%nthetamax
+            s = 0.0_prec
+            do j = this%m%nfrmin, this%m%nfrmax
+                lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
+                s = s + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%uf(j, m)
+            end do
+            z = z + exp(cmplx(0.0_prec, m*f)) * s
+        end do
+#endif                
+        z = z/sqrt(pi)
+        
+    end function S(eval_wf)
 
 
 end module _MODULE_ 

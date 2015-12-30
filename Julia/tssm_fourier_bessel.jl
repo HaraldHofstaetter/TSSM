@@ -1,9 +1,21 @@
+# to be includes by tssm.jl
+
+#quadrature formulas:
+
+const gauss = 1
+const radau = 2
+const lobatto = 3
+
 
 type FourierBessel2D <: TSSM
     m::Ptr{Void}
-    function FourierBessel2D(M::Integer, nr::Integer, nfr::Integer, r_max::Real = 1.0) 
+    function FourierBessel2D(M::Integer, nr::Integer, nfr::Integer; 
+                             r_max::Real = 1.0,
+                             boundary_conditions::Integer = dirichlet,
+                             quadrature_rule::Integer = (boundary_conditions==neumann ? radau : lobatto)
+                            ) 
         meth = new( ccall( dlsym(tssm_handle, "c_new_fourier_bessel_2d"), Ptr{Void}, 
-                   (Int32, Int32, Int32, Float64), M, nr, nfr,  r_max) )
+                   (Int32, Int32, Int32, Float64, Int32, Int32), M, nr, nfr,  r_max, boundary_conditions, quadrature_rule) )
         finalizer(meth, x -> ccall( dlsym(tssm_handle, "c_finalize_fourier_bessel_2d"), 
                   Void, (Ptr{Ptr{Void}},), &x.m) )
         meth           
@@ -12,9 +24,13 @@ end
 
 type FourierBesselReal2D <: TSSM
     m::Ptr{Void}
-    function FourierBesselReal2D(M::Integer, nr::Integer, nfr::Integer, r_max::Real = 1.0) 
+    function FourierBesselReal2D(M::Integer, nr::Integer, nfr::Integer;
+                                 r_max::Real = 1.0,
+                                 boundary_conditions::Integer = dirichlet,
+                                 quadrature_rule::Integer = (boundary_conditions==neumann ? radau : lobatto)
+                                )
         meth = new( ccall( dlsym(tssm_handle, "c_new_fourier_bessel_real_2d"), Ptr{Void}, 
-                   (Int32, Int32, Int32, Float64), M, nr, nfr, r_max) )
+                   (Int32, Int32, Int32, Float64, Int32, Int32), M, nr, nfr, r_max, boundary_conditions, quadrature_rule) )
         finalizer(meth, x -> ccall( dlsym(tssm_handle, "c_finalize_fourier_bessel_real_2d"), 
                   Void, (Ptr{Ptr{Void}},), &x.m) )
         meth           

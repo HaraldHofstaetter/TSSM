@@ -44,6 +44,8 @@ export GeneralizedLaguerreHermite3D, WfGeneralizedLaguerreHermite3D
 export GeneralizedLaguerreReal2D, WfGeneralizedLaguerreReal2D
 export GeneralizedLaguerreHermiteReal3D, WfGeneralizedLaguerreHermiteReal3D
 
+#export gauss, radau, lobatto
+
 export FourierBessel2D, WfFourierBessel2D 
 export FourierBesselReal2D, WfFourierBesselReal2D
 
