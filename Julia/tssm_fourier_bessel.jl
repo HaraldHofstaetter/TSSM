@@ -314,7 +314,7 @@ end
 ## method: eval ###################################################################################
 
 function eval(psi::WfFourierBessel2D, x::Real, y::Real)
-   ccall( dlsym(tssm_handle, "c_eval_wf_fourier_bessel_2d"), Complex64,
+   ccall( dlsym(tssm_handle, "c_eval_wf_fourier_bessel_2d"), Complex128,
          (Ptr{Void}, Float64, Float64), psi.p, x, y )
 end
 

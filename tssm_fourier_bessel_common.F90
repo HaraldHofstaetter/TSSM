@@ -413,10 +413,10 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
                lambda2 = lambda**2
                f = sqrt(1.0_eprec/(pi*(1.0_eprec - real(m**2,kind=eprec)/lambda2)))/abs(bessel_jn(m, lambda)) 
            end select   
-           if ((m>nfthetamin).and.(m<nfthetamax)) then
+           if ((m>=nfthetamin).and.(m<=nfthetamax)) then
                eigenvalues(k, m) = lambda2
            end if
-           if ((m>=1).and.(mm-m>nfthetamin).and.(mm-m<nfthetamax)) then
+           if ((m>=1).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
            end if
            do n = 1,nr
