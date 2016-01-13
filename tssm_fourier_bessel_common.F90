@@ -300,19 +300,20 @@ function besseljprime_zero_approx(nu, m)
     real(kind=prec) :: besseljprime_zero_approx
 
     real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
-    real(kind=prec) :: mu, b
-    if ((nu==0).and.(m==0)) then
-        besseljprime_zero_approx = 0.0_prec
-    else        
-      mu = 4.0_prec*real(nu, kind=prec)**2
-      b = (real(m, kind=prec)+0.5_prec*real(nu, kind=prec)-0.75_prec)*pi
+    real(kind=prec) :: m1, mu, b
+    if (nu==0) then
+        m1 = m +1
+    else
+        m1 = m
+    endif        
+    mu = 4.0_prec*real(nu, kind=prec)**2
+    b = (real(m1, kind=prec)+0.5_prec*real(nu, kind=prec)-0.75_prec)*pi
 
-      besseljprime_zero_approx = b - (mu+3)/(8.0_prec*b) &
+    besseljprime_zero_approx = b - (mu+3)/(8.0_prec*b) &
         -4.0_prec*(7.0_prec*mu**2+82.0_prec*mu-9)/(3.0_prec*(8.0_prec*b)**3) &
         -32.0_prec*(83.0_prec*mu**3+2075.0_prec*mu**2-3039.0_prec*mu+3537.0_prec)/(15.0_prec*(8.0_prec*b)**5) &
         -64.0_prec*(6949.0_prec*mu**4+296492.0_prec*mu**3-1248002.0_prec*mu**2+7414380.0_prec*mu-5853627) &
             /(105.0_prec*(8.0_prec*b)**7) 
-    endif
 end function besseljprime_zero_approx
 
 
@@ -345,11 +346,8 @@ function besseljprime_zero(nu, m)
     integer, intent(in) :: nu
     integer, intent(in) :: m
     real(kind=eprec) :: besseljprime_zero
-    if ((nu==0).and.(m==0)) then
-        besseljprime_zero = 0.0_eprec
-    else        
-        besseljprime_zero = besseljprime_zero_iter(nu, real(besseljprime_zero_approx(nu, m), kind=eprec))
-    endif        
+
+    besseljprime_zero = besseljprime_zero_iter(nu, real(besseljprime_zero_approx(nu, m), kind=eprec))
 end function besseljprime_zero
 
 
