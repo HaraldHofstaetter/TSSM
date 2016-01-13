@@ -30,10 +30,13 @@ module _MODULE_
         real(kind=prec) :: r_max = 1.0_prec
         integer :: boundary_conditions = dirichlet 
         integer :: quadrature_formula = lobatto 
+        real(kind=prec), allocatable :: normalization_factors(:,:)
+
     contains    
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :
+        procedure :: finalize => S(finalize)
     end type _METHOD_
 
     interface _METHOD_ ! constructor
@@ -82,12 +85,22 @@ contains
 
         this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .false. ) ! not separated eigenvalues ...
 
+        allocate( this%normalization_factors(this%nfrmin:this%nfrmax, &
+                                             this%nfthetamin:this%nfthetamax) ) 
+
         call fourier_bessel_coeffs(nr, nfr, M, this%g%nodes_r,  this%g%weights_r, this%L, &
-                                  this%eigenvalues_r_theta, this%nfthetamin, this%nfthetamax, &
+                                  this%eigenvalues_r_theta, this%normalization_factors, this%nfthetamin, this%nfthetamax, &
                                   this%boundary_conditions, this%quadrature_formula) 
 
     end function S(new)
 
+    subroutine S(finalize)(this)
+        class(_METHOD_), intent(inout) :: this
+
+        call this%_BASE_METHOD_%finalize()
+        deallocate( this%normalization_factors )
+
+    end subroutine S(finalize)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -172,13 +185,13 @@ contains
         complex(kind=prec) :: s
         integer :: j, m
 
+        select type (mm =>this%m ); class is (_METHOD_)
+
         r2 = x**2 + y**2
         z = 0.0_prec
-        select type (m=>this%m ); class is (_METHOD_)
-        if (r2 > m%r_max) then
+        if (r2 > mm%r_max) then
             return
         end if
-        end select
 
         r = sqrt(r2)
         theta = atan2(y, x)
@@ -190,13 +203,15 @@ contains
             if (m==0) then
                 do j = this%m%nfrmin, this%m%nfrmax
                     lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                    z = z + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%ufc(j, m)
+                    f = mm%normalization_factors(j, m)
+                    z = z + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
                 end do    
             else
                 s = 0.0_prec
                 do j = this%m%nfrmin, this%m%nfrmax
                     lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                    s = s + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%ufc(j, m)
+                    f = mm%normalization_factors(j, m)
+                    s = s + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
                 end do
                 z = z + 2.0_prec*real(exp(cmplx(0.0_prec, m*f)) * s, kind=prec)
             end if
@@ -206,12 +221,13 @@ contains
             s = 0.0_prec
             do j = this%m%nfrmin, this%m%nfrmax
                 lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                s = s + bessel_jn(m, lambda*r)/abs(bessel_jn(m+1, lambda)) * this%uf(j, m)
+                f = mm%normalization_factors(j, m)
+                s = s + f*bessel_jn(m, lambda*r) * this%uf(j, m)
             end do
             z = z + exp(cmplx(0.0_prec, m*f)) * s
         end do
 #endif                
-        z = z/sqrt(pi)
+        end select
         
     end function S(eval_wf)
 

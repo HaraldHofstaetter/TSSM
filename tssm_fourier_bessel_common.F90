@@ -353,10 +353,10 @@ end function besseljprime_zero
 
 
 #ifdef _QUADPRECISION_
-subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, normalization_factors, nfthetamin, nfthetamax, &
                                  boundary_conditions, quadrature_formula)
 #else
-subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normalization_factors, nfthetamin, nfthetamax, &
                                        boundary_conditions, quadrature_formula)
 #endif
     integer, intent(in) :: nr, kk, mm
@@ -364,6 +364,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
     real(kind=eprec), intent(out) :: w(1:nr)
     real(kind=eprec), intent(out) :: L(1:nr, 1:kk, 0:mm/2) 
     real(kind=eprec), intent(out) :: eigenvalues(1:kk, nfthetamin:nfthetamax)
+    real(kind=eprec), intent(out) :: normalization_factors(1:kk, nfthetamin:nfthetamax)
     integer, intent(in) :: nfthetamin, nfthetamax 
     integer, intent(in) :: boundary_conditions
     integer, intent(in) :: quadrature_formula
@@ -415,9 +416,11 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
            end select   
            if ((m>=nfthetamin).and.(m<=nfthetamax)) then
                eigenvalues(k, m) = lambda2
+               normalization_factors(k, m) = f
            end if
            if ((m>=1).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
+               normalization_factors(k, mm-m) = f
            end if
            do n = 1,nr
                L(n,k,m) = f*bessel_jn(m, lambda*x(n))
@@ -433,13 +436,14 @@ end subroutine fourier_bessel_coeffs_eprec
 
 
 #ifndef _QUADPRECISION_
-subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, nfthetamax, &
+subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, normalization_factors, nfthetamin, nfthetamax, &
                                  boundary_conditions, quadrature_formula)
     integer, intent(in) :: nr, kk, mm
     real(kind=prec), intent(out) :: x(1:nr)
     real(kind=prec), intent(out) :: w(1:nr)
     real(kind=prec), intent(out) :: L(1:nr, 1:kk, 0:mm/2) 
     real(kind=prec), intent(out) :: eigenvalues(1:kk, nfthetamin:nfthetamax)
+    real(kind=prec), intent(out) :: normalization_factors(1:kk, nfthetamin:nfthetamax)
     integer, intent(in) :: nfthetamin, nfthetamax 
     integer, intent(in) :: boundary_conditions
     integer, intent(in) :: quadrature_formula
@@ -448,21 +452,25 @@ subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, nfthetamin, n
     real(kind=eprec) :: w_eprec(1:nr)
     real(eprec), allocatable :: L_eprec(:,:,:)
     real(eprec), allocatable :: ev_eprec(:,:)
+    real(eprec), allocatable :: nf_eprec(:,:)
 
     allocate ( L_eprec(1:nr, 1:kk, 0:mm/2) ) 
     allocate ( ev_eprec(1:kk, nfthetamin:nfthetamax) ) 
+    allocate ( nf_eprec(1:kk, nfthetamin:nfthetamax) ) 
 
     call fourier_bessel_coeffs_eprec(nr, kk, mm, x_eprec, w_eprec, L_eprec, &
-                                     ev_eprec, nfthetamin, nfthetamax, &
+                                     ev_eprec, nf_eprec, nfthetamin, nfthetamax, &
                                      boundary_conditions, quadrature_formula)
 
     x = real(x_eprec, kind=prec) ! conversion eprec->double should be done implicitely!!!
     w = real(w_eprec, kind=prec)
     L = real(L_eprec, kind=prec)
     eigenvalues = real(ev_eprec, kind=prec)
+    normalization_factors = real(nf_eprec, kind=prec)
 
     deallocate (L_eprec)
     deallocate (ev_eprec)
+    deallocate (nf_eprec)
 end subroutine fourier_bessel_coeffs
 #endif
 
