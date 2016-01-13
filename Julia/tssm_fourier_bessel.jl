@@ -132,7 +132,7 @@ function get_L(m::FourierBesselReal2D, unsafe_access::Bool=false)
    dims =Array(Int32, 3)
    Lp = ccall( dlsym(tssm_handle, "c_get_l_fourier_bessel_real_2d"), Ptr{Float64},
          (Ptr{Void}, Ptr{Int32}), m.m, dims )
-   L = pointer_to_array(Hp, (dims[1], dims[2], dims[3]), false)  
+   L = pointer_to_array(Lp, (dims[1], dims[2], dims[3]), false)  
    if unsafe_access
        return L
    else

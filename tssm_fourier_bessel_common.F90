@@ -118,7 +118,7 @@ subroutine quadrature_coefficients_gauss(x, w, n)
         x(k) = z
         x(n-k) = -z
         call legendre_deriv(n+1, z, L, Lprime)
-        w(n/2) = 2.0_eprec/((1.0_eprec-z**2)*Lprime**2)
+        w(k) = 2.0_eprec/((1.0_eprec-z**2)*Lprime**2)
         w(n-k) = w(k)
     end do   
 
@@ -154,21 +154,21 @@ subroutine quadrature_coefficients_gauss_radau(x, w, n)
     d = (/ (1.0_prec/real((2*j+1)*(2*j+3), kind=8), j=0,n-1 ) /)
     e = (/ (sqrt(real(j*(j+1), kind=8)/real((2*j+1)**2, kind=8)), j = 1,n-1 ) /)
 
-    call DSTERF(n-1, d, e, info)
+    call DSTERF(n, d, e, info)
 
     x(0) = -1.0_eprec
-    w(0) = 2.0_eprec/(real((n+1)**2, kind=eprec)*legendre(n, -1.0_eprec)**2)
+    w(0) = 2.0_eprec/(real((n+1)**2, kind=eprec)*legendre(n+1, -1.0_eprec)**2)
     do k=1,n 
         z = real(d(k), kind=eprec)
         do its=1, MAXIT
-            call legendre_deriv(n, z, L, Lprime, forRadau=.true.)
+            call legendre_deriv(n+1, z, L, Lprime, forRadau=.true.)
             z = z - L/Lprime
-            if (abs(Lprime) <= EPS) then 
+            if (abs(L) <= EPS) then 
                 exit
             end if         
         end do
         x(k) = z
-        w(k) = (1.0_eprec-z)/(real((n+1)**2, kind=eprec)*legendre(n, z)**2)
+        w(k) = (1.0_eprec-z)/(real((n+1)**2, kind=eprec)*legendre(n+1, z)**2)
     end do   
 
     deallocate( d )
@@ -232,7 +232,7 @@ subroutine quadrature_coefficients_gauss_lobatto(x, w, n)
 
     deallocate( d )
     deallocate( e )
-    
+
     ! check that all nodes are distinct and increasing
     do k=1,n
         if(.not.((x(k)-x(k-1))>EPS1)) then
@@ -408,17 +408,19 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, nftheta
            select case(boundary_conditions)
            case (dirichlet)
                lambda = besselj_zero(m, k)
+               lambda2 = lambda**2
+               f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, lambda)) 
            case (neumann)
                lambda = besseljprime_zero(m, k)
+               lambda2 = lambda**2
+               f = sqrt(1.0_eprec/(pi*(1.0_eprec - real(m**2,kind=eprec)/lambda2)))/abs(bessel_jn(m, lambda)) 
            end select   
-           lambda2 = lambda**2
            if ((m>nfthetamin).and.(m<nfthetamax)) then
                eigenvalues(k, m) = lambda2
            end if
            if ((m>=1).and.(mm-m>nfthetamin).and.(mm-m<nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
            end if
-           f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, lambda)) !TODO: check for Neumann boundary conditions 
            do n = 1,nr
                L(n,k,m) = f*bessel_jn(m, lambda*x(n))
            end do
