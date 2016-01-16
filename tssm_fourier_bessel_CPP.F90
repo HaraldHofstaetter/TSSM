@@ -199,7 +199,7 @@ contains
         call this%to_frequency_space
 
 #ifdef _REAL_                
-        do m = this%m%g%nthetamin, this%m%g%nthetamax
+        do m = this%m%nfthetamin, this%m%nfthetamax
             if (m==0) then
                 do j = this%m%nfrmin, this%m%nfrmax
                     lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
@@ -217,7 +217,7 @@ contains
             end if
         end do
 #else
-        do m = this%m%g%nthetamin, this%m%g%nthetamax
+        do m = this%m%nfthetamin, this%m%nfthetamax
             m1 = m
             if (m1>this%m%g%ntheta/2) then
                 m1 = abs(m1-this%m%g%ntheta)

@@ -113,7 +113,7 @@ contains
         np = c_loc(mp%L)
         dim(1) = mp%g%nr
         dim(2) = mp%nfr
-        dim(3) = mp%g%ntheta
+        dim(3) = mp%g%ntheta/2 + 1
     end function S(c_get_L)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
