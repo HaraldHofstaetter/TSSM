@@ -83,7 +83,9 @@ contains
             this%quadrature_formula = quadrature_formula
         endif     
 
-        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .false. ) ! not separated eigenvalues ...
+        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .true., .false. ) 
+               ! symmetric coefficients
+               ! not separated eigenvalues ...
 
         allocate( this%normalization_factors(this%nfrmin:this%nfrmax, &
                                              this%nfthetamin:this%nfthetamax) ) 
@@ -179,11 +181,10 @@ contains
         class(_WF_), intent(inout) :: this
         real(kind=prec), intent(in) :: x, y
         _COMPLEX_OR_REAL_(kind=prec) :: z
-        real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
         real(kind=prec) :: r, r2, theta, f, lambda
         complex(kind=prec) :: s
-        integer :: j, m
+        integer :: j, m, m1
 
         select type (mm =>this%m ); class is (_METHOD_)
 
@@ -195,7 +196,6 @@ contains
 
         r = sqrt(r2)
         theta = atan2(y, x)
-        f = 2.0_prec*pi*theta/this%m%g%ntheta
         call this%to_frequency_space
 
 #ifdef _REAL_                
@@ -213,18 +213,22 @@ contains
                     f = mm%normalization_factors(j, m)
                     s = s + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
                 end do
-                z = z + 2.0_prec*real(exp(cmplx(0.0_prec, m*f)) * s, kind=prec)
+                z = z + 2.0_prec*real(exp(cmplx(0.0_prec, m*theta, kind=prec)) * s, kind=prec)
             end if
         end do
 #else
         do m = this%m%g%nthetamin, this%m%g%nthetamax
+            m1 = m
+            if (m1>this%m%g%ntheta/2) then
+                m1 = abs(m1-this%m%g%ntheta)
+            end if
             s = 0.0_prec
             do j = this%m%nfrmin, this%m%nfrmax
-                lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                f = mm%normalization_factors(j, m)
-                s = s + f*bessel_jn(m, lambda*r) * this%uf(j, m)
+                lambda = sqrt(this%m%eigenvalues_r_theta(j, m1))
+                f = mm%normalization_factors(j, m1)
+                s = s + f*bessel_jn(m1, lambda*r) * this%uf(j, m)
             end do
-            z = z + exp(cmplx(0.0_prec, m*f)) * s
+            z = z + exp(cmplx(0.0_prec, m*theta, kind=prec)) * s
         end do
 #endif                
         end select

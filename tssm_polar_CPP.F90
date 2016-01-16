@@ -82,6 +82,7 @@ module _MODULE_
 #ifdef _CYLINDRICAL_        
         real(kind=prec), allocatable :: H_z(:,:)
 #endif 
+        logical :: symmetric_coefficients
 #ifdef _OPENMP
         integer, allocatable :: jf(:)
 #endif
@@ -177,9 +178,9 @@ contains
 
 
 #ifdef _CYLINDRICAL_
-    function S(new)(M, nr, nfr, nz, separated_eigenvalues) result(this)
+    function S(new)(M, nr, nfr, nz, symmetric_coefficients, separated_eigenvalues) result(this)
 #else
-    function S(new)(M, nr, nfr, separated_eigenvalues) result(this)
+    function S(new)(M, nr, nfr, symmetric_coefficients, separated_eigenvalues) result(this)
 #endif
         type(_METHOD_) :: this
         integer, intent(in) :: M
@@ -188,6 +189,7 @@ contains
 #ifdef _CYLINDRICAL_
         integer, intent(in) :: nz
 #endif
+        logical, intent(in), optional :: symmetric_coefficients 
         logical, intent(in), optional :: separated_eigenvalues
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
@@ -272,15 +274,22 @@ contains
 #endif
 
 #ifdef _CYLINDRICAL_
-        this%g%alloc_size = (this%g%m1max-this%g%m1min+1)*(this%g%m2max-this%g%m2min+1) &
-                         *(this%g%m3max-this%g%m3min+1)
+        this%g%alloc_size = max(this%g%m1max-this%g%m1min+1, this%nf1max-this%nf1min+1) &
+                            *(this%g%m2max-this%g%m2min+1)*(this%g%m3max-this%g%m3min+1)
 #else
-        this%g%alloc_size = (this%g%m1max-this%g%m1min+1)*(this%g%m2max-this%g%m2min+1)
+        this%g%alloc_size = max(this%g%m1max-this%g%m1min+1, this%nf1max-this%nf1min+1) &
+                            *(this%g%m2max-this%g%m2min+1)
 #endif
 
         allocate( this%g%nodes_r(this%g%nrmin:this%g%nrmax ) ) 
         allocate( this%g%weights_r(this%g%nrmin:this%g%nrmax ) ) 
-        allocate( this%L(this%g%nr, this%nfr, 0:M/2 ) )   !TODO: CHECK!!!
+        if (present(symmetric_coefficients).and.symmetric_coefficients) then
+            this%symmetric_coefficients = .true.
+            allocate( this%L(this%g%nr, this%nfr, 0:M/2 ) )   !TODO: CHECK!!!
+        else
+            this%symmetric_coefficients = .false.
+            allocate( this%L(this%g%nr, this%nfr, 0:M-1 ) )   !TODO: CHECK!!!
+        end if
 
         this%g%dtheta = 2.0_prec*pi/real(M, kind=prec) 
         !this%g%dtheta = 1.0_prec/real(M, kind=prec)  !TODO: CHECK and UNDERSTAND !!!
@@ -508,7 +517,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(m, m1)
             do m = this%m%nfthetamin, this%m%nfthetamax
                 m1 = m
-                if (m1>this%m%g%ntheta/2) then
+                if (this%m%symmetric_coefficients .and. (m1>this%m%g%ntheta/2)) then
                     m1 = abs(m1-this%m%g%ntheta)
                 end if
 #ifdef _REAL_
@@ -576,7 +585,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(m, m1)
             do m = this%m%nfthetamin, this%m%nfthetamax
                 m1 = m
-                if (m1>this%m%g%ntheta/2) then
+                if (this%m%symmetric_coefficients .and. (m1>this%m%g%ntheta/2)) then
                     m1 = abs(m1-this%m%g%ntheta)
                 end if
 #ifdef _REAL_

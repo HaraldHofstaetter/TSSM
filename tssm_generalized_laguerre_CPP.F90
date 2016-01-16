@@ -108,10 +108,12 @@ contains
         nfr = K+1
 
 #ifndef _HERMITE_
-        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .true.) ! separated eigenvalues
+        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .true., .true.) 
 #else        
-        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, nz, .true.) ! separated eigenvalues
+        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, nz, .true., .true.) 
 #endif        
+          ! symmetric coefficients
+          ! separated eigenvalues ...
 
         call generalized_laguerre_scaled_coeffs(K, M, this%g%nodes_r,  this%g%weights_r, this%L, this%gamma_r )
 

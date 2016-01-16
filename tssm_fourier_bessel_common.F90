@@ -421,7 +421,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
            if ((m>=1).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
                normalization_factors(k, mm-m) = f
-           end if
+           end if           
            do n = 1,nr
                L(n,k,m) = f*bessel_jn(m, lambda*x(n))
            end do
