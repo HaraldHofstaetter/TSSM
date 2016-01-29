@@ -4,25 +4,29 @@ include("coupled_schroedinger.jl")
 include("time_stepper.jl")
 
 
-const alpha=1.0
-const e=0.8
-const v=1.1
+const alpha1=1.0
+const alpha2=0.5
+const e=2/3.0
+const v1=1.0
+const v2=0.1
 const delta=0.5
 
 m=CoupledSchroedinger1D(512,-20, 60, delta, e)
 psi=wave_function(m)
 
-function ex_sol1(x, t)
-    sqrt(2*alpha/(1+e)) * sech(sqrt(2*alpha)*(x-v*t)) * exp(1im*( (v-delta)*x - ( 0.5*(v^2-delta^2)-alpha )*t ))
+function init1(x)
+    (sqrt(2*alpha1/(1+e)) * sech(sqrt(2*alpha1)*(x))    * exp(1im*( (v1-delta)*x )))+
+    (sqrt(2*alpha2/(1+e)) * sech(sqrt(2*alpha2)*(x-25)) * exp(1im*( (v2-delta)*(x-25) )))
 end
 
-function ex_sol2(x, t)
-    sqrt(2*alpha/(1+e)) * sech(sqrt(2*alpha)*(x-v*t)) * exp(1im*( (v+delta)*x - ( 0.5*(v^2-delta^2)-alpha )*t ))
+function init2(x)
+    (sqrt(2*alpha1/(1+e)) * sech(sqrt(2*alpha1)*(x))    * exp(1im*( (v1+delta)*x )))+
+    (sqrt(2*alpha2/(1+e)) * sech(sqrt(2*alpha2)*(x-25)) * exp(1im*( (v2+delta)*(x-25) )))
 end
 
-ex_sol = Function2(ex_sol1, ex_sol2)
+ex_sol = Function2(init1,init2)
 
-set!(psi, ex_sol, 0.0)
+set!(psi, ex_sol)
 
 embedded_scheme = EmbeddedScheme(
           ( 0.475018345144539497,   -0.402020995028838599,
@@ -79,26 +83,55 @@ scheme = embedded_scheme.scheme1
 
  
   x = get_nodes(psi.psi1)
-  u = get_data(psi.psi1, true)
-  
+  u1 = get_data(psi.psi1, true)
+  u2 = get_data(psi.psi2, true)
   using PyPlot
   
   hold(false)
   
-  psi_ex=wave_function(m)
-  u_ex = get_data(psi_ex.psi1, true)
+  #psi_ex=wave_function(m)
+  #u_ex = get_data(psi_ex.psi1, true)
   
-  
-  for t in adaptive_time_stepper(psi, 0.0, 100.0, 0.01, 1e-4, palindromic_scheme_34, "AB")
-  #for t in equidistant_time_stepper(psi, 0.0, 100.0, 0.1, palindromic_scheme_34.scheme, "AB")
+  steps=[0.0]
+  mytime=[0.0]
+  told=0.0
+  nsteps=0
+  tend=50.0
+  t0=0.0
+  out=1
+  tic()
+  for t in adaptive_time_stepper(psi, t0, tend, 0.1, 1e-4, palindromic_scheme_34, "AB")
+  push!(steps,t-told)
+  push!(mytime,t)
+  told=t
+  nsteps=nsteps+1
+  if out==1
      @printf("t=%5.3f\n", t)
      to_real_space!(psi.psi1)
-     plot(x, abs(u).^2)
+     to_real_space!(psi.psi2)
+     plot(x, abs(u1).^2)
      hold(true)
-     set!(psi_ex, ex_sol, t)
-     plot(x, abs(u_ex).^2)
+     #plot(x, abs(u2).^2)
      hold(false)
-     axis([-20,60,0,1.2])
-  #   #readline(STDIN)
+     axis([-20,60,0.0,1.2])
   end
+  end
+  toc()
+  stepmin=minimum(steps[2:end-1])
+  @printf("dtmin=%1.20f  nsteps=%d\n", stepmin,nsteps)
+  plot(mytime[1:end-2], steps[2:end-1])
+  #compute again with constant stepsize.
+  set!(psi, ex_sol)
+  nsteps=0
+  tic()
+  for t in equidistant_time_stepper(psi, t0, tend, stepmin, palindromic_scheme_34.scheme, "AB")
+  nsteps=nsteps+1
+  if out==1
+    @printf("t=%5.3f\n", t)
+  end
+  end
+  toc()
+  @printf("dtmin=%1.20f  nsteps=%d\n", stepmin,nsteps)
+  
+  
   
