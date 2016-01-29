@@ -144,6 +144,81 @@ function Base.next(tsi::AdaptiveTimeStepperIterator, state::AdaptiveTimeStepperS
     state.t + dt0, AdaptiveTimeStepperState(state.t+dt0, dt)
 end
 
+################################################################################
+immutable AdaptiveTimeStepper2Iterator
+   psi::WaveFunction
+   t0::Real
+   tend::Real
+   dt::Real
+   tol::Real
+   scheme1
+   scheme2
+   order::Integer
+   operator_sequence
+   psi2::WaveFunction
+   psi0::WaveFunction
+end
+
+immutable AdaptiveTimeStepper2State
+   t::Real
+   dt::Real
+   dt_old::Real
+   err_old::Real
+end   
+
+function adaptive_time_stepper2(psi::WaveFunction, t0::Real, tend::Real, 
+                         dt::Real, tol::Real, 
+                         scheme1, scheme2, order::Integer, operator_sequence="AB")
+    psi2=clone(psi)                     
+    psi0=clone(psi)                     
+    AdaptiveTimeStepper2Iterator(psi, t0, tend, dt, tol,
+        scheme1, scheme2, order, operator_sequence, psi2, psi0)
+end        
+
+Base.start(tsi::AdaptiveTimeStepper2Iterator) = AdaptiveTimeStepper2State(tsi.t0, tsi.dt, -1.0, -1.0)
+
+function Base.done(tsi::AdaptiveTimeStepper2Iterator, state::AdaptiveTimeStepper2State)
+  state.t >= tsi.tend
+end  
+
+function Base.next(tsi::AdaptiveTimeStepper2Iterator, state::AdaptiveTimeStepper2State)
+    const facmin = 0.25
+    const facmax = 4.0
+    const fac = 0.9
+    const beta1=0.25
+    const beta2=0.25
+    const alpha2=0.25
+    dt = state.dt
+    dt0 = dt
+    dt_old=dt
+    copy!(tsi.psi0, tsi.psi)
+    err = 2.0 #error/tol
+    while err>=1.0
+        dt = min(dt, tsi.tend-state.t)
+        dt0 = dt
+        if tsi.scheme2=="palindromic"
+           step_palindromic!(tsi.psi, tsi.psi2, dt, tsi.scheme1, tsi.operator_sequence)
+           err = 0.5*distance(tsi.psi, tsi.psi2)/tsi.tol
+        else
+           step_embedded!(tsi.psi, tsi.psi2, dt, tsi.scheme1, tsi.scheme2, tsi.operator_sequence)
+           err = distance(tsi.psi, tsi.psi2)/tsi.tol
+        end   
+        if state.dt_old<0.0
+           dt = dt*min(facmax, max(facmin, fac*(1.0/err)^(1.0/(tsi.order+1))))
+        else
+           dt = dt*min(facmax, max(facmin, fac*((1.0/err)^(beta1/(tsi.order+1))*(1.0/state.err_old)^(beta2/(tsi.order+1))*(dt/state.dt_old)^(-alpha2))))         
+        end
+        if err>=1.0
+           copy!(tsi.psi, tsi.psi0)
+           @printf("t=%17.9e  err=%17.8e  dt=%17.8e  rejected...\n", state.t, err, dt)
+        end   
+    end
+    state.t + dt0, AdaptiveTimeStepper2State(state.t+dt0, dt, dt_old, err)
+end
+
+
+
+################################################################################
 immutable EmbeddedScheme
     scheme1
     scheme2
@@ -169,6 +244,20 @@ function adaptive_time_stepper(psi::WaveFunction, t0::Real, tend::Real,
                          operator_sequence)
 end                          
 
+
+function adaptive_time_stepper2(psi::WaveFunction, t0::Real, tend::Real, 
+                         dt::Real, tol::Real, es::EmbeddedScheme, 
+                         operator_sequence="AB")
+    adaptive_time_stepper2(psi, t0, tend, dt, tol, es.scheme1, es.scheme2, es.order,
+                         operator_sequence)
+end                          
+
+function adaptive_time_stepper2(psi::WaveFunction, t0::Real, tend::Real, 
+                         dt::Real, tol::Real, ps::PalindromicScheme, 
+                         operator_sequence="AB")
+    adaptive_time_stepper2(psi, t0, tend, dt, tol, ps.scheme, "palindromic", ps.order,
+                         operator_sequence)
+end                          
 
 ########################################################################
 
