@@ -201,7 +201,6 @@ contains
         integer(C_SIZE_T) :: local_n_2ndlast_trans, local_2ndlast_start_trans
 #endif
 #endif
-print *, "NX XMIN XMAX", nx, xmin, xmax
         if (present(boundary_conditions)) then
             this%boundary_conditions = boundary_conditions
         end if
@@ -1562,8 +1561,6 @@ print *, "NX XMIN XMAX", nx, xmin, xmax
         integer :: j
 #endif      
 
-print *, "CSCALE/FACTOR", factor
-print *, "SCALE/BEFORE", this%u
 #ifndef _OPENMP
 #ifndef _REAL_
         if(aimag(factor)==0.0_prec) then
@@ -1596,7 +1593,6 @@ print *, "SCALE/BEFORE", this%u
          end do
 !$OMP END PARALLEL DO 
 #endif
-print *, "SCALE/AFTER", this%u
     end subroutine S(scale_wf_fourier)
 
 
