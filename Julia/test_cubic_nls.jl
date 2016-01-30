@@ -1,3 +1,4 @@
+push!(LOAD_PATH, pwd())
 using tssm
 
 #include("tssm_schroedinger.jl")

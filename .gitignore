@@ -1,5 +1,12 @@
 *.h5
 *~
+*.o
+*.so
+*.a
+*.mod
+*.f90
+*/test_*
+
 
 
 fftw_wisdom
