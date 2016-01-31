@@ -55,11 +55,15 @@ HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
 ifeq ($(JULIA_BUILD),1)
     FOPTS = -fopenmp -O3 -fPIC -D_NO_HDF5_ 
-    CPP = cpp -std=c89 -D_NO_HDF5_ -D_OPENMP
+    CPP = cpp -std=c89 HDF5_ -D_OPENMP
     FFTW_INCLUDE = ../../include 
     HDF5_INCLUDE = 
     HDF5_LIBS =  
     FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3.so.3 
+else
+    ifneq ($(SYSTEM),MINGW)  
+        OBJS += tssm_hdf5.o 
+    endif    
 endif
 
 

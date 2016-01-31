@@ -2,7 +2,7 @@ all: $(TSSM)
 
 OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
        tssm_splitting_schemes.o \
-       tssm_grid.o tssm_hdf5.o \
+       tssm_grid.o \
        tssm_fourier_common.o \
        tssm_fourier_1d.o tssm_fourier_2d.o tssm_fourier_3d.o \
        tssm_fourier_real_1d.o tssm_fourier_real_2d.o tssm_fourier_real_3d.o \
