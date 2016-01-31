@@ -1,4 +1,20 @@
-SYSTEM = LINUX
+#SYSTEM = LINUX
 #SYSTEM = OSX
 #SYSTEM = VSC3
 #SYSTEM = MINGW
+
+# Figure out OS and architecture
+OS = $(shell uname)
+ifeq ($(OS), MINGW32_NT-6.1)
+  OS=WINNT
+endif
+
+# file extensions
+ifeq ($(OS), WINNT)
+  SYSTEM = MINGW
+else ifeq ($(OS), Darwin)
+  SYSTEM = OSX 
+else
+  SYSTEM = LINUX
+endif
+

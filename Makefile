@@ -9,7 +9,7 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             tssm_fourier.F90 tssm_fourier_common.F90 tssm_fourier_CPP.F90 \
             tssm_multicomponent_fourier_CPP.F90 \
             c_tssm.F90 c_tssm_fourier.F90 c_tssm_fourier_CPP.F90\
-            c_tssm_fourier_wrapper_CPP.c
+            c_tssm_fourier_wrapper_CPP.c \
 	    propagate_b_2components_complex_2d.inc \
 	    propagate_b_2components_real_2d.inc \
             tssm_hermite.F90 tssm_hermite_common.F90 tssm_hermite_CPP.F90 \

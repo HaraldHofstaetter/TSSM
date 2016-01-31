@@ -12,7 +12,6 @@ import Base.norm
 
 export WaveFunction, WaveFunction1D, WaveFunction2D, WaveFunction3D, TSSM
 export dim
-#export tssm_handle
 
 export periodic, dirichlet, neumann
 
