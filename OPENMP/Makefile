@@ -53,7 +53,7 @@ HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
-ifeq ($(JULIA_BUILD),1) # settings for the JuliaBox
+ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
     FOPTS = -fopenmp -O3 -fPIC 
     CPP = cpp -std=c89  -D_OPENMP 
     FFTW_INCLUDE = ../../include 
