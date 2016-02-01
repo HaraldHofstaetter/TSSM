@@ -375,7 +375,8 @@ contains
     subroutine S(finalize_wf_hermite)(this)
         use, intrinsic :: iso_c_binding, only: c_loc
         class(S(wf_hermite)), intent(inout) :: this
-        call fftw_free(c_loc(this%up))
+        !call fftw_free(c_loc(this%up))
+        call fftw_free(c_loc(this%up(1)))
     end subroutine S(finalize_wf_hermite)
 
 

@@ -331,7 +331,14 @@ contains
         type(S(wf_schroedinger)), pointer :: psip
 
         call c_f_pointer(psi, psip)
-        up = c_loc(psip%u)
+        !up = c_loc(psip%u)
+#if(_DIM_==1)
+        up = c_loc(psip%u(psip%m%g%m1min))
+#elif(_DIM_==2)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+#elif(_DIM_==3)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
+#endif
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
@@ -354,16 +361,19 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-           evp = c_loc(mp%eigenvalues1)
+           !evp = c_loc(mp%eigenvalues1)
+           evp = c_loc(mp%eigenvalues1(mp%nf1min))
            dim(1) = mp%nf1max-mp%nf1min+1
 #if(_DIM_>=2)        
         case (2)
-           evp = c_loc(mp%eigenvalues2)
+           !evp = c_loc(mp%eigenvalues2)
+           evp = c_loc(mp%eigenvalues2(mp%nf2min))
            dim(1) = mp%nf2max-mp%nf2min+1
 #endif        
 #if(_DIM_>=3)        
         case (3)
-           evp = c_loc(mp%eigenvalues3)
+           !evp = c_loc(mp%eigenvalues3)
+           evp = c_loc(mp%eigenvalues3(mp%nf3min))
            dim(1) = mp%nf3max-mp%nf3min+1
 #endif        
         end select
@@ -581,16 +591,19 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-            np = c_loc(mp%g%weights_x)
+            !np = c_loc(mp%g%weights_x)
+            np = c_loc(mp%g%weights_x(mp%g%n1min))
             dim(1) = mp%g%n1max-mp%g%n1min+1
 #if(_DIM_>=2)        
         case (2)
-            np = c_loc(mp%g%weights_y)
+            !np = c_loc(mp%g%weights_y)
+            np = c_loc(mp%g%weights_y(mp%g%n2min))
             dim(1) = mp%g%n2max-mp%g%n2min+1
 #endif
 #if(_DIM_>=3)        
         case (3)
-            np = c_loc(mp%g%weights_z)
+            !np = c_loc(mp%g%weights_z)
+            np = c_loc(mp%g%weights_z(mp%g%n3min))
             dim(1) = mp%g%n3max-mp%g%n3min+1
 #endif
         end select
@@ -946,7 +959,14 @@ contains
         type(S(schroedinger)), pointer :: mp
 
         call c_f_pointer(m, mp)
-        Vp = c_loc(mp%V)
+        !Vp = c_loc(mp%V)
+#if(_DIM_==1)
+        Vp = c_loc(mp%V(mp%g%m1min))
+#elif(_DIM_==2)
+        Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min))
+#elif(_DIM_==3)
+        Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min, mp%g%m3min))
+#endif
         dim(1) = mp%g%m1max-mp%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = mp%g%m2max-mp%g%m2min+1

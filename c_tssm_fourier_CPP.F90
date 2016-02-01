@@ -281,7 +281,14 @@ contains
         type(S(wf_fourier)), pointer :: psip
 
         call c_f_pointer(psi, psip)
-        up = c_loc(psip%u)
+        !up = c_loc(psip%u)
+#if(_DIM_==1)
+        up = c_loc(psip%u(psip%m%g%m1min))
+#elif(_DIM_==2)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+#elif(_DIM_==3)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
+#endif
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
@@ -304,16 +311,19 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-           evp = c_loc(mp%eigenvalues1)
+           !evp = c_loc(mp%eigenvalues1
+           evp = c_loc(mp%eigenvalues1(mp%nf1min))
            dim(1) = mp%nf1max-mp%nf1min+1
 #if(_DIM_>=2)        
         case (2)
-           evp = c_loc(mp%eigenvalues2)
+           !evp = c_loc(mp%eigenvalues2)
+           evp = c_loc(mp%eigenvalues2(mp%nf2min))
            dim(1) = mp%nf2max-mp%nf2min+1
 #endif        
 #if(_DIM_>=3)        
         case (3)
-           evp = c_loc(mp%eigenvalues3)
+           !evp = c_loc(mp%eigenvalues3)
+           evp = c_loc(mp%eigenvalues3(mp%nf3min))
            dim(1) = mp%nf3max-mp%nf3min+1
 #endif        
         end select

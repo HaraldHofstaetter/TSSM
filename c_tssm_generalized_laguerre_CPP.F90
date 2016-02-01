@@ -94,18 +94,22 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-           evp = c_loc(mp%eigenvalues_r)
+           !evp = c_loc(mp%eigenvalues_r)
+           evp = c_loc(mp%eigenvalues_r(mp%nfrmin))
            dim(1) = mp%nf1max-mp%nf1min+1
 #ifndef _HERMITE_
         case (2)
-           evp = c_loc(mp%eigenvalues_theta)
+           !evp = c_loc(mp%eigenvalues_theta)
+           evp = c_loc(mp%eigenvalues_theta(mp%nfthetamin))
            dim(1) = mp%nf2max-mp%nf2min+1
 #else
         case (2)
-           evp = c_loc(mp%eigenvalues_z)
+           !evp = c_loc(mp%eigenvalues_z)
+           evp = c_loc(mp%eigenvalues_z(mp%nfzmin))
            dim(1) = mp%nf2max-mp%nf2min+1
         case (3)
-           evp = c_loc(mp%eigenvalues_theta)
+           !evp = c_loc(mp%eigenvalues_theta)
+           evp = c_loc(mp%eigenvalues_theta(mp%nfthetamin))
            dim(1) = mp%nf3max-mp%nf3min+1
 #endif
         end select
@@ -148,11 +152,13 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-            np = c_loc(mp%g%weights_r)
+            !np = c_loc(mp%g%weights_r)
+            np = c_loc(mp%g%weights_r(mp%g%n1min))
             dim(1) = mp%g%n1max-mp%g%n1min+1
 #ifdef _HERMITE_
         case (2)
-            np = c_loc(mp%g%weights_z)
+            !np = c_loc(mp%g%weights_z)
+            np = c_loc(mp%g%weights_z(mp%g%n2min))
             dim(1) = mp%g%n2max-mp%g%n2min+1
 #endif
         end select
@@ -404,7 +410,14 @@ contains
         type(_WF_), pointer :: psip
 
         call c_f_pointer(psi, psip)
-        up = c_loc(psip%u)
+        !up = c_loc(psip%u)
+#if(_DIM_==1)
+        up = c_loc(psip%u(psip%m%g%m1min))
+#elif(_DIM_==2)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+#elif(_DIM_==3)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
+#endif
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1

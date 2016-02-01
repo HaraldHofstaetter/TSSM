@@ -57,7 +57,8 @@ contains
         type(_METHOD_), pointer :: mp
 
         call c_f_pointer(m, mp)
-        evp = c_loc(mp%eigenvalues_r_theta)
+        !evp = c_loc(mp%eigenvalues_r_theta)
+        evp = c_loc(mp%eigenvalues_r_theta(mp%nf1min,mp%nf2min))
         dim(1) = mp%nf1max-mp%nf1min+1
         dim(2) = mp%nf2max-mp%nf2min+1
     end function S(c_get_eigenvalues)
@@ -95,7 +96,8 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-            np = c_loc(mp%g%weights_r)
+            !np = c_loc(mp%g%weights_r)
+            np = c_loc(mp%g%weights_r(mp%g%n1min))
             dim(1) = mp%g%n1max-mp%g%n1min+1
         end select
     end function S(c_get_weights)
@@ -341,7 +343,8 @@ contains
         type(_WF_), pointer :: psip
 
         call c_f_pointer(psi, psip)
-        up = c_loc(psip%u)
+        !up = c_loc(psip%u)
+        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
     end function S(c_get_data_wf)

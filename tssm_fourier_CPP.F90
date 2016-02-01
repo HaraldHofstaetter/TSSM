@@ -660,7 +660,8 @@ contains
             call fftw_destroy_plan(this%plan_backward)
         end if
         call fftw_destroy_plan(this%plan_forward)
-        call fftw_free(c_loc(this%up))
+        !call fftw_free(c_loc(this%up))
+        call fftw_free(c_loc(this%up(1)))
     end subroutine S(finalize_wf_fourier)
 
     
