@@ -60,10 +60,6 @@ ifeq ($(JULIA_BUILD),1)
     HDF5_INCLUDE = ../../include 
     HDF5_LIBS =  
     FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3.so.3 
-else
-    ifneq ($(SYSTEM),MINGW)  
-        OBJS += tssm_hdf5.o 
-    endif    
 endif
 
 
