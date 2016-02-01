@@ -53,14 +53,16 @@ HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
-ifeq ($(JULIA_BUILD),1)
-    FOPTS = -fopenmp -O3 -fPIC -D_NO_HDF5_ 
-    CPP = cpp -std=c89 -D_NO_HDF5_ -D_OPENMP 
+ifeq ($(JULIA_BUILD),1) # settings for the JuliaBox
+    FOPTS = -fopenmp -O3 -fPIC 
+    CPP = cpp -std=c89  -D_OPENMP 
     FFTW_INCLUDE = ../../include 
     HDF5_INCLUDE = ../../include 
-    HDF5_LIBS =  
+    HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_fortran.so.7 \
+                 /usr/lib/x86_64-linux-gnu/libhdf5.so.7
     FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3.so.3 
 endif
+
 
 
 include ../Makefile.common
