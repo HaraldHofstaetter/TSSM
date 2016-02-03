@@ -1,21 +1,31 @@
 #ifdef _HERMITE_
 #ifdef _REAL_
 #define S0(x,y)  x ## _hermite_real_ ## y ## d 
+#define W0(x,y)  x ## _hermite_real_ ## y ## d_w 
 #else
 #define S0(x,y)  x ## _hermite_ ## y ## d 
+#define W0(x,y)  x ## _hermite_ ## y ## d_w 
 #endif
 #else
 #ifdef _REAL_
 #define S0(x,y)  x ## _real_ ## y ## d 
+#define W0(x,y)  x ## _real_ ## y ## d_w 
 #else
 #define S0(x,y)  x ## _ ## y ## d 
+#define W0(x,y)  x ## _ ## y ## d_w
 #endif
 #endif
 #define S1(x,y) S0(x,y)
 #define S(x) S1(x,_DIM_)
+#ifdef _QUADPRECISION_
+#define W1(x,y) W0(x,y)
+#define W(x) W1(x,_DIM_)
+#else
+#define W(x) S1(x,_DIM_)
+#endif
 #define SC0(x) #x
 #define SC1(x) SC0(x)
-#define SC(x) SC1(S(x))
+#define SC(x) SC1(W(x))
 
 #ifdef _REAL_
 #define SB0(x,y)  x ## _real_ ## y ## d 
@@ -52,7 +62,7 @@ contains
                                   nz, omega_z, &
 #endif
                               hbar, mass, potential, with_potential, cubic_coupling) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(c_new_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         real(kind=prec),  value :: omega_x 
@@ -97,7 +107,7 @@ contains
                               nz, zmin, zmax, &
 #endif
                               hbar, mass, potential, with_potential, cubic_coupling, boundary_conditions) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(c_new_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         real(kind=prec),  value :: xmin 
@@ -132,13 +142,14 @@ contains
                        hbar, mass, cubic_coupling=cubic_coupling, boundary_conditions=boundary_conditions) 
         this =  c_loc(m)
         if (with_potential) then
-            call S(c_set_potential_schroedinger)(this, potential)
+            call S(c_set_potential_schroedinger)(this, potential)          
         end if
     end function S(c_new_schroedinger)
 #endif
 
 
-    subroutine S(c_finalize_schroedinger)(m)  bind(c)
+    subroutine S(c_finalize_schroedinger)(m) &
+        bind(c, name=SC(c_finalize_schroedinger))
         use iso_c_binding
         type(c_ptr) :: m
         type(S(schroedinger)), pointer :: mp
@@ -151,7 +162,7 @@ contains
 
 
     function S(c_new_wf_schroedinger)(m) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(c_new_wf_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         type(c_ptr), value :: m 
@@ -229,6 +240,17 @@ contains
         call psip%propagate_B(dt)
     end subroutine S(c_propagate_B_wfs)
 
+    subroutine S(c_propagate_C_wfs)(psi, dt) & 
+        bind(c, name=SC(c_propagate_c_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%propagate_C(dt)
+    end subroutine S(c_propagate_C_wfs)
+    
     subroutine S(c_add_apply_A_wfs)(this, other, coefficient) &
         bind(c, name=SC(c_add_apply_a_wf_schroedinger)) 
         use iso_c_binding
@@ -363,7 +385,7 @@ contains
 
 
     function S(c_get_eigenvalues_schroedinger)(m, dim, which) &
-        result(evp) bind(c)
+        result(evp) bind(c, name=SC(c_get_eigenvalues_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: evp
@@ -394,7 +416,7 @@ contains
 
 
     function S(c_get_nodes_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(c_get_nodes_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
@@ -423,7 +445,7 @@ contains
 
 !XXXXXXXXXXXXXXXXXXXXXXXXXXXX
    function S(c_get_hbar_schroedinger)(m) &
-        result(hbar) bind(c)
+        result(hbar) bind(c, name=SC(c_get_hbar_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: hbar
@@ -433,7 +455,7 @@ contains
     end function S(c_get_hbar_schroedinger)   
 
     function S(c_get_mass_schroedinger)(m) &
-        result(mass) bind(c)
+        result(mass) bind(c, name=SC(c_get_mass_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: mass
@@ -443,7 +465,7 @@ contains
     end function S(c_get_mass_schroedinger)   
 
     function S(c_get_cubic_coupling_schroedinger)(m) &
-        result(cubic_coupling) bind(c)
+        result(cubic_coupling) bind(c, name=SC(c_get_cubic_coupling_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: cubic_coupling
@@ -453,7 +475,7 @@ contains
     end function S(c_get_cubic_coupling_schroedinger)   
 
     function S(c_get_nx_schroedinger)(m) &
-        result(nx) bind(c)
+        result(nx) bind(c, name=SC(c_get_nx_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nx
@@ -464,7 +486,7 @@ contains
 
 #if(_DIM_>=2)
     function S(c_get_ny_schroedinger)(m) &
-        result(ny) bind(c)
+        result(ny) bind(c, name=SC(c_get_ny_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: ny
@@ -476,7 +498,7 @@ contains
 
 #if(_DIM_>=3)
     function S(c_get_nz_schroedinger)(m) &
-        result(nz) bind(c)
+        result(nz) bind(c, name=SC(c_get_nz_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nz
@@ -489,7 +511,7 @@ contains
 
 #ifdef _HERMITE_
    function S(c_get_omega_x_schroedinger)(m) &
-        result(omega_x) bind(c)
+        result(omega_x) bind(c, name=SC(c_get_omega_x_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_x
@@ -500,7 +522,7 @@ contains
 
 #if(_DIM_>=2)
    function S(c_get_omega_y_schroedinger)(m) &
-        result(omega_y) bind(c)
+        result(omega_y) bind(c, name=SC(c_get_omega_y_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_y
@@ -512,7 +534,7 @@ contains
 
 #if(_DIM_>=3)
    function S(c_get_omega_z_schroedinger)(m) &
-        result(omega_z) bind(c)
+        result(omega_z) bind(c, name=SC(c_get_omega_z_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_z
@@ -524,7 +546,7 @@ contains
 
 #else
    function S(c_get_xmin_schroedinger)(m) &
-        result(xmin) bind(c)
+        result(xmin) bind(c, name=SC(c_get_xmin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: xmin
@@ -534,7 +556,7 @@ contains
     end function S(c_get_xmin_schroedinger)   
 
     function S(c_get_xmax_schroedinger)(m) &
-        result(xmax) bind(c)
+        result(xmax) bind(c, name=SC(c_get_xmax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: xmax
@@ -545,7 +567,7 @@ contains
 
 #if(_DIM_>=2)
    function S(c_get_ymin_schroedinger)(m) &
-        result(ymin) bind(c)
+        result(ymin) bind(c, name=SC(c_get_ymin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: ymin
@@ -555,7 +577,7 @@ contains
     end function S(c_get_ymin_schroedinger)   
 
     function S(c_get_ymax_schroedinger)(m) &
-        result(ymax) bind(c)
+        result(ymax) bind(c, name=SC(c_get_ymax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: ymax
@@ -567,7 +589,7 @@ contains
 
 #if(_DIM_>=3)
    function S(c_get_zmin_schroedinger)(m) &
-        result(zmin) bind(c)
+        result(zmin) bind(c, name=SC(c_get_zmin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: zmin
@@ -577,7 +599,7 @@ contains
     end function S(c_get_zmin_schroedinger)   
 
     function S(c_get_zmax_schroedinger)(m) &
-        result(zmax) bind(c)
+        result(zmax) bind(c, name=SC(c_get_zmax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: zmax
@@ -593,7 +615,7 @@ contains
 #ifdef _HERMITE_
 
     function S(c_get_weights_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(c_get_weights_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
@@ -624,7 +646,7 @@ contains
 
 
     function S(c_get_H_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(c_get_H_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(c_ptr)  :: np
@@ -910,7 +932,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     subroutine S(c_set_potential_schroedinger)(m, f) &
-        bind(c)
+        bind(c, name=SC(c_set_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(S(schroedinger)), pointer :: mp
@@ -964,7 +986,7 @@ contains
     end subroutine S(c_set_potential_schroedinger)
 
     function S(c_get_potential_schroedinger)(m, dim) &
-        result(Vp) bind(c)
+        result(Vp) bind(c, name=SC(c_get_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(c_ptr)  :: Vp
@@ -990,7 +1012,8 @@ contains
      end function S(c_get_potential_schroedinger)
 
 
-    subroutine S(c_load_potential_schroedinger)(m, filename, filename_length) bind(c) 
+    subroutine S(c_load_potential_schroedinger)(m, filename, filename_length) &
+        bind(c, name=SC(c_load_potential_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: m 
         integer(c_int), intent(in), value :: filename_length
@@ -1005,7 +1028,8 @@ contains
         call mp%load_potential(fn)
     end subroutine S(c_load_potential_schroedinger)
  
-    subroutine S(c_save_potential_schroedinger)(m, filename, filename_length) bind(c) 
+    subroutine S(c_save_potential_schroedinger)(m, filename, filename_length) &
+        bind(c, name=SC(c_save_potential_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: m 
         integer(c_int), intent(in), value :: filename_length

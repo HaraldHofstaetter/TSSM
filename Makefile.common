@@ -39,7 +39,12 @@ OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
 
 OBJS_WRAPPER = \
        c_tssm_fourier_wrapper_1d.o c_tssm_fourier_wrapper_2d.o c_tssm_fourier_wrapper_3d.o \
-       c_tssm_fourier_wrapper_real_1d.o c_tssm_fourier_wrapper_real_2d.o c_tssm_fourier_wrapper_real_3d.o 
+       c_tssm_fourier_wrapper_real_1d.o c_tssm_fourier_wrapper_real_2d.o c_tssm_fourier_wrapper_real_3d.o \
+       c_tssm_schroedinger_wrapper_1d.o c_tssm_schroedinger_wrapper_2d.o c_tssm_schroedinger_wrapper_3d.o \
+       c_tssm_schroedinger_wrapper_real_1d.o c_tssm_schroedinger_wrapper_real_2d.o c_tssm_schroedinger_wrapper_real_3d.o \
+       c_tssm_schroedinger_hermite_wrapper_1d.o c_tssm_schroedinger_hermite_wrapper_2d.o \
+       c_tssm_schroedinger_wrapper_3d.o  c_tssm_schroedinger_hermite_wrapper_real_1d.o \
+       c_tssm_schroedinger_hermite_wrapper_real_2d.o c_tssm_schroedinger_hermite_wrapper_real_3d.o 
 
 
 $(TSSM): $(OBJS)
@@ -462,7 +467,6 @@ c_tssm_fourier_wrapper_3d.o: ../c_tssm_fourier_wrapper_CPP.c
 c_tssm_fourier_wrapper_real_1d.o: ../c_tssm_fourier_wrapper_CPP.c
 	$(CC) $(COPTS) -D_REAL_ -D_DIM_=1 -c ../c_tssm_fourier_wrapper_CPP.c -o c_tssm_fourier_wrapper_real_1d.o
 
-
 c_tssm_fourier_wrapper_real_2d.o: ../c_tssm_fourier_wrapper_CPP.c
 	$(CC) $(COPTS) -D_REAL_ -D_DIM_=2 -c ../c_tssm_fourier_wrapper_CPP.c -o c_tssm_fourier_wrapper_real_2d.o
 
@@ -509,6 +513,25 @@ c_tssm_schroedinger_real_3d.f90: ../c_tssm_schroedinger_CPP.F90
 
 c_tssm_schroedinger_real_3d.o: c_tssm_schroedinger_real_3d.f90
 	$(FC) $(FOPTS) -c c_tssm_schroedinger_real_3d.f90  -o c_tssm_schroedinger_real_3d.o
+##
+
+c_tssm_schroedinger_wrapper_1d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_DIM_=1 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_1d.o
+
+c_tssm_schroedinger_wrapper_2d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_DIM_=2 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_2d.o
+
+c_tssm_schroedinger_wrapper_3d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_DIM_=3 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_3d.o
+
+c_tssm_schroedinger_wrapper_real_1d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_REAL_ -D_DIM_=1 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_real_1d.o
+
+c_tssm_schroedinger_wrapper_real_2d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_REAL_ -D_DIM_=2 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_real_2d.o
+
+c_tssm_schroedinger_wrapper_real_3d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_REAL_ -D_DIM_=3 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_wrapper_real_3d.o
 
 ##
 
@@ -547,6 +570,29 @@ c_tssm_schroedinger_hermite_real_3d.f90: ../c_tssm_schroedinger_CPP.F90
 
 c_tssm_schroedinger_hermite_real_3d.o: c_tssm_schroedinger_hermite_real_3d.f90
 	$(FC) $(FOPTS) -c c_tssm_schroedinger_hermite_real_3d.f90  -o c_tssm_schroedinger_hermite_real_3d.o
+
+##
+
+c_tssm_schroedinger_hermite_wrapper_1d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_DIM_=1 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_1d.o
+
+c_tssm_schroedinger_hermite_wrapper_2d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_DIM_=2 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_2d.o
+
+c_tssm_schroedinger_hermite_wrapper_3d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_DIM_=3 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_3d.o
+
+c_tssm_schroedinger_hermite_wrapper_real_1d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_REAL_ -D_DIM_=1 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_real_1d.o
+
+c_tssm_schroedinger_hermite_wrapper_real_2d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_REAL_ -D_DIM_=2 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_real_2d.o
+
+c_tssm_schroedinger_hermite_wrapper_real_3d.o: ../c_tssm_schroedinger_wrapper_CPP.c
+	$(CC) $(COPTS) -D_HERMITE_ -D_REAL_ -D_DIM_=3 -c ../c_tssm_schroedinger_wrapper_CPP.c -o c_tssm_schroedinger_hermite_wrapper_real_3d.o
+
+##
+        
 
 ###############################
 
