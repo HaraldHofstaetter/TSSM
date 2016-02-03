@@ -60,7 +60,7 @@ include ../Makefile.common
 shared_lib: $(TSSM_SHARED_LIB)
 
 $(TSSM_SHARED_LIB):  $(OBJS) $(OBJS_WRAPPER)
-	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(FFTW_LIBS) $(HDF5_LIBS) 
+	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(OBJS_WRAPPER) $(FFTW_LIBS) $(HDF5_LIBS) 
 
 
 

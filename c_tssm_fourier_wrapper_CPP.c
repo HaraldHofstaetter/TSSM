@@ -42,11 +42,11 @@ typedef __complex128  mycomplex128;
 
 
 #ifdef _REAL_
-#define S0(x,y)  x ## _real_ ## y ## D 
-#define W0(x,y)  x ## _real_ ## y ## D_w 
+#define S0(x,y)  x ## _real_ ## y ## d 
+#define W0(x,y)  x ## _real_ ## y ## d_w 
 #else
-#define S0(x,y)  x ## _ ## y ## D 
-#define W0(x,y)  x ## _ ## y ## D_w
+#define S0(x,y)  x ## _ ## y ## d 
+#define W0(x,y)  x ## _ ## y ## d_w
 #endif
 #define S1(x,y) S0(x,y)
 #define S(x) S1(x,_DIM_)
