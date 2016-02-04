@@ -10,6 +10,7 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             tssm_multicomponent_fourier_CPP.F90 \
             c_tssm.F90 c_tssm_fourier.F90 c_tssm_fourier_CPP.F90\
             c_tssm_fourier_f128wrapper_CPP.c \
+            c_tssm_fourier_bessel_f128wrapper_CPP.c \
             c_tssm_schroedinger_f128wrapper_CPP.c \
 	    propagate_b_2components_complex_2d.inc \
 	    propagate_b_2components_real_2d.inc \

@@ -27,7 +27,7 @@ module _MODULE_
     implicit none
 
     type, extends(_BASE_METHOD_) :: _METHOD_ 
-        real(kind=prec) :: r_max = 1.0_prec
+        real(kind=prec) :: rmax = 1.0_prec
         integer :: boundary_conditions = dirichlet 
         integer :: quadrature_formula = lobatto 
         real(kind=prec), allocatable :: normalization_factors(:,:)
@@ -60,18 +60,18 @@ module _MODULE_
 contains
 
 
-    function S(new)(M, nr, nfr, r_max, boundary_conditions, quadrature_formula) result(this)
+    function S(new)(M, nr, nfr, rmax, boundary_conditions, quadrature_formula) result(this)
         type(_METHOD_) :: this
         integer, intent(in) :: M
         integer, intent(in) :: nr 
         integer, intent(in) :: nfr 
-        real(kind=prec), intent(in), optional :: r_max 
+        real(kind=prec), intent(in), optional :: rmax 
         integer, intent(in), optional :: boundary_conditions
         integer, intent(in), optional :: quadrature_formula
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
-        if (present(r_max)) then
-            this%r_max = r_max
+        if (present(rmax)) then
+            this%rmax = rmax
         end if
         if (present(boundary_conditions)) then
             this%boundary_conditions = boundary_conditions
@@ -139,7 +139,7 @@ contains
         call hdf5_write_attributes(filename, (/ "nodes_type" /), &
           (/ "fourier_bessel" /), &
           (/ character(len=0) :: /), (/ integer :: /), &
-          (/ "r_max" /), (/ m%r_max /) ) 
+          (/ "rmax" /), (/ m%rmax /) ) 
         end select
 !TODO save nodes !!!
 #endif        
@@ -168,7 +168,7 @@ contains
               stop "E: wrong nodes type"
        end if
        select type (m=>this%m ); class is (_METHOD_)
-       if (abs(hdf5_read_double_attribute(filename, "r_max")- m%r_max)>eps) then
+       if (abs(hdf5_read_double_attribute(filename, "rmax")- m%rmax)>eps) then
               stop "E: incompatible grids"
        end if       
        end select
@@ -190,7 +190,7 @@ contains
 
         r2 = x**2 + y**2
         z = 0.0_prec
-        if (r2 > mm%r_max) then
+        if (r2 > mm%rmax) then
             return
         end if
 
