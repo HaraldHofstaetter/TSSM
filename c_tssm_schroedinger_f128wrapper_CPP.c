@@ -72,10 +72,7 @@ typedef __complex128  mycomplex128;
 #endif
 
 
-#ifdef _HERMITE_
-
-#else
-#if(_DIM==1)                        
+#if(_DIM_==1)                        
 void* W(c_new_schroedinger)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -89,13 +86,13 @@ void* W(c_new_schroedinger)(
 
 void* S(c_new_schroedinger)(
 #ifdef _HERMITE_
-                        int nx, myfloat128 _omega_x, 
+                        int nx, myfloat128 omega_x, 
 #else
                         int nx, myfloat128 xmin, myfloat128 xmax, 
 #endif                        
-                        myfloat hbar, myfloat mass, 
-                        myfloat (*potential)(myfloat),
-                        int with_potential, myfloat cubic_coupling,
+                        myfloat128 hbar, myfloat128 mass, 
+                        myfloat128 (*potential)(myfloat128),
+                        int with_potential, myfloat128 cubic_coupling,
                         int boundary_conditions)
 {
     __float128 pp(__float128 x)
@@ -112,10 +109,10 @@ void* S(c_new_schroedinger)(
                               nx, F(xmin), F(xmax), 
 #endif                        
                               F(hbar), F(mass), pp,
-                              with_potential, F(cubic_coupling)
+                              with_potential, F(cubic_coupling),
                               boundary_conditions);
 }
-#elif(_DIM==2)                        
+#elif(_DIM_==2)                        
 void* W(c_new_schroedinger)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -131,15 +128,15 @@ void* W(c_new_schroedinger)(
 
 void* S(c_new_schroedinger)(
 #ifdef _HERMITE_
-                        int nx, myfloat128 _omega_x, 
-                        int ny, myfloat128 _omega_y, 
+                        int nx, myfloat128 omega_x, 
+                        int ny, myfloat128 omega_y, 
 #else
                         int nx, myfloat128 xmin, myfloat128 xmax, 
                         int ny, myfloat128 ymin, myfloat128 ymax, 
 #endif                              
-                        myfloat hbar, myfloat mass, 
-                        myfloat (*potential)(myfloat,myfloat),
-                        int with_potential, myfloat cubic_coupling,
+                        myfloat128 hbar, myfloat128 mass, 
+                        myfloat128 (*potential)(myfloat128,myfloat128),
+                        int with_potential, myfloat128 cubic_coupling,
                         int boundary_conditions)
 {
     __float128 pp(__float128 x, __float128 y)
@@ -159,10 +156,10 @@ void* S(c_new_schroedinger)(
                               ny, F(ymin), F(ymax), 
 #endif                        
                               F(hbar), F(mass), pp,
-                              with_potential, F(cubic_coupling)
+                              with_potential, F(cubic_coupling),
                               boundary_conditions);
 }
-#elif(_DIM==3)                        
+#elif(_DIM_==3)                        
 void* W(c_new_schroedinger)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -180,17 +177,17 @@ void* W(c_new_schroedinger)(
 
 void* S(c_new_schroedinger)(
 #ifdef _HERMITE_
-                        int nx, myfloat128 _omega_x, 
-                        int ny, myfloat128 _omega_y, 
-                        int nz, myfloat128 _omega_z, 
+                        int nx, myfloat128 omega_x, 
+                        int ny, myfloat128 omega_y, 
+                        int nz, myfloat128 omega_z, 
 #else
                         int nx, myfloat128 xmin, myfloat128 xmax, 
                         int ny, myfloat128 ymin, myfloat128 ymax, 
                         int nz, myfloat128 zmin, myfloat128 zmax, 
 #endif                              
-                        myfloat hbar, myfloat mass, 
-                        myfloat (*potential)(myfloat,myfloat,myfloat),
-                        int with_potential, myfloat cubic_coupling,
+                        myfloat128 hbar, myfloat128 mass, 
+                        myfloat128 (*potential)(myfloat128,myfloat128,myfloat128),
+                        int with_potential, myfloat128 cubic_coupling,
                         int boundary_conditions)
 {
     __float128 pp(__float128 x, __float128 y, __float128 z)
@@ -213,11 +210,10 @@ void* S(c_new_schroedinger)(
                               nz, F(zmin), F(zmax), 
 #endif                        
                               F(hbar), F(mass), pp,
-                              with_potential, F(cubic_coupling)
+                              with_potential, F(cubic_coupling),
                               boundary_conditions);
 }
 
-#endif
 #endif
 
 
