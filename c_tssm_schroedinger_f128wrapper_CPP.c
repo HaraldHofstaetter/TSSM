@@ -262,22 +262,20 @@ void S(c_to_frequency_space_wf_schroedinger)(void *psi)
     W(c_to_frequency_space_wf_schroedinger)(psi);
 }
 
-
-void W(c_propagate_A_wf_schroedinger)(void *psi, __float128 dt);
-void S(c_propagate_A_wf_schroedinger)(void *psi, myfloat128 dt)
+void W(c_propagate_A_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_propagate_A_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     W(c_propagate_A_wf_schroedinger)(psi, F(dt));
 }    
 
-
-void W(c_propagate_B_wf_schroedinger)(void *psi, __float128 dt);
-void S(c_propagate_B_wf_schroedinger)(void *psi, myfloat128 dt)
+void W(c_propagate_B_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_propagate_B_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     W(c_propagate_B_wf_schroedinger)(psi, F(dt));
 }    
 
-void W(c_propagate_C_wf_schroedinger)(void *psi, __float128 dt);
-void S(c_propagate_C_wf_schroedinger)(void *psi, myfloat128 dt)
+void W(c_propagate_C_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_propagate_C_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     W(c_propagate_C_wf_schroedinger)(psi, F(dt));
 }    
@@ -389,6 +387,12 @@ void* S(c_get_weights_schroedinger)(void* m, int dim[1], int which)
 {
     return W(c_get_weights_schroedinger)(m, dim, which);
 }    
+
+void* W(c_get_H)(void* m, int dim[2], int which);
+void* S(c_get_H)(void* m, int dim[2], int which)
+{
+    return W(c_get_H)(m, dim, which);
+}   
 #endif
 
 int W(c_get_nx_schroedinger)(void *m); 
@@ -713,5 +717,203 @@ void  S(c_set_t_wf_schroedinger)(void *psi,
 
 
 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! schroedinger specific methods !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+#if(_DIM_==1)
+void W(c_set_potential_schroedinger)(void *m, __float128 (*f)(__float128));
+void S(c_set_potential_schroedinger)(void *m, myfloat128 (*f)(myfloat128))
+{
+    __float128 ff(__float128 x)
+    {
+        myfloat128 res, xx;
+        F(xx) = x;
+        res = f(xx);
+        return F(res);
+    }
+    W(c_set_potential_schroedinger)(m, ff);
+}
+
+#elif(_DIM_==2)
+void W(c_set_potential_schroedinger)(void *m, __float128 (*f)(__float128, __float128));
+void S(c_set_potential_schroedinger)(void *m, myfloat128 (*f)(myfloat128, myfloat128))
+{
+    __float128 ff(__float128 x, __float128 y)
+    {
+        myfloat128 res, xx, yy;
+        F(xx) = x;
+        F(yy) = y;
+        res = f(xx, yy);
+        return F(res);
+    }
+    W(c_set_potential_schroedinger)(m, ff);
+}    
+
+#elif(_DIM_==3)
+void W(c_set_potential_schroedinger)(void *m, __float128 (*f)(__float128, 
+                                __float128, __float128));
+void S(c_set_potential_schroedinger)(void *m, myfloat128 (*f)(myfloat128, 
+                                myfloat128, myfloat128))
+{
+    __float128 ff(__float128 x, __float128 y, __float128 z)
+    {
+        myfloat128 res, xx, yy, zz;
+        F(xx) = x;
+        F(yy) = y;
+        F(zz) = z;
+        res = f(xx, yy, zz);
+        return F(res);
+    }
+    W(c_set_potential_schroedinger)(m, ff);
+}    
 
 #endif
+
+void* W(c_get_potential_schroedinger)(void *m, int dim[_DIM_]);
+void* S(c_get_potential_schroedinger)(void *m, int dim[_DIM_])
+{
+    return W(c_get_potential_schroedinger)(m, dim);
+}
+
+void W(c_load_potential_schroedinger)(void *m, char* filename, int filename_length);
+void S(c_load_potential_schroedinger)(void *m, char* filename, int filename_length)
+{
+    W(c_load_potential_schroedinger)(m, filename, filename_length);
+} 
+
+void W(c_save_potential_schroedinger)(void *m, char* filename, int filename_length);
+void S(c_save_potential_schroedinger)(void *m, char* filename, int filename_length)
+{
+    W(c_save_potential_schroedinger)(m, filename, filename_length);
+}
+
+void W(c_imaginary_time_propagate_A_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_imaginary_time_propagate_A_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
+{
+    W(c_imaginary_time_propagate_A_wf_schroedinger)(psi, F(dt));
+}    
+
+void W(c_imaginary_time_propagate_B_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_imaginary_time_propagate_B_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
+{
+    W(c_imaginary_time_propagate_B_wf_schroedinger)(psi, F(dt));
+}    
+
+void W(c_imaginary_time_propagate_C_wf_schroedinger)(void *psi, _COMPLEX_OR_REAL_ dt);
+void S(c_imaginary_time_propagate_C_wf_schroedinger)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
+{
+    W(c_imaginary_time_propagate_C_wf_schroedinger)(psi, F(dt));
+}    
+
+void W(c_add_apply_B_wf_schroedinger)(void *this, void *other,
+                  _COMPLEX_OR_REAL_ coefficient);
+void S(c_add_apply_B_wf_schroedinger)(void *this, void *other,
+                  _WRAPPED_COMPLEX_OR_REAL_ coefficient)
+{
+    W(c_add_apply_B_wf_schroedinger)(this, other, F(coefficient));
+}
+
+__float128 W(c_kinetic_energy_wf_schroedinger)(void *psi);
+myfloat128 S(c_kinetic_energy_wf_schroedinger)(void *psi)
+{
+    myfloat128 res;
+    F(res) = W(c_kinetic_energy_wf_schroedinger)(psi);
+    return res;
+} 
+
+__float128 W(c_potential_energy_wf_schroedinger)(void *psi);
+myfloat128 S(c_potential_energy_wf_schroedinger)(void *psi)
+{
+    myfloat128 res;
+    F(res) = W(c_potential_energy_wf_schroedinger)(psi);
+    return res;
+}
+
+__float128 W(c_interaction_energy_wf_schroedinger)(void *psi);
+myfloat128 S(c_interaction_energy_wf_schroedinger)(void *psi)
+{
+    myfloat128 res;
+    F(res) = W(c_interaction_energy_wf_schroedinger)(psi);
+    return res;
+}
+
+
+#if(_DIM_==1)
+__float128 W(c_observable_wf_schroedinger)(void *psi, __float128 (*f)(__float128));
+myfloat128 S(c_observable_wf_schroedinger)(void *psi, myfloat128 (*f)(myfloat128))
+{
+    __float128 ff(__float128 x)
+    {
+        myfloat128 res, xx;
+        F(xx) = x;
+        res = f(xx);
+        return F(res);
+    }
+    myfloat128 res;
+    F(res) = W(c_observable_wf_schroedinger)(psi, ff);
+    return res;
+}
+#elif(_DIM_==2)
+__float128 W(c_observable_wf_schroedinger)(void *psi, __float128 (*f)(__float128, __float128));
+myfloat128 S(c_observable_wf_schroedinger)(void *psi, myfloat128 (*f)(myfloat128, myfloat128))
+{
+    __float128 ff(__float128 x, __float128 y)
+    {
+        myfloat128 res, xx, yy;
+        F(xx) = x;
+        F(yy) = y;
+        res = f(xx, yy);
+        return F(res);
+    }
+    myfloat128 res;
+    F(res) = W(c_observable_wf_schroedinger)(psi, ff);
+    return res;
+}
+
+#elif(_DIM_==3)
+__float128 W(c_observable_wf_schroedinger)(void *psi, __float128 (*f)(__float128, 
+                                __float128, __float128));
+myfloat128 S(c_observable_wf_schroedinger)(void *psi, myfloat128 (*f)(myfloat128, 
+                                myfloat128, myfloat128))
+{
+    __float128 ff(__float128 x, __float128 y, __float128 z)
+    {
+        myfloat128 res, xx, yy, zz;
+        F(xx) = x;
+        F(yy) = y;
+        F(zz) = z;
+        res = f(xx, yy, zz);
+        return F(res);
+    }
+    myfloat128 res;
+    F(res) = W(c_observable_wf_schroedinger)(psi, ff);
+    return res;
+}    
+
+#endif
+
+void W(c_get_energy_expectation_deviation_wf_schroedinger)(void *psi, int dim[2]);
+void S(c_get_energy_expectation_deviation_wf_schroedinger)(void *psi, int dim[2])
+{
+   W(c_get_energy_expectation_deviation_wf_schroedinger)(psi, dim);
+}
+
+void W(c_get_realspace_observables_wf_schroedinger)(void *psi, int dim[2+2*_DIM_]);
+void S(c_get_realspace_observables_wf_schroedinger)(void *psi, int dim[2+2*_DIM_])
+{
+   W(c_get_realspace_observables_wf_schroedinger)(psi, dim);
+}
+
+
+void W(c_selfconsistent_nonlinear_step_wf_schroedinger)(void *psi, 
+           _COMPLEX_OR_REAL_ dt, _COMPLEX_OR_REAL_ dt1, 
+           __float128 eps, int max_iters);
+void S(c_selfconsistent_nonlinear_step_wf_schroedinger)(void *psi, 
+           _WRAPPED_COMPLEX_OR_REAL_ dt, _COMPLEX_OR_REAL_ dt1, 
+           myfloat128 eps, int max_iters)
+{
+    S(c_selfconsistent_nonlinear_step_wf_schroedinger)(psi, dt, dt1, eps, max_iters);
+}
+
+#endif  /* QUADPRECISION */

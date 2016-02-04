@@ -1118,12 +1118,54 @@ contains
         result(ans) bind(c, name=SC(c_observable_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
-        real(kind=prec), external, bind(c) :: f
         type(S(wf_schroedinger)), pointer :: psip
         real(kind=prec) :: ans
+        interface 
+#if(_DIM_==1)
+           function f(x) bind(c)
+#elif(_DIM_==2)
+           function f(x, y) bind(c)
+#elif(_DIM_==3)
+           function f(x, y, z) bind(c)
+#endif           
+               import prec
+               real(kind=prec), value :: x
+#if(_DIM_>=2)
+               real(kind=prec), value :: y
+#endif               
+#if(_DIM_>=3)
+               real(kind=prec), value :: z
+#endif               
+               real(kind=prec) :: f 
+           end function f
+        end interface 
 
         call c_f_pointer(psi, psip)
-        ans = psip%observable(f)
+        ans = psip%observable(ff)
+    contains
+#if(_DIM_==1)
+        function ff(x) 
+#elif(_DIM_==2)
+        function ff(x, y)
+#elif(_DIM_==3)
+        function ff(x, y, z)
+#endif          
+            real(kind=prec), intent(in) :: x
+#if(_DIM_>=2)
+            real(kind=prec), intent(in) :: y
+#endif               
+#if(_DIM_>=3)
+            real(kind=prec), intent(in) :: z
+#endif               
+            real(kind=prec) :: ff 
+#if(_DIM_==1)
+            ff = f(x)
+#elif(_DIM_==2)
+            ff = f(x, y)
+#elif(_DIM_==3)
+            ff = f(x, y, z)
+#endif
+        end function ff
     end function S(c_observable_wfs)
 
     subroutine S(c_get_energy_expectation_deviation_wfs)(psi, ans) &
