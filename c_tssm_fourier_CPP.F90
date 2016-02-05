@@ -298,13 +298,14 @@ contains
 
         call c_f_pointer(psi, psip)
         !up = c_loc(psip%u)
-#if(_DIM_==1)
-        up = c_loc(psip%u(psip%m%g%m1min))
-#elif(_DIM_==2)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
-#elif(_DIM_==3)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
-#endif
+!#if(_DIM_==1)
+!        up = c_loc(psip%u(psip%m%g%m1min))
+!#elif(_DIM_==2)
+!        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+!#elif(_DIM_==3)
+!        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
+!#endif
+        up = c_loc(psip%up(1))
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1

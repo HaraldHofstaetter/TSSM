@@ -404,7 +404,8 @@ contains
 
         call c_f_pointer(psi, psip)
         !up = c_loc(psip%u)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+        !up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+        up = c_loc(psip%up(1))
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
     end function S(c_get_data_wf)
