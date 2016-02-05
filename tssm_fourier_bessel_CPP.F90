@@ -1,6 +1,9 @@
-
 #ifdef _REAL_
+#ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_fourier_bessel_real_2d
+#else
     #define _MODULE_ tssm_fourier_bessel_real_2d
+#endif    
     #define _METHOD_ fourier_bessel_real_2d
     #define _WF_ wf_fourier_bessel_real_2d
     #define _BASE_METHOD_ polar_real_2d
@@ -8,7 +11,11 @@
     #define S(x) x ## _gen_laguerre_real_2d
  #define _COMPLEX_OR_REAL_ real
 #else
+#ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_fourier_bessel_2d
+#else
     #define _MODULE_ tssm_fourier_bessel_2d
+#endif    
     #define _METHOD_ fourier_bessel_2d
     #define _WF_ wf_fourier_bessel_2d
     #define _BASE_METHOD_ polar_2d
@@ -19,11 +26,19 @@
 
 
 module _MODULE_
+#ifdef _QUADPRECISION_
+    use tssmq
+    use tssmq_grid
+    use tssmq_polar
+    use tssmq_fourier_common
+    use tssmq_fourier_bessel_common
+#else
     use tssm
     use tssm_grid
     use tssm_polar
     use tssm_fourier_common
     use tssm_fourier_bessel_common
+#endif    
     implicit none
 
     type, extends(_BASE_METHOD_) :: _METHOD_ 
@@ -128,7 +143,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
         !TODO
@@ -152,7 +171,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_

@@ -1,5 +1,10 @@
+#ifdef _QUADPRECISION_
+module tssmq_splitting_schemes
+    use tssmq
+#else
 module tssm_splitting_schemes
     use tssm
+#endif    
 
 !Source: Coefficients of various splitting methods
 !        http://www.asc.tuwien.ac.at/~winfried/splitting/index.php
@@ -374,4 +379,8 @@ module tssm_splitting_schemes
 
 
 
+#ifdef _QUADPRECISION_
+end module tssmq_splitting_schemes
+#else
 end module tssm_splitting_schemes
+#endif

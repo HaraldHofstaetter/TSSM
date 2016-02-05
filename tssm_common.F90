@@ -1,4 +1,8 @@
+#ifdef _QUADPRECISION_
+module tssmq_common
+#else
 module tssm_common
+#endif
      implicit none
 #ifdef _MPI_
      include "mpif.h"
@@ -97,4 +101,8 @@ real function tock(t)
     tock = real(now - t)/real(clock_rate)
 end function tock
 
+#ifdef _QUADPRECISION_
+end module tssmq_common
+#else
 end module tssm_common
+#endif

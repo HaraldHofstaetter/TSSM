@@ -1,8 +1,21 @@
+#ifdef _QUADPRECISION_
+module tssmq_hdf5
+#else
 module tssm_hdf5
+#endif
+
 #ifndef _NO_HDF5_
+
+#ifdef _QUADPRECISION_
+use tssmq
+use tssmq_grid
+#else
 use tssm
 use tssm_grid
+#endif
+
 use hdf5
+
 implicit none
 
 contains
@@ -1330,6 +1343,10 @@ end subroutine hdf5_read_gridfun_MPI_0
 #endif
 
 
-
 #endif
+
+#ifdef _QUADPRECISION_
+end module tssmq_hdf5
+#else
 end module tssm_hdf5
+#endif

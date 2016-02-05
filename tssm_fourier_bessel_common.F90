@@ -1,6 +1,12 @@
+#ifdef _QUADPRECISION_
+module tssmq_fourier_bessel_common
+use tssmq
+use tssmq_fourier_common, only: dirichlet, neumann
+#else
 module tssm_fourier_bessel_common
 use tssm
 use tssm_fourier_common, only: dirichlet, neumann
+#endif
 implicit none
 
 integer, parameter :: gauss = 1
@@ -474,4 +480,8 @@ subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, normalization
 end subroutine fourier_bessel_coeffs
 #endif
 
+#ifdef _QUADPRECISION_
+end module tssmq_fourier_bessel_common
+#else
 end module tssm_fourier_bessel_common
+#endif

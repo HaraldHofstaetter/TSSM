@@ -1,12 +1,20 @@
 
 #ifdef _REAL_
  #ifdef _CYLINDRICAL_
+  #ifdef _QUADPRECISION_ 
+    #define _MODULE_ tssmq_cylindrical_real_3d
+  #else
     #define _MODULE_ tssm_cylindrical_real_3d
+  #endif  
     #define _METHOD_ cylindrical_real_3d
     #define _WF_ wf_cylindrical_real_3d
     #define S(x) x ## _cylindrical_real_3d
  #else
+  #ifdef _QUADPRECISION_ 
+    #define _MODULE_ tssmq_polar_real_2d
+  #else
     #define _MODULE_ tssm_polar_real_2d
+  #endif  
     #define _METHOD_ polar_real_2d
     #define _WF_ wf_polar_real_2d
     #define S(x) x ## _polar_real_2d
@@ -15,12 +23,20 @@
  #define _COMPLEX_OR_REAL_ real
 #else
  #ifdef _CYLINDRICAL_
+  #ifdef _QUADPRECISION_ 
+    #define _MODULE_ tssmq_cylindrical_3d
+  #else
     #define _MODULE_ tssm_cylindrical_3d
+  #endif  
     #define _METHOD_ cylindrical_3d
     #define _WF_ wf_cylindrical_3d
     #define S(x) x ## _cylindrical_3d
  #else
+  #ifdef _QUADPRECISION_ 
+    #define _MODULE_ tssmq_polar_2d
+  #else
     #define _MODULE_ tssm_polar_2d
+  #endif  
     #define _METHOD_ polar_2d
     #define _WF_ wf_polar_2d
     #define S(x) x ## _polar_2d
@@ -43,12 +59,16 @@
 #endif 
 
 
-
-
 module _MODULE_
+#ifdef _QUADPRECISION_ 
+    use tssmq
+    use tssmq_grid
+    use tssmq_fourier_common
+#else
     use tssm
     use tssm_grid
     use tssm_fourier_common
+#endif    
     implicit none
 
     type, extends(spectral_method) :: _METHOD_ 
@@ -909,7 +929,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
         !TODO
@@ -944,7 +968,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_

@@ -8,22 +8,22 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             tssm_common.F90 tssm_CPP.F90 tssm.F90 tssm_grid.F90 tssm_hdf5.F90 \
             tssm_fourier.F90 tssm_fourier_common.F90 tssm_fourier_CPP.F90 \
             tssm_multicomponent_fourier_CPP.F90 \
-            c_tssm.F90 c_tssm_fourier.F90 c_tssm_fourier_CPP.F90\
-            c_tssm_fourier_f128wrapper_CPP.c \
-            c_tssm_fourier_bessel_f128wrapper_CPP.c \
-            c_tssm_schroedinger_f128wrapper_CPP.c \
+            tssm_c.F90 tssm_c_fourier.F90 tssm_c_fourier_CPP.F90\
+            tssm_c_fourier_f128wrapper_CPP.c \
+            tssm_c_fourier_bessel_f128wrapper_CPP.c \
+            tssm_c_schroedinger_f128wrapper_CPP.c \
 	    propagate_b_2components_complex_2d.inc \
 	    propagate_b_2components_real_2d.inc \
             tssm_hermite.F90 tssm_hermite_common.F90 tssm_hermite_CPP.F90 \
             tssm_polar.F90 tssm_polar_CPP.F90 \
             tssm_generalized_laguerre.F90 tssm_generalized_laguerre_common.F90 tssm_generalized_laguerre_CPP.F90 \
-            c_tssm_generalized_laguerre_CPP.F90 \
+            tssm_c_generalized_laguerre_CPP.F90 \
             tssm_schroedinger.F90  tssm_schroedinger_CPP.F90 \
-            c_tssm_schroedinger_CPP.F90 \
+            tssm_c_schroedinger_CPP.F90 \
             tssm_fourier_bessel_common.F90 \
             tssm_fourier_bessel_CPP.F90 \
             tssm_fourier_bessel.F90 \
-            c_tssm_fourier_bessel_CPP.F90 \
+            tssm_c_fourier_bessel_CPP.F90 \
             tssm_disorder_potential.F90 test_fisher.F90 \
             test.F90 test_soliton.F90 test_gaussian.F90 test_harmonic.F90 \
             test_gray_scott.F90 test_gray_scott_complex.F90 test_real.F90 \

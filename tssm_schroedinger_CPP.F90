@@ -45,10 +45,6 @@
 #define SB1(x,y) SB0(x,y)
 #define SB(x) SB1(x,_DIM_)
 
-#define _MODULE_ S(tssm_schroedinger)
-#define _METHOD_ S(schroedinger)
-#define _WF_ S(wf_schroedinger)
-
 #endif 
 
 #ifdef _REAL_
@@ -66,12 +62,22 @@
 
 
 
+#ifdef _QUADPRECISION_
+module S(tssmq_schroedinger) ! (Nonlinear) Schroedinger
+    use tssmq
+#if defined(_HERMITE_)
+    use tssmq_hermite
+#else
+    use tssmq_fourier
+#endif
+#else
 module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     use tssm
 #if defined(_HERMITE_)
     use tssm_hermite
 #else
     use tssm_fourier
+#endif
 #endif
     implicit none
 
@@ -342,7 +348,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         character(len=*), intent(in) :: filename
         print *, "W: save_potential not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(schroedinger)), intent(inout) :: this
         character(len=*), intent(in) :: filename
         call hdf5_save_real_gridfun(this%g, this%V, filename, "potential")
@@ -362,7 +372,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         character(len=*), intent(in) :: filename
         print *, "W: load_potential not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(schroedinger)), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_
@@ -3684,7 +3698,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
 
     subroutine S(compute_groundstate_wfs)(this, dt0, tol, max_iters, &
                                                       start_with_B, splitting_scheme, extrapolation_order)
+#ifdef _QUADPRECISION_
+       use tssmq_common
+#else
        use tssm_common
+#endif       
        class(S(wf_schroedinger)), intent(inout) :: this
        real(kind=prec), intent(in) :: dt0 ! TODO should be optional
        real(kind=prec), intent(in) :: tol ! TODO should be optional
@@ -3847,4 +3865,8 @@ subroutine S(save_potential_schroedinger)(this, filename)
 
     end subroutine S(compute_groundstate_wfs)
 
+#ifdef _QUADPRECISION_
+end module S(tssmq_schroedinger)
+#else
 end module S(tssm_schroedinger)
+#endif

@@ -13,9 +13,13 @@
  #define _COMPLEX_OR_REAL_ complex
 #endif
 
-
+#ifdef _QUADPRECISION_
+module S(tssmq_multicomponent_fourier)    
+    use S(tssmq_fourier)
+#else
 module S(tssm_multicomponent_fourier)    
     use S(tssm_fourier)
+#endif    
     implicit none
 
     type, extends(spectral_method) :: S(multicomponent_fourier)
@@ -459,7 +463,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
         integer :: k
@@ -517,7 +525,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
@@ -539,7 +551,10 @@ contains
 #endif
     end subroutine S(save_wf_multicomponent_fourier)
 
-
+#ifdef _QUADPRECISION_
+end module S(tssmq_multicomponent_fourier)    
+#else
 end module S(tssm_multicomponent_fourier)    
+#endif
 
 

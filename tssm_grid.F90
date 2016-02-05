@@ -1,5 +1,10 @@
+#ifdef _QUADPRECISION_
+module tssmq_grid
+    use tssmq_common
+#else
 module tssm_grid
     use tssm_common
+#endif    
     use, intrinsic :: iso_c_binding, only: c_size_t
     implicit none
 
@@ -2417,4 +2422,8 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
     end function inner_product_complex_gridfun_cylindrical_3D
 
 
+#ifdef _QUADPRECISION_
+end module tssmq_grid
+#else
 end module tssm_grid
+#endif

@@ -37,11 +37,17 @@
 #define fftw_free fftwq_free
 #endif 
 
-
+#ifdef _QUADPRECISION_
+module S(tssmq_fourier)
+    use tssmq
+    use tssmq_grid
+    use tssmq_fourier_common
+#else
 module S(tssm_fourier)
     use tssm
     use tssm_grid
     use tssm_fourier_common
+#endif    
     use, intrinsic :: iso_c_binding, only: c_ptr
     implicit none
 
@@ -1385,7 +1391,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
@@ -1409,7 +1419,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_
@@ -1998,6 +2012,10 @@ contains
     !    deallocate( this%u )
     !end subroutine S(final_wf_fourier)
 
+#ifdef _QUADPRECISION_
+end module S(tssmq_fourier)
+#else
 end module S(tssm_fourier)
+#endif
 
 

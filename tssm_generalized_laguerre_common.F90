@@ -1,5 +1,10 @@
+#ifdef _QUADPRECISION_
+module tssmq_generalized_laguerre_common
+use tssmq
+#else
 module tssm_generalized_laguerre_common
 use tssm
+#endif
 implicit none
 
 integer, parameter :: eprec=selected_real_kind(p=30)
@@ -300,5 +305,8 @@ end subroutine generalized_laguerre_scaled_coeffs
 #endif
 
 
-
+#ifdef _QUADPRECISION_
+end module tssmq_generalized_laguerre_common
+#else
 end module tssm_generalized_laguerre_common
+#endif

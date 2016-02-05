@@ -1,14 +1,22 @@
 
 #ifdef _REAL_
  #ifdef _HERMITE_
+   #ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_generalized_laguerre_hermite_real_3d
+   #else
     #define _MODULE_ tssm_generalized_laguerre_hermite_real_3d
+   #endif 
     #define _METHOD_ generalized_laguerre_hermite_real_3d
     #define _WF_ wf_generalized_laguerre_hermite_real_3d
     #define _BASE_METHOD_ cylindrical_real_3d
     #define _BASE_WF_ wf_cylindrical_real_3d
     #define S(x) x ## _gen_laguerre_hermite_real_3d
  #else
+   #ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_generalized_laguerre_real_2d
+   #else 
     #define _MODULE_ tssm_generalized_laguerre_real_2d
+   #endif 
     #define _METHOD_ generalized_laguerre_real_2d
     #define _WF_ wf_generalized_laguerre_real_2d
     #define _BASE_METHOD_ polar_real_2d
@@ -18,14 +26,22 @@
  #define _COMPLEX_OR_REAL_ real
 #else
  #ifdef _HERMITE_
+   #ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_generalized_laguerre_hermite_3d
+   #else 
     #define _MODULE_ tssm_generalized_laguerre_hermite_3d
+   #endif 
     #define _METHOD_ generalized_laguerre_hermite_3d
     #define _WF_ wf_generalized_laguerre_hermite_3d
     #define _BASE_METHOD_ cylindrical_3d
     #define _BASE_WF_ wf_cylindrical_3d
     #define S(x) x ## _gen_laguerre_hermite_3d
  #else
+   #ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_generalized_laguerre_2d
+   #else 
     #define _MODULE_ tssm_generalized_laguerre_2d
+   #endif 
     #define _METHOD_ generalized_laguerre_2d
     #define _WF_ wf_generalized_laguerre_2d
     #define _BASE_METHOD_ polar_2d
@@ -37,12 +53,21 @@
 
 
 module _MODULE_
+#ifdef _QUADPRECISION_
+    use tssmq
+    use tssmq_grid
+    use tssmq_polar
+    use tssmq_fourier_common
+    use tssmq_hermite_common
+    use tssmq_generalized_laguerre_common
+#else
     use tssm
     use tssm_grid
     use tssm_polar
     use tssm_fourier_common
     use tssm_hermite_common
     use tssm_generalized_laguerre_common
+#endif    
     implicit none
 
     type, extends(_BASE_METHOD_) :: _METHOD_ 
@@ -166,7 +191,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
         !TODO
@@ -197,7 +226,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_

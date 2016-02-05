@@ -9,8 +9,13 @@
 #define fftw_free fftwq_free
 #endif
 
+#ifdef _QUADPRECISION_
+module tssmq_fourier_common
+    use tssmq
+#else
 module tssm_fourier_common
     use tssm
+#endif    
     use, intrinsic :: iso_c_binding !needed for fftw3.f03
     implicit none
 #if(defined(_MPI_))
@@ -185,6 +190,10 @@ contains
     end subroutine get_scrambled_eigenvalues
 #endif         
 
+#ifdef _QUADPRECISION_
+end module tssmq_fourier_common
+#else
 end module tssm_fourier_common
+#endif
 
 

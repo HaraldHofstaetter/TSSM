@@ -1,5 +1,10 @@
+#ifdef _QUADPRECISION_
+module tssmq_disorder_potential
+    use tssmq_schroedinger
+#else
 module tssm_disorder_potential
     use tssm_schroedinger
+#endif    
     implicit none 
 
 
@@ -342,5 +347,8 @@ contains
 
            
 
-
+#ifdef _QUADPRECISION_
+end module tssmq_disorder_potential
+#else
 end module tssm_disorder_potential
+#endif
