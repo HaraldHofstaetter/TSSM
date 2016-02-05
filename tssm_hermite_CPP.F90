@@ -17,6 +17,7 @@
 #ifdef _QUADPRECISION_
 #define fftw_alloc_real fftwq_alloc_real
 #define fftw_alloc_complex fftwq_alloc_complex
+#define fftw_free fftwq_free
 #endif
 
 

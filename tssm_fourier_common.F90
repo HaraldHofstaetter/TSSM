@@ -1,3 +1,14 @@
+#ifdef _QUADPRECISION_
+#define fftw_cleanup fftwq_cleanup
+#define fftw_import_wisdom_from_filename fftwq_import_wisdom_from_filename
+#define fftw_export_wisdom_to_filename  fftwq_export_wisdom_to_filename
+#define fftw_init_threads fftwq_init_threads
+#define fftw_plan_with_nthreads fftwq_plan_with_nthreads
+#define fftw_cleanup_threads fftwq_cleanup_threads
+#define fftw_destroy_plan fftwq_destroy_plan
+#define fftw_free fftwq_free
+#endif
+
 module tssm_fourier_common
     use tssm
     use, intrinsic :: iso_c_binding !needed for fftw3.f03
@@ -15,7 +26,11 @@ module tssm_fourier_common
 #ifdef _MPI_
     character(len=64, kind=c_char) :: fftw_wisdom_file = c_char_'fftw_mpi_wisdom' // c_null_char
 #else 
-    character(len=64, kind=c_char) :: fftw_wisdom_file = c_char_'fftw_wisdom' // c_null_char
+#ifdef _QUADPRECISION_
+        character(len=64, kind=c_char) :: fftw_wisdom_file = c_char_'fftwq_wisdom' // c_null_char
+#else
+        character(len=64, kind=c_char) :: fftw_wisdom_file = c_char_'fftw_wisdom' // c_null_char
+#endif
 #endif 
     
     ! boundary condition kinds 
@@ -28,23 +43,32 @@ module tssm_fourier_common
 contains
 
     subroutine initialize_tssm_fourier
-!$      use omp_lib
+#ifdef _OPENMP    
+        use omp_lib
+        integer :: ierr
+#endif
         logical, save :: already_initialized = .false.
-!$      integer :: ierr
         if(already_initialized) return 
         call initialize_tssm
-!$      ierr = fftw_init_threads()
+#ifdef _OPENMP    
+        ierr = fftw_init_threads()
+#endif
 #ifdef _MPI_
         call fftw_mpi_init
 #endif
         call load_fftw_wisdom
-!$      call fftw_plan_with_nthreads(n_threads)
+#ifdef _OPENMP    
+        call fftw_plan_with_nthreads(n_threads)
+#endif
         already_initialized = .true.
     end subroutine initialize_tssm_fourier
 
     subroutine finalize_tssm_fourier
             call save_fftw_wisdom
-!$          call fftw_cleanup_threads
+
+#ifdef _OPENMP    
+            call fftw_cleanup_threads
+#endif            
 #ifdef _MPI_
             call fftw_mpi_cleanup
 #else 

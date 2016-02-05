@@ -8,7 +8,7 @@ include ../Makefile.system
 FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
 FC = gfortran 
-FOPTS = -fcheck=all -g -fPIC
+FOPTS = -fcheck=all -g -fvisibility=hidden -fPIC
 CPP = cpp-4.9 -std=c89 
 #CPP = gfortran -E 
 MAKE_SHARED_LIB = gfortran -shared
@@ -48,7 +48,8 @@ endif
 
 FFTW_INCLUDE = $(FFTW_BASE)/include 
 FFTW_LIB = $(FFTW_BASE)/lib
-FFTW_LIBS = -L$(FFTW_LIB) -lfftw3 
+#FFTW_LIBS = -L$(FFTW_LIB) -lfftw3 
+FFTW_LIBS = $(FFTW_LIB)/libfftw3.so 
 
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib

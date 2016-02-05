@@ -1,31 +1,21 @@
 #ifdef _HERMITE_
 #ifdef _REAL_
 #define S0(x,y)  x ## _hermite_real_ ## y ## d 
-#define W0(x,y)  x ## _hermite_real_ ## y ## d_w 
 #else
 #define S0(x,y)  x ## _hermite_ ## y ## d 
-#define W0(x,y)  x ## _hermite_ ## y ## d_w 
 #endif
 #else
 #ifdef _REAL_
 #define S0(x,y)  x ## _real_ ## y ## d 
-#define W0(x,y)  x ## _real_ ## y ## d_w 
 #else
 #define S0(x,y)  x ## _ ## y ## d 
-#define W0(x,y)  x ## _ ## y ## d_w
 #endif
 #endif
 #define S1(x,y) S0(x,y)
 #define S(x) S1(x,_DIM_)
-#ifdef _QUADPRECISION_
-#define W1(x,y) W0(x,y)
-#define W(x) W1(x,_DIM_)
-#else
-#define W(x) S1(x,_DIM_)
-#endif
 #define SC0(x) #x
 #define SC1(x) SC0(x)
-#define SC(x) SC1(W(x))
+#define SC(x) SC1(S(x))
 
 #ifdef _REAL_
 #define SB0(x,y)  x ## _real_ ## y ## d 
@@ -219,7 +209,7 @@ contains
     end subroutine S(c_to_frequency_space_wfs)
 
     subroutine S(c_propagate_A_wfs)(psi, dt) & 
-         bind(c, name=SC(c_propagate_a_wf_schroedinger)) 
+         bind(c, name=SC(c_propagate_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -230,7 +220,7 @@ contains
     end subroutine S(c_propagate_A_wfs)
 
     subroutine S(c_propagate_B_wfs)(psi, dt) & 
-        bind(c, name=SC(c_propagate_b_wf_schroedinger)) 
+        bind(c, name=SC(c_propagate_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -241,7 +231,7 @@ contains
     end subroutine S(c_propagate_B_wfs)
 
     subroutine S(c_propagate_C_wfs)(psi, dt) & 
-        bind(c, name=SC(c_propagate_c_wf_schroedinger)) 
+        bind(c, name=SC(c_propagate_C_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -252,7 +242,7 @@ contains
     end subroutine S(c_propagate_C_wfs)
     
     subroutine S(c_add_apply_A_wfs)(this, other, coefficient) &
-        bind(c, name=SC(c_add_apply_a_wf_schroedinger)) 
+        bind(c, name=SC(c_add_apply_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -1046,7 +1036,7 @@ contains
     end subroutine S(c_save_potential_schroedinger)
 
     subroutine S(c_imaginary_time_propagate_A_wfs)(psi, dt) &
-        bind(c, name=SC(c_imaginary_time_propagate_a_wf_schroedinger)) 
+        bind(c, name=SC(c_imaginary_time_propagate_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -1057,7 +1047,7 @@ contains
     end subroutine S(c_imaginary_time_propagate_A_wfs)
 
     subroutine S(c_imaginary_time_propagate_B_wfs)(psi, dt, method_for_B) &
-        bind(c, name=SC(c_imaginary_time_propagate_b_wf_schroedinger)) 
+        bind(c, name=SC(c_imaginary_time_propagate_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -1069,7 +1059,7 @@ contains
     end subroutine S(c_imaginary_time_propagate_B_wfs)
 
     subroutine S(c_add_apply_B_wfs)(this, other, coefficient) &
-        bind(c, name=SC(c_add_apply_b_wf_schroedinger)) 
+        bind(c, name=SC(c_add_apply_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 

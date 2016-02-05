@@ -33,6 +33,8 @@
 #define fftw_execute_dft_c2r fftwq_execute_dft_c2r
 #define fftw_execute_dft fftwq_execute_dft
 #define fftw_execute_r2r fftwq_execute_r2r
+#define fftw_destroy_plan fftwq_destroy_plan
+#define fftw_free fftwq_free
 #endif 
 
 
@@ -837,7 +839,6 @@ contains
         class(S(wf_fourier)), intent(inout) :: this
         
         real(kind=prec), parameter :: f = sqrt(0.5_prec)
-
 
         if (this%is_real_space) then
             select case(this%m%boundary_conditions) 

@@ -5,11 +5,6 @@
     #define _WF_ wf_fourier_bessel_real_2d
     #define _COMPLEX_OR_REAL_ real
     #define S(x) x ## _fourier_bessel_real_2d
-    #ifdef _QUADPRECISION_
-         #define W(x) x ## _fourier_bessel_real_2d_w
-    #else     
-         #define W(x) x ## _fourier_bessel_real_2d
-    #endif     
 #else
     #define _MODULE_ tssm_fourier_bessel_2d
     #define _C_MODULE_ c_tssm_fourier_bessel_2d
@@ -17,15 +12,10 @@
     #define _WF_ wf_fourier_bessel_2d
     #define _COMPLEX_OR_REAL_ complex
     #define S(x) x ## _fourier_bessel_2d
-    #ifdef _QUADPRECISION_
-         #define W(x) x ## _fourier_bessel_2d_w
-    #else     
-         #define W(x) x ## _fourier_bessel_2d
-    #endif     
 #endif
 #define SC0(x) #x
 #define SC1(x) SC0(x)
-#define SC(x) SC1(W(x))
+#define SC(x) SC1(S(x))
 
 
 module _C_MODULE_ 
@@ -61,45 +51,45 @@ contains
         deallocate( mp )
     end subroutine S(c_finalize)
 
-   function S(c_get_ntheta_fourier)(m) &
-        result(ntheta) bind(c, name=SC(c_get_ntheta_fourier))
+   function S(c_get_ntheta)(m) &
+        result(ntheta) bind(c, name=SC(c_get_ntheta))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: ntheta
         type(_METHOD_), pointer :: mp
         call c_f_pointer(m, mp)
         ntheta = mp%g%ntheta
-    end function S(c_get_ntheta_fourier)   
+    end function S(c_get_ntheta)   
     
-   function S(c_get_nr_fourier)(m) &
-        result(nr) bind(c, name=SC(c_get_nr_fourier))
+   function S(c_get_nr)(m) &
+        result(nr) bind(c, name=SC(c_get_nr))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nr
         type(_METHOD_), pointer :: mp
         call c_f_pointer(m, mp)
         nr = mp%g%nr
-    end function S(c_get_nr_fourier)   
+    end function S(c_get_nr)   
 
-   function S(c_get_nfr_fourier)(m) &
-        result(nfr) bind(c, name=SC(c_get_nfr_fourier))
+   function S(c_get_nfr)(m) &
+        result(nfr) bind(c, name=SC(c_get_nfr))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nfr
         type(_METHOD_), pointer :: mp
         call c_f_pointer(m, mp)
         nfr = mp%nfr
-    end function S(c_get_nfr_fourier)   
+    end function S(c_get_nfr)   
 
-    function S(c_get_rmax_fourier)(m) &
-        result(rmax) bind(c, name=SC(c_get_rmax_fourier))
+    function S(c_get_rmax)(m) &
+        result(rmax) bind(c, name=SC(c_get_rmax))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: rmax
         type(_METHOD_), pointer :: mp
         call c_f_pointer(m, mp)
         rmax = mp%rmax
-    end function S(c_get_rmax_fourier)   
+    end function S(c_get_rmax)   
 
 
 

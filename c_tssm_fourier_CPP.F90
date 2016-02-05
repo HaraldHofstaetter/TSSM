@@ -1,21 +1,13 @@
 #ifdef _REAL_
 #define S0(x,y)  x ## _real_ ## y ## d 
-#define W0(x,y)  x ## _real_ ## y ## d_w 
 #else
 #define S0(x,y)  x ## _ ## y ## d 
-#define W0(x,y)  x ## _ ## y ## d_w
 #endif
 #define S1(x,y) S0(x,y)
 #define S(x) S1(x,_DIM_)
-#ifdef _QUADPRECISION_
-#define W1(x,y) W0(x,y)
-#define W(x) W1(x,_DIM_)
-#else
-#define W(x) S1(x,_DIM_)
-#endif
 #define SC0(x) #x
 #define SC1(x) SC0(x)
-#define SC(x) SC1(W(x))
+#define SC(x) SC1(S(x))
 
 #ifdef _REAL_
  #define _WAVE_FUNCTION_ real_wave_function
