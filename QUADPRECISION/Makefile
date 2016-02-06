@@ -49,9 +49,7 @@ endif
 
 FFTW_INCLUDE = $(FFTW_BASE)/include 
 FFTW_LIB = $(FFTW_BASE)/lib
-#FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q -lquadmath -lm
-FFTW_LIBS = $(FFTW_LIB)/libfftw3q.so -lquadmath -lm
-
+FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q -lquadmath -lm
 
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib

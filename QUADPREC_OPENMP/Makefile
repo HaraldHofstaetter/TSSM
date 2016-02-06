@@ -9,6 +9,8 @@ FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
 FC = gfortran 
 FOPTS = -fopenmp -O3 -fPIC -D_QUADPRECISION_
+CC = gcc
+COPTS = -fopenmp -O3 -fPIC -D_QUADPRECISION_
 CPP = cpp-4.9 -std=c89  -D_OPENMP -D_QUADPRECISION_
 MAKE_SHARED_LIB = gfortran -fopenmp -shared 
 
@@ -47,18 +49,29 @@ endif
 
 FFTW_INCLUDE = $(FFTW_BASE)/include 
 FFTW_LIB = $(FFTW_BASE)/lib
-FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q_omp -lfftw3_omp -lfftw3q -lfftw3 -lquadmath -lm
+FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q_omp -lfftw3q -lquadmath -lm
 
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
+ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
+    FOPTS = -fopenmp -O3 -fPIC 
+    CPP = cpp -std=c89  -D_OPENMP 
+    FFTW_INCLUDE = ../../include 
+    HDF5_INCLUDE = ../../include 
+    HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_fortran.so.7 \
+                 /usr/lib/x86_64-linux-gnu/libhdf5.so.7
+    FFTW_LIBS = -L../../libs -lfftw3q_omp -lfftw3q -lquadmath -lm
+endif
+
+
 include ../Makefile.common
 
 shared_lib: $(TSSM_SHARED_LIB)
 
-$(TSSM_SHARED_LIB):  $(OBJS)
-	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(FFTW_LIBS) $(HDF5_LIBS) 
+$(TSSM_SHARED_LIB):  $(OBJS)  $(OBJS_F128WRAPPER)
+	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(OBJS_F128WRAPPER) $(FFTW_LIBS) $(HDF5_LIBS) 
 
 
 
