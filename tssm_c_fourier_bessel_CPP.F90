@@ -1,30 +1,52 @@
 #ifdef _REAL_
+#ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_fourier_bessel_real_2d
+    #define _C_MODULE_ tssmq_c_fourier_bessel_real_2d
+#else
     #define _MODULE_ tssm_fourier_bessel_real_2d
-    #define _C_MODULE_ c_tssm_fourier_bessel_real_2d
+    #define _C_MODULE_ tssm_c_fourier_bessel_real_2d
+#endif    
     #define _METHOD_ fourier_bessel_real_2d
     #define _WF_ wf_fourier_bessel_real_2d
+    #define _COMPLEX_OR_REAL_ real
     #define S(x) x ## _fourier_bessel_real_2d
- #define _COMPLEX_OR_REAL_ real
+#else
+#ifdef _QUADPRECISION_
+    #define _MODULE_ tssmq_fourier_bessel_2d
+    #define _C_MODULE_ tssmq_c_fourier_bessel_2d
 #else
     #define _MODULE_ tssm_fourier_bessel_2d
-    #define _C_MODULE_ c_tssm_fourier_bessel_2d
+    #define _C_MODULE_ tssm_c_fourier_bessel_2d
+#endif
     #define _METHOD_ fourier_bessel_2d
     #define _WF_ wf_fourier_bessel_2d
+    #define _COMPLEX_OR_REAL_ complex
     #define S(x) x ## _fourier_bessel_2d
- #define _COMPLEX_OR_REAL_ complex
 #endif
 
+#ifdef _QUADPRECISION_
+    #define C0(x) tssmq_ ## x 
+#else    
+    #define C0(x) tssm_ ## x
+#endif    
+#define C1(x) C0(x)
+#define C(x) C1(S(x))
+#define SC0(x) #x
+#define SC1(x) SC0(x)
+#define SC(x) SC1(C(x))
+
+
 module _C_MODULE_ 
-    use tssm_fourier_bessel
+    use _MODULE_
     implicit none
 
 contains
 
-    function S(c_new)(M, nr, nfr, r_max, boundary_conditions, quadrature_formula) &
-        result(this) bind(c)
+    function S(c_new)(ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula) &
+        result(this) bind(c, name=SC(new))
         use iso_c_binding
         type(c_ptr) :: this 
-        integer, value :: M
+        integer, value :: ntheta
         integer, value ::nr 
         integer, value ::nfr 
         real(kind=prec),  value :: r_max 
@@ -33,11 +55,11 @@ contains
 
         type(_METHOD_), pointer :: meth
         allocate( meth )
-        meth = _METHOD_( M, nr, nfr, r_max, boundary_conditions, quadrature_formula)
+        meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula)
         this =  c_loc(meth)
     end function S(c_new)
 
-    subroutine S(c_finalize)(m)  bind(c)
+    subroutine S(c_finalize)(m)  bind(c, name=SC(finalize))
         use iso_c_binding
         type(c_ptr) :: m
         type(_METHOD_), pointer :: mp
@@ -47,9 +69,50 @@ contains
         deallocate( mp )
     end subroutine S(c_finalize)
 
+   function S(c_get_ntheta)(m) &
+        result(ntheta) bind(c, name=SC(get_ntheta))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: ntheta
+        type(_METHOD_), pointer :: mp
+        call c_f_pointer(m, mp)
+        ntheta = mp%g%ntheta
+    end function S(c_get_ntheta)   
+    
+   function S(c_get_nr)(m) &
+        result(nr) bind(c, name=SC(get_nr))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: nr
+        type(_METHOD_), pointer :: mp
+        call c_f_pointer(m, mp)
+        nr = mp%g%nr
+    end function S(c_get_nr)   
+
+   function S(c_get_nfr)(m) &
+        result(nfr) bind(c, name=SC(get_nfr))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: nfr
+        type(_METHOD_), pointer :: mp
+        call c_f_pointer(m, mp)
+        nfr = mp%nfr
+    end function S(c_get_nfr)   
+
+    function S(c_get_rmax)(m) &
+        result(rmax) bind(c, name=SC(get_rmax))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        real(kind=prec) :: rmax
+        type(_METHOD_), pointer :: mp
+        call c_f_pointer(m, mp)
+        rmax = mp%rmax
+    end function S(c_get_rmax)   
+
+
 
     function S(c_get_eigenvalues)(m, dim) &
-        result(evp) bind(c)
+        result(evp) bind(c, name=SC(get_eigenvalues))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: evp
@@ -64,7 +127,7 @@ contains
     end function S(c_get_eigenvalues)
 
    function S(c_get_nodes)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(get_nodes))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
@@ -84,27 +147,23 @@ contains
     end function S(c_get_nodes)
  
 
-    function S(c_get_weights)(m, dim, which) &
-        result(np) bind(c)
+    function S(c_get_weights)(m, dim) &
+        result(np) bind(c, name=SC(get_weights))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
         integer, intent(out)  :: dim(1)
-        integer, value :: which
         type(_METHOD_), pointer :: mp
 
         call c_f_pointer(m, mp)
-        select case (which)
-        case (1)
-            !np = c_loc(mp%g%weights_r)
-            np = c_loc(mp%g%weights_r(mp%g%n1min))
-            dim(1) = mp%g%n1max-mp%g%n1min+1
-        end select
+        !np = c_loc(mp%g%weights_r)
+        np = c_loc(mp%g%weights_r(mp%g%n1min))
+        dim(1) = mp%g%n1max-mp%g%n1min+1
     end function S(c_get_weights)
 
 
     function S(c_get_L)(m, dim) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(get_L))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(c_ptr)  :: np
@@ -121,7 +180,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     function S(c_new_wf)(m) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(new_wf))
         use iso_c_binding
         type(c_ptr) :: this 
         type(c_ptr), value :: m 
@@ -134,7 +193,8 @@ contains
         this =  c_loc(psi)
     end function S(c_new_wf)
 
-    subroutine S(c_finalize_wf)(psi)  bind(c)
+    subroutine S(c_finalize_wf)(psi) &
+        bind(c, name=SC(finalize_wf))
         use iso_c_binding
         type(c_ptr) :: psi 
         type(_WF_), pointer :: psip
@@ -146,7 +206,7 @@ contains
 
 
     function S(c_is_real_space_wf)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(is_real_space_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -156,7 +216,8 @@ contains
         ans = psip%is_real_space
     end function S(c_is_real_space_wf)
 
-    subroutine S(c_to_real_space_wf)(psi) bind(c) 
+    subroutine S(c_to_real_space_wf)(psi) &
+        bind(c, name=SC(to_real_space_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -165,7 +226,8 @@ contains
         call psip%to_real_space
     end subroutine S(c_to_real_space_wf)
   
-    subroutine S(c_to_frequency_space_wf)(psi) bind(c) 
+    subroutine S(c_to_frequency_space_wf)(psi) &
+        bind(c, name=SC(to_frequency_space_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -174,7 +236,8 @@ contains
         call psip%to_frequency_space
     end subroutine S(c_to_frequency_space_wf)
 
-    subroutine S(c_propagate_A_wf)(psi, dt) bind(c) 
+    subroutine S(c_propagate_A_wf)(psi, dt) &
+        bind(c, name=SC(propagate_A_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -184,7 +247,8 @@ contains
         call psip%propagate_A(dt)
     end subroutine S(c_propagate_A_wf)
 
-    subroutine S(c_propagate_B_wf)(psi, dt) bind(c) 
+    subroutine S(c_propagate_B_wf)(psi, dt) &
+        bind(c, name=SC(propagate_B_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -194,7 +258,8 @@ contains
         call psip%propagate_B(dt)
     end subroutine S(c_propagate_B_wf)
 
-    subroutine S(c_propagate_C_wf)(psi, dt) bind(c) 
+    subroutine S(c_propagate_C_wf)(psi, dt) &
+        bind(c, name=SC(propagate_C_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -204,7 +269,8 @@ contains
         call psip%propagate_C(dt)
     end subroutine S(c_propagate_C_wf)
 
-    subroutine S(c_add_apply_A_wf)(this, other, coefficient) bind(c) 
+    subroutine S(c_add_apply_A_wf)(this, other, coefficient) &
+        bind(c, name=SC(add_apply_A_wf)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -218,7 +284,8 @@ contains
     end subroutine S(c_add_apply_A_wf)
 
 
-    subroutine S(c_save_wf)(psi, filename, filename_length) bind(c) 
+    subroutine S(c_save_wf)(psi, filename, filename_length) &
+        bind(c, name=SC(save_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         integer(c_int), intent(in), value :: filename_length
@@ -233,7 +300,8 @@ contains
         call psip%save(fn)
     end subroutine S(c_save_wf)
 
-    subroutine S(c_load_wf)(psi, filename, filename_length) bind(c) 
+    subroutine S(c_load_wf)(psi, filename, filename_length) &
+        bind(c, name=SC(load_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         integer(c_int), intent(in), value :: filename_length
@@ -249,7 +317,7 @@ contains
     end subroutine S(c_load_wf)
 
    function S(c_eval_wf)(psi, x, y) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(eval_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         real(kind=prec), value :: x 
@@ -263,7 +331,7 @@ contains
     
 
     function S(c_norm2_wf)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(norm2_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -274,7 +342,7 @@ contains
     end function S(c_norm2_wf)
 
     function S(c_norm2_in_frequency_space_wf)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(norm2_in_frequency_space_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -285,7 +353,7 @@ contains
     end function S(c_norm2_in_frequency_space_wf)
 
     function S(c_inner_product_wf)(psi, other) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(inner_product_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(c_ptr), value :: other 
@@ -299,7 +367,7 @@ contains
    end function S(c_inner_product_wf)
 
    function S(c_normalize_wf)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(normalize_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -309,7 +377,7 @@ contains
         call psip%normalize(ans)
     end function S(c_normalize_wf)
 
-   subroutine S(c_scale_wf)(psi, factor) bind(c)
+   subroutine S(c_scale_wf)(psi, factor) bind(c, name=SC(scale_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -319,7 +387,7 @@ contains
         call psip%scale(factor)
     end subroutine S(c_scale_wf)
 
-   subroutine S(c_axpy_wf)(this, other, factor) bind(c) 
+   subroutine S(c_axpy_wf)(this, other, factor) bind(c, name=SC(axpy_wf)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -335,7 +403,7 @@ contains
 
 
     function S(c_get_data_wf)(psi, dim) &
-        result(up) bind(c)
+        result(up) bind(c, name=SC(get_data_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(c_ptr)  :: up
@@ -344,7 +412,8 @@ contains
 
         call c_f_pointer(psi, psip)
         !up = c_loc(psip%u)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+        !up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+        up = c_loc(psip%up(1))
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
     end function S(c_get_data_wf)
@@ -356,7 +425,7 @@ contains
 
 #ifndef _REAL_ 
     subroutine S(c_rset_wf)(psi, f) &
-        bind(c)
+        bind(c, name=SC(rset_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -382,7 +451,7 @@ contains
 #endif    
 
     subroutine S(c_set_wf)(psi, f) &
-        bind(c)
+        bind(c, name=SC(set_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -409,7 +478,7 @@ contains
 
 #ifndef _REAL_ 
     subroutine S(c_rset_t_wf)(psi, f, t) &
-        bind(c)
+        bind(c, name=SC(rset_t_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -438,7 +507,7 @@ contains
 #endif    
 
     subroutine S(c_set_t_wf)(psi, f, t) &
-        bind(c)
+        bind(c, name=SC(set_t_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
@@ -468,7 +537,7 @@ contains
 
 
     subroutine S(c_copy_wf)(psi, source) &
-        bind(c)
+        bind(c, name=SC(copy_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(c_ptr), value :: source 
@@ -480,7 +549,7 @@ contains
     end subroutine S(c_copy_wf)
 
     function S(c_distance_wf)(psi1, psi2) &
-        result(d) bind(c)
+        result(d) bind(c, name=SC(distance_wf))
         use iso_c_binding
         type(c_ptr), value :: psi1 
         type(c_ptr), value :: psi2 

@@ -1,5 +1,10 @@
+#ifdef _QUADPRECISION_
+module tssmq_hermite_common
+use tssmq
+#else
 module tssm_hermite_common
 use tssm
+#endif
 implicit none
 
 integer, parameter :: eprec=selected_real_kind(p=30)
@@ -200,4 +205,8 @@ end subroutine hermite_scaled_coeffs
 
 
 
+#ifdef _QUADPRECISION_
+end module tssmq_hermite_common
+#else
 end module tssm_hermite_common
+#endif

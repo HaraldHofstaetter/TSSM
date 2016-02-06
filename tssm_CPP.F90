@@ -8,8 +8,13 @@
   #define S(x)  x ## _complex
 #endif  
 
+#ifdef _QUADPRECISION_
+module S(tssmq)
+     use tssmq_common
+#else
 module S(tssm)
      use tssm_common
+#endif
      implicit none
 
      type, abstract :: _WAVE_FUNCTION_
@@ -790,7 +795,11 @@ contains
     end subroutine S(print_local_orders_wf)
 
 
+#ifdef _QUADPRECISION_
+end module S(tssmq)
+#else
 end module S(tssm)
+#endif
 
 
 

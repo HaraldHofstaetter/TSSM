@@ -1,23 +1,35 @@
 #ifdef _HERMITE_
 #ifdef _REAL_
-#define S0(x,y)  x ## _hermite_real_ ## y ## D 
+#define S0(x,y)  x ## _hermite_real_ ## y ## d 
 #else
-#define S0(x,y)  x ## _hermite_ ## y ## D 
+#define S0(x,y)  x ## _hermite_ ## y ## d 
 #endif
 #else
 #ifdef _REAL_
-#define S0(x,y)  x ## _real_ ## y ## D 
+#define S0(x,y)  x ## _real_ ## y ## d 
 #else
-#define S0(x,y)  x ## _ ## y ## D 
+#define S0(x,y)  x ## _ ## y ## d 
 #endif
 #endif
 #define S1(x,y) S0(x,y)
 #define S(x) S1(x,_DIM_)
 
+#ifdef _QUADPRECISION_
+    #define C0(x) tssmq_ ## x 
+#else    
+    #define C0(x) tssm_ ## x
+#endif    
+#define C1(x) C0(x)
+#define C(x) C1(S(x))
+#define SC0(x) #x
+#define SC1(x) SC0(x)
+#define SC(x) SC1(C(x))
+
+
 #ifdef _REAL_
-#define SB0(x,y)  x ## _real_ ## y ## D 
+#define SB0(x,y)  x ## _real_ ## y ## d 
 #else
-#define SB0(x,y)  x ## _ ## y ## D 
+#define SB0(x,y)  x ## _ ## y ## d 
 #endif
 #define SB1(x,y) SB0(x,y)
 #define SB(x) SB1(x,_DIM_)
@@ -32,8 +44,13 @@
 
 
 
-module S(c_tssm_schroedinger)
+#ifdef _QUADPRECISION_
+module S(tssmq_c_schroedinger)
+    use tssmq_schroedinger
+#else
+module S(tssm_c_schroedinger)
     use tssm_schroedinger
+#endif    
     implicit none
 
 contains
@@ -49,7 +66,7 @@ contains
                                   nz, omega_z, &
 #endif
                               hbar, mass, potential, with_potential, cubic_coupling) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(new_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         real(kind=prec),  value :: omega_x 
@@ -94,7 +111,7 @@ contains
                               nz, zmin, zmax, &
 #endif
                               hbar, mass, potential, with_potential, cubic_coupling, boundary_conditions) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(new_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         real(kind=prec),  value :: xmin 
@@ -129,13 +146,14 @@ contains
                        hbar, mass, cubic_coupling=cubic_coupling, boundary_conditions=boundary_conditions) 
         this =  c_loc(m)
         if (with_potential) then
-            call S(c_set_potential_schroedinger)(this, potential)
+            call S(c_set_potential_schroedinger)(this, potential)          
         end if
     end function S(c_new_schroedinger)
 #endif
 
 
-    subroutine S(c_finalize_schroedinger)(m)  bind(c)
+    subroutine S(c_finalize_schroedinger)(m) &
+        bind(c, name=SC(finalize_schroedinger))
         use iso_c_binding
         type(c_ptr) :: m
         type(S(schroedinger)), pointer :: mp
@@ -148,7 +166,7 @@ contains
 
 
     function S(c_new_wf_schroedinger)(m) &
-        result(this) bind(c)
+        result(this) bind(c, name=SC(new_wf_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
         type(c_ptr), value :: m 
@@ -161,7 +179,8 @@ contains
         this =  c_loc(psi)
     end function S(c_new_wf_schroedinger)
 
-    subroutine S(c_finalize_wfs)(psi)  bind(c)
+    subroutine S(c_finalize_wfs)(psi)  &
+        bind(c, name=SC(finalize_wf_schroedinger))
         use iso_c_binding
         type(c_ptr) :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -173,7 +192,7 @@ contains
 
 
     function S(c_is_real_space_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(is_real_space_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -183,7 +202,8 @@ contains
         ans = psip%is_real_space
     end function S(c_is_real_space_wfs)
 
-    subroutine S(c_to_real_space_wfs)(psi) bind(c) 
+    subroutine S(c_to_real_space_wfs)(psi) &
+        bind(c, name=SC(to_real_space_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -192,7 +212,8 @@ contains
         call psip%to_real_space
     end subroutine S(c_to_real_space_wfs)
   
-    subroutine S(c_to_frequency_space_wfs)(psi) bind(c) 
+    subroutine S(c_to_frequency_space_wfs)(psi) & 
+        bind(c, name=SC(to_frequency_space_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -201,7 +222,8 @@ contains
         call psip%to_frequency_space
     end subroutine S(c_to_frequency_space_wfs)
 
-    subroutine S(c_propagate_A_wfs)(psi, dt) bind(c) 
+    subroutine S(c_propagate_A_wfs)(psi, dt) & 
+         bind(c, name=SC(propagate_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -211,7 +233,8 @@ contains
         call psip%propagate_A(dt)
     end subroutine S(c_propagate_A_wfs)
 
-    subroutine S(c_propagate_B_wfs)(psi, dt) bind(c) 
+    subroutine S(c_propagate_B_wfs)(psi, dt) & 
+        bind(c, name=SC(propagate_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -221,7 +244,19 @@ contains
         call psip%propagate_B(dt)
     end subroutine S(c_propagate_B_wfs)
 
-    subroutine S(c_add_apply_A_wfs)(this, other, coefficient) bind(c) 
+    subroutine S(c_propagate_C_wfs)(psi, dt) & 
+        bind(c, name=SC(propagate_C_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%propagate_C(dt)
+    end subroutine S(c_propagate_C_wfs)
+    
+    subroutine S(c_add_apply_A_wfs)(this, other, coefficient) &
+        bind(c, name=SC(add_apply_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -235,7 +270,8 @@ contains
     end subroutine S(c_add_apply_A_wfs)
 
 
-    subroutine S(c_save_wfs)(psi, filename, filename_length) bind(c) 
+    subroutine S(c_save_wfs)(psi, filename, filename_length) &
+        bind(c, name=SC(save_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         integer(c_int), intent(in), value :: filename_length
@@ -250,7 +286,8 @@ contains
         call psip%save(fn)
     end subroutine S(c_save_wfs)
 
-    subroutine S(c_load_wfs)(psi, filename, filename_length) bind(c) 
+    subroutine S(c_load_wfs)(psi, filename, filename_length) &
+        bind(c, name=SC(load_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         integer(c_int), intent(in), value :: filename_length
@@ -266,7 +303,7 @@ contains
     end subroutine S(c_load_wfs)
 
     function S(c_norm2_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(norm2_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -277,7 +314,7 @@ contains
     end function S(c_norm2_wfs)
 
     function S(c_norm2_in_frequency_space_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(norm2_in_frequency_space_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -289,7 +326,7 @@ contains
     
 
    function S(c_normalize_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(normalize_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -299,7 +336,8 @@ contains
         call psip%normalize(ans)
     end function S(c_normalize_wfs)
 
-   subroutine S(c_scale_wfs)(psi, factor) bind(c)
+   subroutine S(c_scale_wfs)(psi, factor) & 
+        bind(c, name=SC(scale_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -309,7 +347,8 @@ contains
         call psip%scale(factor)
     end subroutine S(c_scale_wfs)
 
-   subroutine S(c_axpy_wfs)(this, other, factor) bind(c) 
+   subroutine S(c_axpy_wfs)(this, other, factor) &
+        bind(c, name=SC(axpy_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -323,7 +362,7 @@ contains
     end subroutine S(c_axpy_wfs)
 
     function S(c_get_data_wfs)(psi, dim) &
-        result(up) bind(c)
+        result(up) bind(c, name=SC(get_data_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(c_ptr)  :: up
@@ -332,13 +371,14 @@ contains
 
         call c_f_pointer(psi, psip)
         !up = c_loc(psip%u)
-#if(_DIM_==1)
-        up = c_loc(psip%u(psip%m%g%m1min))
-#elif(_DIM_==2)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
-#elif(_DIM_==3)
-        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
-#endif
+!#if(_DIM_==1)
+!        up = c_loc(psip%u(psip%m%g%m1min))
+!#elif(_DIM_==2)
+!        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min))
+!#elif(_DIM_==3)
+!        up = c_loc(psip%u(psip%m%g%m1min, psip%m%g%m2min, psip%m%g%m3min))
+!#endif
+        up = c_loc(psip%up(1))
         dim(1) = psip%m%g%m1max-psip%m%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = psip%m%g%m2max-psip%m%g%m2min+1
@@ -350,7 +390,7 @@ contains
 
 
     function S(c_get_eigenvalues_schroedinger)(m, dim, which) &
-        result(evp) bind(c)
+        result(evp) bind(c, name=SC(get_eigenvalues_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: evp
@@ -381,7 +421,7 @@ contains
 
 
     function S(c_get_nodes_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(get_nodes_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
@@ -410,7 +450,7 @@ contains
 
 !XXXXXXXXXXXXXXXXXXXXXXXXXXXX
    function S(c_get_hbar_schroedinger)(m) &
-        result(hbar) bind(c)
+        result(hbar) bind(c, name=SC(get_hbar_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: hbar
@@ -420,7 +460,7 @@ contains
     end function S(c_get_hbar_schroedinger)   
 
     function S(c_get_mass_schroedinger)(m) &
-        result(mass) bind(c)
+        result(mass) bind(c, name=SC(get_mass_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: mass
@@ -430,7 +470,7 @@ contains
     end function S(c_get_mass_schroedinger)   
 
     function S(c_get_cubic_coupling_schroedinger)(m) &
-        result(cubic_coupling) bind(c)
+        result(cubic_coupling) bind(c, name=SC(get_cubic_coupling_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: cubic_coupling
@@ -440,7 +480,7 @@ contains
     end function S(c_get_cubic_coupling_schroedinger)   
 
     function S(c_get_nx_schroedinger)(m) &
-        result(nx) bind(c)
+        result(nx) bind(c, name=SC(get_nx_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nx
@@ -451,7 +491,7 @@ contains
 
 #if(_DIM_>=2)
     function S(c_get_ny_schroedinger)(m) &
-        result(ny) bind(c)
+        result(ny) bind(c, name=SC(get_ny_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: ny
@@ -463,7 +503,7 @@ contains
 
 #if(_DIM_>=3)
     function S(c_get_nz_schroedinger)(m) &
-        result(nz) bind(c)
+        result(nz) bind(c, name=SC(get_nz_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         integer :: nz
@@ -476,7 +516,7 @@ contains
 
 #ifdef _HERMITE_
    function S(c_get_omega_x_schroedinger)(m) &
-        result(omega_x) bind(c)
+        result(omega_x) bind(c, name=SC(get_omega_x_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_x
@@ -487,7 +527,7 @@ contains
 
 #if(_DIM_>=2)
    function S(c_get_omega_y_schroedinger)(m) &
-        result(omega_y) bind(c)
+        result(omega_y) bind(c, name=SC(get_omega_y_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_y
@@ -499,7 +539,7 @@ contains
 
 #if(_DIM_>=3)
    function S(c_get_omega_z_schroedinger)(m) &
-        result(omega_z) bind(c)
+        result(omega_z) bind(c, name=SC(get_omega_z_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: omega_z
@@ -511,7 +551,7 @@ contains
 
 #else
    function S(c_get_xmin_schroedinger)(m) &
-        result(xmin) bind(c)
+        result(xmin) bind(c, name=SC(get_xmin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: xmin
@@ -521,7 +561,7 @@ contains
     end function S(c_get_xmin_schroedinger)   
 
     function S(c_get_xmax_schroedinger)(m) &
-        result(xmax) bind(c)
+        result(xmax) bind(c, name=SC(get_xmax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: xmax
@@ -532,7 +572,7 @@ contains
 
 #if(_DIM_>=2)
    function S(c_get_ymin_schroedinger)(m) &
-        result(ymin) bind(c)
+        result(ymin) bind(c, name=SC(get_ymin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: ymin
@@ -542,7 +582,7 @@ contains
     end function S(c_get_ymin_schroedinger)   
 
     function S(c_get_ymax_schroedinger)(m) &
-        result(ymax) bind(c)
+        result(ymax) bind(c, name=SC(get_ymax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: ymax
@@ -554,7 +594,7 @@ contains
 
 #if(_DIM_>=3)
    function S(c_get_zmin_schroedinger)(m) &
-        result(zmin) bind(c)
+        result(zmin) bind(c, name=SC(get_zmin_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: zmin
@@ -564,7 +604,7 @@ contains
     end function S(c_get_zmin_schroedinger)   
 
     function S(c_get_zmax_schroedinger)(m) &
-        result(zmax) bind(c)
+        result(zmax) bind(c, name=SC(get_zmax_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         real(kind=prec) :: zmax
@@ -580,7 +620,7 @@ contains
 #ifdef _HERMITE_
 
     function S(c_get_weights_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(get_weights_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
         type(c_ptr) :: np
@@ -611,7 +651,7 @@ contains
 
 
     function S(c_get_H_schroedinger)(m, dim, which) &
-        result(np) bind(c)
+        result(np) bind(c, name=SC(get_H_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(c_ptr)  :: np
@@ -646,7 +686,7 @@ contains
 
 #ifndef _REAL_ 
     subroutine S(c_rset_wfs)(psi, f) &
-        bind(c)
+        bind(c, name=SC(rset_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -700,7 +740,7 @@ contains
 #endif    
 
     subroutine S(c_set_wfs)(psi, f) &
-        bind(c)
+        bind(c, name=SC(set_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -754,7 +794,7 @@ contains
 
 #ifndef _REAL_ 
     subroutine S(c_rset_t_wfs)(psi, f, t) &
-        bind(c)
+        bind(c, name=SC(rset_t_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -811,7 +851,7 @@ contains
 #endif    
 
     subroutine S(c_set_t_wfs)(psi, f, t) &
-        bind(c)
+        bind(c, name=SC(set_t_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -868,7 +908,7 @@ contains
 
 
     subroutine S(c_copy_wfs)(psi, source) &
-        bind(c)
+        bind(c, name=SC(copy_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(c_ptr), value :: source 
@@ -880,7 +920,7 @@ contains
     end subroutine S(c_copy_wfs)
 
     function S(c_distance_wfs)(psi1, psi2) &
-        result(d) bind(c)
+        result(d) bind(c, name=SC(distance_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi1 
         type(c_ptr), value :: psi2 
@@ -897,7 +937,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     subroutine S(c_set_potential_schroedinger)(m, f) &
-        bind(c)
+        bind(c, name=SC(set_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(S(schroedinger)), pointer :: mp
@@ -951,7 +991,7 @@ contains
     end subroutine S(c_set_potential_schroedinger)
 
     function S(c_get_potential_schroedinger)(m, dim) &
-        result(Vp) bind(c)
+        result(Vp) bind(c, name=SC(get_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(c_ptr)  :: Vp
@@ -977,7 +1017,8 @@ contains
      end function S(c_get_potential_schroedinger)
 
 
-    subroutine S(c_load_potential_schroedinger)(m, filename, filename_length) bind(c) 
+    subroutine S(c_load_potential_schroedinger)(m, filename, filename_length) &
+        bind(c, name=SC(load_potential_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: m 
         integer(c_int), intent(in), value :: filename_length
@@ -992,7 +1033,8 @@ contains
         call mp%load_potential(fn)
     end subroutine S(c_load_potential_schroedinger)
  
-    subroutine S(c_save_potential_schroedinger)(m, filename, filename_length) bind(c) 
+    subroutine S(c_save_potential_schroedinger)(m, filename, filename_length) &
+        bind(c, name=SC(save_potential_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: m 
         integer(c_int), intent(in), value :: filename_length
@@ -1007,7 +1049,8 @@ contains
         call mp%save_potential(fn)
     end subroutine S(c_save_potential_schroedinger)
 
-    subroutine S(c_imaginary_time_propagate_A_wfs)(psi, dt) bind(c) 
+    subroutine S(c_imaginary_time_propagate_A_wfs)(psi, dt) &
+        bind(c, name=SC(imaginary_time_propagate_A_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -1017,7 +1060,8 @@ contains
         call psip%imaginary_time_propagate_A(dt)
     end subroutine S(c_imaginary_time_propagate_A_wfs)
 
-    subroutine S(c_imaginary_time_propagate_B_wfs)(psi, dt, method_for_B) bind(c) 
+    subroutine S(c_imaginary_time_propagate_B_wfs)(psi, dt, method_for_B) &
+        bind(c, name=SC(imaginary_time_propagate_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -1028,7 +1072,8 @@ contains
         call psip%imaginary_time_propagate_B(dt, method_for_B)
     end subroutine S(c_imaginary_time_propagate_B_wfs)
 
-    subroutine S(c_add_apply_B_wfs)(this, other, coefficient) bind(c) 
+    subroutine S(c_add_apply_B_wfs)(this, other, coefficient) &
+        bind(c, name=SC(add_apply_B_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: this
         type(c_ptr), value :: other 
@@ -1042,7 +1087,7 @@ contains
     end subroutine S(c_add_apply_B_wfs)
    
     function S(c_kinetic_energy_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(kinetic_energy_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -1053,7 +1098,7 @@ contains
     end function S(c_kinetic_energy_wfs)
 
     function S(c_potential_energy_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(potential_energy_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -1064,7 +1109,7 @@ contains
     end function S(c_potential_energy_wfs)
     
     function S(c_interaction_energy_wfs)(psi) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(interaction_energy_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
@@ -1075,19 +1120,61 @@ contains
     end function S(c_interaction_energy_wfs)
 
     function S(c_observable_wfs)(psi, f) &
-        result(ans) bind(c)
+        result(ans) bind(c, name=SC(observable_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
-        real(kind=prec), external, bind(c) :: f
         type(S(wf_schroedinger)), pointer :: psip
         real(kind=prec) :: ans
+        interface 
+#if(_DIM_==1)
+           function f(x) bind(c)
+#elif(_DIM_==2)
+           function f(x, y) bind(c)
+#elif(_DIM_==3)
+           function f(x, y, z) bind(c)
+#endif           
+               import prec
+               real(kind=prec), value :: x
+#if(_DIM_>=2)
+               real(kind=prec), value :: y
+#endif               
+#if(_DIM_>=3)
+               real(kind=prec), value :: z
+#endif               
+               real(kind=prec) :: f 
+           end function f
+        end interface 
 
         call c_f_pointer(psi, psip)
-        ans = psip%observable(f)
+        ans = psip%observable(ff)
+    contains
+#if(_DIM_==1)
+        function ff(x) 
+#elif(_DIM_==2)
+        function ff(x, y)
+#elif(_DIM_==3)
+        function ff(x, y, z)
+#endif          
+            real(kind=prec), intent(in) :: x
+#if(_DIM_>=2)
+            real(kind=prec), intent(in) :: y
+#endif               
+#if(_DIM_>=3)
+            real(kind=prec), intent(in) :: z
+#endif               
+            real(kind=prec) :: ff 
+#if(_DIM_==1)
+            ff = f(x)
+#elif(_DIM_==2)
+            ff = f(x, y)
+#elif(_DIM_==3)
+            ff = f(x, y, z)
+#endif
+        end function ff
     end function S(c_observable_wfs)
 
     subroutine S(c_get_energy_expectation_deviation_wfs)(psi, ans) &
-        bind(c)
+        bind(c, name=SC(get_energy_expectation_deviation_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         real(kind=prec), intent(out) :: ans(2)
@@ -1098,7 +1185,7 @@ contains
     end subroutine S(c_get_energy_expectation_deviation_wfs)
     
     subroutine S(c_get_realspace_observables_wfs)(psi, ans) &
-        bind(c)
+        bind(c, name=SC(get_realspace_observables_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
         real(kind=prec), intent(out) :: ans(2+2*_DIM_)
@@ -1114,7 +1201,8 @@ contains
 #endif
     end subroutine S(c_get_realspace_observables_wfs)
 
-    subroutine S(c_selfconsistent_nonlinear_step_wfs)(psi, dt, dt1, eps, max_iters) bind(c) 
+    subroutine S(c_selfconsistent_nonlinear_step_wfs)(psi, dt, dt1, eps, max_iters) &
+        bind(c, name=SC(selfconsistent_nonlinear_step_wf_schroedinger)) 
         use iso_c_binding
         type(c_ptr), value :: psi
         _COMPLEX_OR_REAL_(kind=prec), value :: dt
@@ -1127,4 +1215,8 @@ contains
         call psip%selfconsistent_nonlinear_step(dt, dt1, eps, max_iters)
     end subroutine S(c_selfconsistent_nonlinear_step_wfs)
 
-end module S(c_tssm_schroedinger)
+#ifdef _QUADPRECISION_
+end module S(tssmq_c_schroedinger)
+#else
+end module S(tssm_c_schroedinger)
+#endif

@@ -13,7 +13,7 @@ CPP = cpp-4.9 -std=c89 -D_QUADPRECISION_
 MAKE_SHARED_LIB = gfortran -shared
 
 
-TSSM_LIBS = -L. -ltssm
+TSSM_LIBS = -L. -ltssmq
 TSSM = libtssmq.a
 TSSM_SHARED_LIB = libtssmq.so
 
@@ -49,7 +49,7 @@ endif
 
 FFTW_INCLUDE = $(FFTW_BASE)/include 
 FFTW_LIB = $(FFTW_BASE)/lib
-FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q -lfftw3 -lquadmath -lm
+FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q -lquadmath -lm
 
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
@@ -59,8 +59,8 @@ include ../Makefile.common
 
 shared_lib: $(TSSM_SHARED_LIB)
 
-$(TSSM_SHARED_LIB):  $(OBJS) $(OBJS_WRAPPER)
-	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(FFTW_LIBS) $(HDF5_LIBS) 
+$(TSSM_SHARED_LIB):  $(OBJS) $(OBJS_F128WRAPPER)
+	$(MAKE_SHARED_LIB) -o $(TSSM_SHARED_LIB) $(OBJS) $(OBJS_F128WRAPPER) $(FFTW_LIBS) $(HDF5_LIBS) 
 
 
 

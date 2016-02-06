@@ -17,14 +17,22 @@
 #ifdef _QUADPRECISION_
 #define fftw_alloc_real fftwq_alloc_real
 #define fftw_alloc_complex fftwq_alloc_complex
+#define fftw_free fftwq_free
 #endif
 
-
+#ifdef _QUADPRECISION_
+module S(tssmq_hermite)
+    use tssmq
+    use tssmq_grid
+    use tssmq_fourier_common   ! for fftw_alloc, etc.
+    use tssmq_hermite_common
+#else
 module S(tssm_hermite)
     use tssm
     use tssm_grid
     use tssm_fourier_common   ! for fftw_alloc, etc.
     use tssm_hermite_common
+#endif    
     implicit none
 
     type, extends(spectral_method) :: S(hermite)
@@ -569,7 +577,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: save not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_hermite)), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
@@ -610,7 +622,11 @@ contains
         character(len=*), intent(in) :: filename
         print *, "W: load not implemented"
 #else
+#ifdef _QUADPRECISION_
+        use tssmq_hdf5
+#else
         use tssm_hdf5
+#endif        
         class(S(wf_hermite)), intent(inout) :: this
         character(len=*), intent(in) :: filename
 #ifdef _QUADPRECISION_
@@ -829,4 +845,8 @@ contains
 
 
 
+#ifdef _QUADPRECISION_
+end module S(tssmq_hermite)
+#else
 end module S(tssm_hermite)
+#endif
