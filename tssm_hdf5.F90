@@ -84,7 +84,6 @@ end subroutine hdf5_write_real_gridfun
 
 
 subroutine hdf5_write_complex_gridfun(file_id, g, u, dset_name_real, dset_name_imag)
-   JULIABOX_BUILD=1
     integer(HID_T), intent(in) :: file_id       ! File identifier 
     class(grid) :: g
     complex(prec), intent(inout), target :: u(*)
