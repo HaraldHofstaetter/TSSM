@@ -84,7 +84,7 @@ end subroutine hdf5_write_real_gridfun
 
 
 subroutine hdf5_write_complex_gridfun(file_id, g, u, dset_name_real, dset_name_imag)
-    use, intrinsic :: iso_c_binding
+   JULIABOX_BUILD=1
     integer(HID_T), intent(in) :: file_id       ! File identifier 
     class(grid) :: g
     complex(prec), intent(inout), target :: u(*)
@@ -200,6 +200,7 @@ end subroutine hdf5_load_complex_gridfun
 
 subroutine hdf5_write_gridfun_0(file_id, g, u, real_wavefunction, &
                                dset_name_real, dset_name_imag)
+    use, intrinsic :: iso_c_binding
     integer(HID_T), intent(in) :: file_id       ! File identifier 
     class(grid) :: g
     real(kind=prec), intent(inout), target :: u(*)
@@ -979,6 +980,7 @@ end subroutine hdf5_read_grid_attributes
 
 subroutine hdf5_read_gridfun_0(file_id, g, u, real_wavefunction, &
                                dset_name_real, dset_name_imag, offset)
+    use, intrinsic :: iso_c_binding
     integer(HID_T), intent(in) :: file_id       ! File identifier 
     class(grid) :: g
     real(prec), target, intent(inout) :: u(*)
