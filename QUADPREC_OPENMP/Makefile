@@ -56,8 +56,7 @@ HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
 ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
-    FOPTS = -fopenmp -O3 -fPIC 
-    CPP = cpp -std=c89  -D_OPENMP 
+    CPP = cpp -std=c89  -D_OPENMP -D_QUADPRECISION_
     FFTW_INCLUDE = ../../include 
     HDF5_INCLUDE = ../../include 
     HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_fortran.so.7 \
