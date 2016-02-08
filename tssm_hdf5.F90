@@ -84,6 +84,7 @@ end subroutine hdf5_write_real_gridfun
 
 
 subroutine hdf5_write_complex_gridfun(file_id, g, u, dset_name_real, dset_name_imag)
+    use, intrinsic :: iso_c_binding
     integer(HID_T), intent(in) :: file_id       ! File identifier 
     class(grid) :: g
     complex(prec), intent(inout), target :: u(*)
