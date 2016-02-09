@@ -63,7 +63,8 @@ ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
                  /usr/lib/x86_64-linux-gnu/libhdf5.so.7
     #FFTW_LIBS = -L../../usr/lib -lfftw3q_omp -lfftw3q -lquadmath -lm
     FFTW_LIB = /home/juser/.julia/v0.4/TSSM/deps/usr/lib
-    FFTW_LIBS = $(FFTW_LIB)/libfftw3q_omp.so.3.4.4 $(FFTW_LIB)/libfftw3q.so.3.4.4 -lquadmath -lm
+    #FFTW_LIBS = $(FFTW_LIB)/libfftw3q_omp.so.3.4.4 $(FFTW_LIB)/libfftw3q.so.3.4.4 -lquadmath -lm
+    FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q_omp -lfftw3q -lquadmath -lm -Wl,-rpath $(FFTW_LIB)
 endif
 
 
