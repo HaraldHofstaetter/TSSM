@@ -64,7 +64,7 @@ module _MODULE_
     contains
         procedure :: save => S(save_wf)
         procedure :: load => S(load_wf)
-        procedure :: eval => S(eval_wf)
+        procedure :: evaluate => S(evaluate_wf)
     end type _WF_ 
 
     interface _WF_ ! constructor
@@ -200,7 +200,7 @@ contains
 #endif
     end subroutine S(load_wf)
 
-    function S(eval_wf)(this, x, y) result(z)
+    function S(evaluate_wf)(this, x, y) result(z)
         class(_WF_), intent(inout) :: this
         real(kind=prec), intent(in) :: x, y
         _COMPLEX_OR_REAL_(kind=prec) :: z
@@ -256,7 +256,7 @@ contains
 #endif                
         end select
         
-    end function S(eval_wf)
+    end function S(evaluate_wf)
 
 
 end module _MODULE_ 
