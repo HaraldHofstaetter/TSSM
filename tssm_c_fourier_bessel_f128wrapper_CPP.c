@@ -226,7 +226,7 @@ void W(axpy_wf)(void *this, void *other, _WRAPPED_COMPLEX_OR_REAL_ factor)
 _COMPLEX_OR_REAL_ S(evaluate_wf)(void *psi, __float128 x, __float128 y);
 _WRAPPED_COMPLEX_OR_REAL_ W(evaluate_wf)(void *psi, myfloat128 x, myfloat128 y)
 {
-    myfloat128 res;
+    _WRAPPED_COMPLEX_OR_REAL_ res;
     F(res) = S(evaluate_wf)(psi, F(x), F(y));
     return res;
 }    
