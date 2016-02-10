@@ -8,7 +8,7 @@
     #define _WF_ wf_fourier_bessel_real_2d
     #define _BASE_METHOD_ polar_real_2d
     #define _BASE_WF_ wf_polar_real_2d
-    #define S(x) x ## _gen_laguerre_real_2d
+    #define S(x) x ## _fourier_bessel_real_2d
  #define _COMPLEX_OR_REAL_ real
 #else
 #ifdef _QUADPRECISION_
@@ -20,7 +20,7 @@
     #define _WF_ wf_fourier_bessel_2d
     #define _BASE_METHOD_ polar_2d
     #define _BASE_WF_ wf_polar_2d
-    #define S(x) x ## _gen_laguerre_2d
+    #define S(x) x ## _fourier_bessel_2d
  #define _COMPLEX_OR_REAL_ complex
 #endif
 
