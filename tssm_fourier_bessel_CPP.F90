@@ -207,7 +207,7 @@ contains
 
         real(kind=prec) :: r, r2, theta, f, lambda
         complex(kind=prec) :: s
-        integer :: j, m, m1
+        integer :: j, m, m1, m2
 
         select type (mm =>this%m ); class is (_METHOD_)
 
@@ -222,28 +222,28 @@ contains
         call this%to_frequency_space
 
 #ifdef _REAL_                
+!$OMP PARALLEL DO PRIVATE(m, m1, m2, j, f, lambda, s) REDUCTION(+:z)
         do m = this%m%nfthetamin, this%m%nfthetamax
-            if (m==0) then
-                do j = this%m%nfrmin, this%m%nfrmax
-                    lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                    f = mm%normalization_factors(j, m)
-                    z = z + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
-                end do    
-            else
-                s = 0.0_prec
-                do j = this%m%nfrmin, this%m%nfrmax
-                    lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
-                    f = mm%normalization_factors(j, m)
-                    s = s + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
-                end do
-                z = z + 2.0_prec*real(exp(cmplx(0.0_prec, m*theta, kind=prec)) * s, kind=prec)
+            s = 0.0_prec
+            do j = this%m%nfrmin, this%m%nfrmax
+                lambda = sqrt(this%m%eigenvalues_r_theta(j, m))
+                f = mm%normalization_factors(j, m)
+                s = s + f*bessel_jn(m, lambda*r) * this%ufc(j, m)
+            end do
+            if (m/=0 .and. m/=this%m%g%ntheta/2) then
+                s = 2*s
             end if
+            z = z + real(exp(cmplx(0.0_prec, m*theta, kind=prec)) * s, kind=prec)
         end do
+!$OMP END PARALLEL DO        
 #else
+!$OMP PARALLEL DO PRIVATE(m, m1, m2, j, f, lambda, s) REDUCTION(+:z)
         do m = this%m%nfthetamin, this%m%nfthetamax
             m1 = m
+            m2 = m
             if (m1>this%m%g%ntheta/2) then
                 m1 = abs(m1-this%m%g%ntheta)
+                m2 = -m1
             end if
             s = 0.0_prec
             do j = this%m%nfrmin, this%m%nfrmax
@@ -251,8 +251,9 @@ contains
                 f = mm%normalization_factors(j, m1)
                 s = s + f*bessel_jn(m1, lambda*r) * this%uf(j, m)
             end do
-            z = z + exp(cmplx(0.0_prec, m*theta, kind=prec)) * s
+            z = z + exp(cmplx(0.0_prec, m2*theta, kind=prec)) * s
         end do
+!$OMP END PARALLEL DO        
 #endif                
         end select
         

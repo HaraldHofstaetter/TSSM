@@ -407,7 +407,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
     end select
 
     deallocate( xx, ww )
-
+!$OMP PARALLEL DO PRIVATE(m, k, lambda, lambda2, f)
     do m=0,mm/2
         do k=1,kk
            select case(boundary_conditions)
@@ -424,7 +424,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
                eigenvalues(k, m) = lambda2
                normalization_factors(k, m) = f
            end if
-           if ((m>=1).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
+           if ((m>=1).and.(m<mm/2).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
                eigenvalues(k, mm-m) = lambda2
                normalization_factors(k, mm-m) = f
            end if           
@@ -433,6 +433,7 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
            end do
         end do
     end do    
+!$OMP END PARALLEL DO
 
 #ifdef _QUADPRECISION_
 end subroutine fourier_bessel_coeffs
