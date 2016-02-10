@@ -326,7 +326,7 @@ contains
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%eval(x, y)
+        ans = psip%evaluate(x, y)
     end function S(c_evaluate_wf)
     
 
