@@ -323,7 +323,7 @@ contains
         real(kind=prec), value :: x 
         real(kind=prec), value :: y 
         type(_WF_), pointer :: psip
-        real(kind=prec) :: ans
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
         ans = psip%evaluate(x, y)
