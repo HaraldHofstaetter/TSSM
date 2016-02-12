@@ -1,4 +1,4 @@
-!!! TODO: OPENMP- Version of tssm_hermite_CPP.F90 !!!
+!!! TODO: OPENMP- Version of tssm_hermite_CPP.F90 (make "!$OMP PARALLEL WORKSHARE" explicit)
 #ifdef _REAL_
 #define S0(x,y)  x ## _real_ ## y ## D 
 #else

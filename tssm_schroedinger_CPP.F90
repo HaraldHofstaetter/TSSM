@@ -3229,10 +3229,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
                 w => m%g%weights_z(lbound(m%g%weights_z,1)+m%g%jj(j-1):lbound(m%g%weights_z,1)+m%g%jj(j)-1)
 #endif 
 #ifdef _REAL_
-                E_var = E_var + sum( (-m%tmp%u - E_expectation*this%u )**2  &
+                E_var = E_var + sum( (-u2 - E_expectation*u1 )**2  &
 #else
-                E_var = E_var + sum( ((real(m%tmp%u, prec) - E_expectation*aimag(this%u) )**2 &
-                +   (aimag(m%tmp%u) + E_expectation*real(this%u, prec))**2) &
+                E_var = E_var + sum( ((real(u2, prec) - E_expectation*aimag(u1) )**2 &
+                +   (aimag(u2) + E_expectation*real(u1, prec))**2) &
 #endif
 #if(_DIM_==1)
                 *w) 
