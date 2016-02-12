@@ -689,7 +689,7 @@ contains
 #endif
 
         if (.not. this%is_real_space) then
-!$OMP PARALLEL WORKSHARE 
+!xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)        
            this%u = matmul(this%m%H_x, this%uf)
 #elif(_DIM_==2)        
@@ -705,7 +705,7 @@ contains
                             (/ ny, nx, nz /) ), (/nx, ny, nz /), order=(/ 2, 1, 3 /) )
            this%u = reshape( matmul(reshape(this%uf, (/ nx*ny, nz /) ), transpose(this%m%H_z)), (/ nx, ny, nz /) ) 
 #endif
-!$OMP END PARALLEL WORKSHARE 
+!xxx$OMP END PARALLEL WORKSHARE 
            this%is_real_space = .true.
         end if     
     end subroutine S(to_real_space_wf_hermite)
@@ -718,7 +718,7 @@ contains
 #endif
 
         if (this%is_real_space) then
-!$OMP PARALLEL WORKSHARE 
+!xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)        
            this%u = matmul(transpose(this%m%H_x), this%m%g%weights_x*this%uf)
 #elif(_DIM_==2)        
@@ -739,7 +739,7 @@ contains
                reshape(this%uf, (/ nx*ny, nz /) )*spread(this%m%g%weights_z, 1, nx*ny), &
                this%m%H_z), (/ nx, ny, nz /) ) 
 #endif
-!$OMP END PARALLEL WORKSHARE 
+!xxx$OMP END PARALLEL WORKSHARE 
            this%is_real_space = .false.
         end if     
     end subroutine S(to_frequency_space_wf_hermite)
@@ -755,13 +755,13 @@ contains
 #endif
         
         call this%to_frequency_space 
-!$OMP PARALLEL WORKSHARE 
+!xxx$OMP PARALLEL WORKSHARE 
 #ifdef _REAL_
         n = sum( this%uf**2 )
 #else
         n = sum(real(this%uf,prec)**2 + aimag(this%uf)**2) 
 #endif
-!$OMP END PARALLEL WORKSHARE 
+!xxx$OMP END PARALLEL WORKSHARE 
 #ifdef _MPI_
         call MPI_Reduce(n, n1, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
         if (this_proc==0) then
@@ -779,7 +779,7 @@ contains
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         call this%to_frequency_space
 
-!$OMP PARALLEL WORKSHARE 
+!xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)
         this%uf = exp((dt*this%coefficient)*this%m%eigenvalues1) * this%uf
 #elif(_DIM_==2)
@@ -793,7 +793,7 @@ contains
         this%uf = spread(spread(exp((dt*this%coefficient)*this%m%eigenvalues3), 1, this%m%nf1max-this%m%nf1min+1), &
                                 2, this%m%nf2max-this%m%nf2min+1) * this%uf
 #endif
-!$OMP END PARALLEL WORKSHARE 
+!xxx$OMP END PARALLEL WORKSHARE 
     end subroutine S(propagate_A_wf_hermite)
 
 
@@ -819,7 +819,7 @@ contains
         call this%to_frequency_space
         call wf%to_frequency_space
 
-!$OMP PARALLEL WORKSHARE 
+!xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)
         wf%uf = wf%uf + C*this%m%eigenvalues1*this%uf
 #elif(_DIM_==2)
@@ -833,7 +833,7 @@ contains
         wf%uf = wf%uf + C*spread(spread(this%m%eigenvalues3, 1, this%m%nf1max-this%m%nf1min+1), &
                                 2, this%m%nf2max-this%m%nf2min+1) * this%uf
 #endif
-!$OMP END PARALLEL WORKSHARE 
+!xxx$OMP END PARALLEL WORKSHARE 
         class default
            stop "E: wave functions not belonging to the same method"
         end select
