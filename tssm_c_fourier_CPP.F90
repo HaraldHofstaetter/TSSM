@@ -236,27 +236,27 @@ contains
         call psip%load(fn)
     end subroutine S(c_load_wf_fourier)
 
-    function S(c_norm2_wf_fourier)(psi) &
-        result(ans) bind(c, name=SC(norm2_wf_fourier))
+    function S(c_norm_wf_fourier)(psi) &
+        result(ans) bind(c, name=SC(norm_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_fourier)), pointer :: psip
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2()
-    end function S(c_norm2_wf_fourier)
+        ans = psip%norm()
+    end function S(c_norm_wf_fourier)
 
-    function S(c_norm2_in_frequency_space_wf_fourier)(psi) &
-        result(ans) bind(c, name=SC(norm2_in_frequency_space_wf_fourier))
+    function S(c_norm_in_frequency_space_wf_fourier)(psi) &
+        result(ans) bind(c, name=SC(norm_in_frequency_space_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_fourier)), pointer :: psip
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2_in_frequency_space()
-    end function S(c_norm2_in_frequency_space_wf_fourier)
+        ans = psip%norm_in_frequency_space()
+    end function S(c_norm_in_frequency_space_wf_fourier)
     
 
    function S(c_normalize_wf_fourier)(psi) &

@@ -171,20 +171,20 @@ program test_gaussian
     !get initial solution:
     t = 0_prec
     call psi2%set(gaussian_2D) 
-    print *, "2D  0 norm", psi2%norm2()
+    print *, "2D  0 norm", psi2%norm()
     print *, "2D  0 E_kin", psi2%kinetic_energy()
     call psi2%get_energy_expectation_deviation(E, E_var)
     print *, "2D E_kin, E_var", E, E_var
 
     !compute numerical solution
     call psi2%propagate_A(cmplx(tend,0,kind=prec))
-    print *, "2D P norm", psi2%norm2()
+    print *, "2D P norm", psi2%norm()
     print *, "2D P E_kin", psi2%kinetic_energy()
 
     !get exact final solution
     t = tend 
     call psi2_ex%set(gaussian_2D) 
-    print *, "2D E norm", psi2_ex%norm2()
+    print *, "2D E norm", psi2_ex%norm()
     print *, "2D E E_kin", psi2_ex%kinetic_energy()
 
     print *, "2D err", psi2%distance(psi2_ex)
@@ -220,7 +220,7 @@ program test_gaussian
     t = 0_prec
     call psi3%set(gaussian_3D) 
 
-    print *, "3D norm", psi3%norm2()
+    print *, "3D norm", psi3%norm()
     print *, "3D E_kin", psi3%kinetic_energy()
     call psi3%get_energy_expectation_deviation(E, E_var)
     print *, "3D E_kin, E_var", E, E_var
@@ -232,7 +232,7 @@ program test_gaussian
     t = tend 
     call psi3_ex%set(gaussian_3D) 
 
-    print *, "3D norm", psi3%norm2()
+    print *, "3D norm", psi3%norm()
     print *, "3D err", psi3%distance(psi3_ex)
 
     call psi3%save("xxx.h5")

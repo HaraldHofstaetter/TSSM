@@ -131,8 +131,8 @@ module S(tssm_hermite)
         procedure :: clone => S(clone_wf_hermite)
         procedure :: finalize => S(finalize_wf_hermite)
         procedure :: copy => S(copy_wf_hermite)
-        procedure :: norm2 => S(norm2_wf_hermite)
-        procedure :: norm2_in_frequency_space => S(norm2_in_frequency_space_wf_hermite)
+        procedure :: norm => S(norm_wf_hermite)
+        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf_hermite)
         procedure :: normalize => S(normalize_wf_hermite)
         procedure :: distance => S(distance_wf_hermite)
         procedure :: axpy => S(axpy_wf_hermite)
@@ -169,7 +169,7 @@ contains
         real(kind=prec), intent(in) :: gamma_z 
 #endif
 
-        integer :: j
+        integer :: i
 
 !adjust grid parameters, TODO MPI!!!
 
@@ -224,7 +224,7 @@ contains
         allocate( this%eigenvalues1(this%nf1min:this%nf1max ) ) 
         allocate( this%H_x(this%g%n1min:this%g%n1max, this%nf1min:this%nf1max ) ) 
         call hermite_scaled_coeffs(nx, this%g%nodes_x,  this%g%weights_x, this%H_x, this%gamma_x)
-        this%eigenvalues1 = (/ ( -this%gamma_x*(0.5_prec + real(j, prec)), j = this%nf1min, this%nf1max) /)
+        this%eigenvalues1 = (/ ( -this%gamma_x*(0.5_prec + real(i, prec)), i = this%nf1min, this%nf1max) /)
 #if(_DIM_>=2)
         this%gamma_y = gamma_y
         allocate( this%g%nodes_y(this%g%n2min:this%g%n2max ) ) 
@@ -232,7 +232,7 @@ contains
         allocate( this%eigenvalues2(this%nf2min:this%nf2max ) ) 
         allocate( this%H_y(this%g%n2min:this%g%n2max, this%nf2min:this%nf2max ) ) 
         call hermite_scaled_coeffs(ny, this%g%nodes_y,  this%g%weights_y, this%H_y, this%gamma_y)
-        this%eigenvalues2 = (/ ( -this%gamma_y*(0.5_prec + real(j, prec)), j = this%nf2min, this%nf2max) /)
+        this%eigenvalues2 = (/ ( -this%gamma_y*(0.5_prec + real(i, prec)), i = this%nf2min, this%nf2max) /)
 #endif
 #if(_DIM_>=3)
         this%gamma_z = gamma_z
@@ -241,10 +241,38 @@ contains
         allocate( this%eigenvalues3(this%nf3min:this%nf3max ) ) 
         allocate( this%H_z(this%g%n3min:this%g%n3max, this%nf3min:this%nf3max ) ) 
         call hermite_scaled_coeffs(nz, this%g%nodes_z,  this%g%weights_z, this%H_z, this%gamma_z)
-        this%eigenvalues3 = (/ ( -this%gamma_z*(0.5_prec + real(j, prec)), j = this%nf3min, this%nf3max) /)
+        this%eigenvalues3 = (/ ( -this%gamma_z*(0.5_prec + real(i, prec)), i = this%nf3min, this%nf3max) /)
+#endif
+#ifdef _OPENMP
+        allocate( this%g%jj(0:n_threads) )
+        allocate( this%jf(0:n_threads) )
+#if(_DIM_==1)
+        do i=0,n_threads-1
+           this%g%jj(i) = i*ceiling(real(this%g%n1max-this%g%n1min+1)/real(n_threads))
+           this%jf(i) = i*ceiling(real(this%nf1max-this%nf1min+1)/real(n_threads))
+        end do
+        this%g%jj(n_threads) = this%g%n1max-this%g%n1min+1 
+        this%jf(n_threads) = this%nf1max-this%nf1min+1 
+#elif(_DIM_==2)
+        do i=0,n_threads-1
+           this%g%jj(i) = i*ceiling(real(this%g%n2max-this%g%n2min+1)/real(n_threads))
+           this%jf(i) = i*ceiling(real(this%nf2max-this%nf2min+1)/real(n_threads))
+        end do
+        this%g%jj(n_threads) = this%g%n2max-this%g%n2min+1
+        this%jf(n_threads) = this%nf2max-this%nf2min+1 
+#elif(_DIM_==3)
+        do i=0,n_threads-1
+           this%g%jj(i) = i*ceiling(real(this%g%n3max-this%g%n3min+1)/real(n_threads))
+           this%jf(i) = i*ceiling(real(this%nf3max-this%nf3min+1)/real(n_threads))
+        end do
+        this%g%jj(n_threads) = this%g%n3max-this%g%n3min+1
+        this%jf(n_threads) = this%nf3max-this%nf3min+1 
 #endif
 
+#endif
     end function S(new_hermite)
+
+
 
     subroutine S(finalize_hermite)(this)
         class(S(hermite)), intent(inout) :: this
@@ -431,23 +459,23 @@ contains
 
 #endif        
 
-    function S(norm2_wf_hermite)(this) result(n)
+    function S(norm_wf_hermite)(this) result(n)
         class(S(wf_hermite)), intent(inout) :: this
         real(kind=prec) :: n
         
         call this%to_real_space 
 #ifdef _REAL_        
-        n = this%m%g%norm2_real_gridfun(this%u)
+        n = this%m%g%norm_real_gridfun(this%u)
 #else
-        n = this%m%g%norm2_complex_gridfun(this%u)
+        n = this%m%g%norm_complex_gridfun(this%u)
 #endif        
-    end function S(norm2_wf_hermite)
+    end function S(norm_wf_hermite)
 
     subroutine S(normalize_wf_hermite)(this, norm)
         class(S(wf_hermite)), intent(inout) :: this
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
-        n = this%norm2()
+        n = this%norm()
         if (present(norm)) then
             norm = n
         end if    
@@ -457,14 +485,10 @@ contains
     subroutine S(scale_wf_hermite)(this, factor)
         class(S(wf_hermite)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
-#ifndef _REAL_
-        if(aimag(factor)==0.0_prec) then
-            this%u = real(factor, kind=prec)*this%u
-        else
-#endif        
-            this%u = factor*this%u
-#ifndef _REAL_
-        end if
+#ifdef _REAL_
+        call this%m%g%scale_real_gridfun(this%u, factor)
+#else        
+        call this%m%g%scale_complex_gridfun(this%u, factor)
 #endif        
     end subroutine S(scale_wf_hermite)
 
@@ -480,25 +504,9 @@ contains
         call this%to_real_space 
         call other%to_real_space 
 #ifdef _REAL_
-        if(factor==1.0_prec) then
-           this%u = this%u + other%u
-        elseif(factor==-1.0_prec) then
-           this%u = this%u - other%u
-        else
-           this%u = this%u + factor*other%u
-        end if   
-#else
-        if(aimag(factor)==0.0_prec) then
-            if(real(factor,prec)==1.0_prec) then
-               this%u = this%u + other%u
-            elseif(real(factor,prec)==-1.0_prec) then
-               this%u = this%u - other%u
-            else
-               this%u = this%u + real(factor, kind=prec)*other%u
-            end if   
-        else
-            this%u = this%u + factor*other%u
-        end if
+        call this%m%g%axpy_real_gridfun(this%u, other%u, factor)
+#else        
+        call this%m%g%axpy_complex_gridfun(this%u, other%u, factor)
 #endif        
         class default
            stop "E: wave functions not belonging to the same method"
@@ -518,12 +526,11 @@ contains
        
         this%is_real_space = source%is_real_space
 
-        if (this%is_real_space) then
-            this%u = source%u
-        else    
-            this%uf = source%uf 
-        end if
-
+#ifdef _REAL_
+        call this%m%g%copy_real_gridfun(this%u, source%u)
+#else        
+        call this%m%g%copy_complex_gridfun(this%u, source%u)
+#endif        
         class default
            stop "E: wave functions not belonging to the same method"
         end select
@@ -543,32 +550,21 @@ contains
             n = 0.0_prec
             return
         end if
-  
-        !!! TODO handle norm in frequency space without transforming
-#if 1
-        call this%to_real_space 
-        call wf%to_real_space 
-#ifdef _REAL_        
-        n = this%m%g%norm2_real_gridfun(this%u-wf%u)
+
+#ifdef _REAL_
+        call this%axpy(wf, -1.0_prec)
+        n = this%norm()
+        call this%axpy(wf, +1.0_prec)
 #else
-        n = this%m%g%norm2_complex_gridfun(this%u-wf%u)
-#endif      
-#else
-        call this%to_frequency_space 
-        call wf%to_frequency_space 
-!$OMP PARALLEL WORKSHARE 
-        this%uf = this%uf - wf%uf
-!$OMP END PARALLEL WORKSHARE 
-        n = this%norm2()
-!$OMP PARALLEL WORKSHARE 
-        this%uf = this%uf + wf%uf
-!$OMP END PARALLEL WORKSHARE 
-#endif
+        call this%axpy(wf, cmplx(-1.0_prec, 0.0_prec, kind=prec))
+        n = this%norm()
+        call this%axpy(wf, cmplx(-1.0_prec, 0.0_prec, kind=prec))
+#endif        
+
         class default
            stop "E: wave functions not belonging to the same method"
         end select
     end function S(distance_wf_hermite)
-
 
 
     subroutine S(save_wf_hermite)(this, filename)
@@ -749,7 +745,7 @@ contains
     end subroutine S(to_frequency_space_wf_hermite)
 
 
-    function S(norm2_in_frequency_space_wf_hermite)(this) result(N)
+    function S(norm_in_frequency_space_wf_hermite)(this) result(N)
         class(S(wf_hermite)), intent(inout) :: this
         real(kind=prec) :: N
 
@@ -775,7 +771,7 @@ contains
 #else 
         n = sqrt(n)
 #endif
-    end function S(norm2_in_frequency_space_wf_hermite)
+    end function S(norm_in_frequency_space_wf_hermite)
 
 
     subroutine S(propagate_A_wf_hermite)(this, dt)

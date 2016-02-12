@@ -62,7 +62,7 @@ module S(tssm_multicomponent_fourier)
         procedure :: clone => S(clone_wf_multicomponent_fourier)
         procedure :: finalize => S(finalize_wf_multicomponent_fourier)
         procedure :: copy => S(copy_wf_multicomponent_fourier)
-        procedure :: norm2 => S(norm2_wf_multicomponent_fourier)
+        procedure :: norm => S(norm_wf_multicomponent_fourier)
         procedure :: normalize => S(normalize_wf_multicomponent_fourier)
         procedure :: distance => S(distance_wf_multicomponent_fourier)
         procedure :: axpy => S(axpy_wf_multicomponent_fourier)
@@ -233,16 +233,16 @@ contains
     end subroutine S(propagate_A_wf_multicomponent_fourier)
 
 
-    function S(norm2_wf_multicomponent_fourier)(this) result(n)
+    function S(norm_wf_multicomponent_fourier)(this) result(n)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         real(kind=prec) :: n
         integer :: j
         n = 0.0_prec 
         do j=1, this%m%nc
-             n = n + ( this%C(j)%p%norm2() )**2 
+             n = n + ( this%C(j)%p%norm() )**2 
         end do
         n = sqrt(n)
-    end function S(norm2_wf_multicomponent_fourier)
+    end function S(norm_wf_multicomponent_fourier)
 
 
     function S(distance_wf_multicomponent_fourier)(this, wf) result(n)
@@ -286,7 +286,7 @@ contains
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
 
-        n = this%norm2()
+        n = this%norm()
 #ifdef _REAL_        
         call this%scale(1.0_prec/n)
 #else

@@ -330,27 +330,27 @@ contains
     end function S(c_evaluate_wf)
     
 
-    function S(c_norm2_wf)(psi) &
-        result(ans) bind(c, name=SC(norm2_wf))
+    function S(c_norm_wf)(psi) &
+        result(ans) bind(c, name=SC(norm_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2()
-    end function S(c_norm2_wf)
+        ans = psip%norm()
+    end function S(c_norm_wf)
 
-    function S(c_norm2_in_frequency_space_wf)(psi) &
-        result(ans) bind(c, name=SC(norm2_in_frequency_space_wf))
+    function S(c_norm_in_frequency_space_wf)(psi) &
+        result(ans) bind(c, name=SC(norm_in_frequency_space_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2_in_frequency_space()
-    end function S(c_norm2_in_frequency_space_wf)
+        ans = psip%norm_in_frequency_space()
+    end function S(c_norm_in_frequency_space_wf)
 
     function S(c_inner_product_wf)(psi, other) &
         result(ans) bind(c, name=SC(inner_product_wf))

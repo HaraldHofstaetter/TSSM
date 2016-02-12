@@ -10,50 +10,47 @@ module tssm_grid
 
     type, abstract :: grid
         integer(kind=C_SIZE_T) :: alloc_size
-    contains
-    end type grid
-
-    type, extends(grid) :: grid_1D
-        integer :: nn1min, nn1max ! overall index range
-        integer :: n1min, n1max ! this index section "belongs" to current processor
-        integer :: m1min, m1max ! this index section (superset of the above) of a grid function
-                                ! is allocated by current processor
 #ifdef _OPENMP
         integer, allocatable :: jj(:)
 #endif
     contains
+    end type grid
+
+    type, abstract, extends(grid) :: grid_1D
+        integer :: nn1min, nn1max ! overall index range
+        integer :: n1min, n1max ! this index section "belongs" to current processor
+        integer :: m1min, m1max ! this index section (superset of the above) of a grid function
+                                ! is allocated by current processor
+    contains
         procedure :: allocate_real_gridfun => allocate_real_gridfun_1D
         procedure :: allocate_complex_gridfun => allocate_complex_gridfun_1D
-!        procedure :: scale_real_gridfun => scale_real_gridfun_1D
-!        procedure :: axpy_real_gridfun => axpy_real_gridfun_1D
-!        procedure :: copy_real_gridfun => copy_real_gridfun_1D
-!        procedure :: scale_complex_gridfun => scale_complex_gridfun_1D
-!        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_1D
-!        procedure :: copy_complex_gridfun => copy_complex_gridfun_1D
+        procedure :: scale_real_gridfun => scale_real_gridfun_1D
+        procedure :: scale_complex_gridfun => scale_complex_gridfun_1D
+        procedure :: axpy_real_gridfun => axpy_real_gridfun_1D
+        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_1D
+        procedure :: copy_real_gridfun => copy_real_gridfun_1D
+        procedure :: copy_complex_gridfun => copy_complex_gridfun_1D
     end type grid_1D
-    
-    type, extends(grid) :: grid_2D
+
+    type, abstract, extends(grid) :: grid_2D
         integer :: nn1min, nn1max 
         integer :: n1min, n1max
         integer :: m1min, m1max
         integer :: nn2min, nn2max 
         integer :: n2min, n2max
         integer :: m2min, m2max
-#ifdef _OPENMP
-        integer, allocatable :: jj(:)
-#endif
     contains
         procedure :: allocate_real_gridfun => allocate_real_gridfun_2D
         procedure :: allocate_complex_gridfun => allocate_complex_gridfun_2D
-!        procedure :: scale_real_gridfun => scale_real_gridfun_2D
-!        procedure :: axpy_real_gridfun => axpy_real_gridfun_2D
-!        procedure :: copy_real_gridfun => copy_real_gridfun_2D
-!        procedure :: scale_complex_gridfun => scale_complex_gridfun_2D
-!        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_2D
-!        procedure :: copy_complex_gridfun => copy_complex_gridfun_2D
+        procedure :: scale_real_gridfun => scale_real_gridfun_2D
+        procedure :: axpy_real_gridfun => axpy_real_gridfun_2D
+        procedure :: copy_real_gridfun => copy_real_gridfun_2D
+        procedure :: scale_complex_gridfun => scale_complex_gridfun_2D
+        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_2D
+        procedure :: copy_complex_gridfun => copy_complex_gridfun_2D
     end type grid_2D
-    
-    type, extends(grid) :: grid_3D
+
+    type, abstract, extends(grid) :: grid_3D
         integer :: nn1min, nn1max 
         integer :: n1min, n1max
         integer :: m1min, m1max
@@ -63,18 +60,15 @@ module tssm_grid
         integer :: nn3min, nn3max 
         integer :: n3min, n3max
         integer :: m3min, m3max
-#ifdef _OPENMP
-        integer, allocatable :: jj(:)
-#endif
     contains
         procedure :: allocate_real_gridfun => allocate_real_gridfun_3D
         procedure :: allocate_complex_gridfun => allocate_complex_gridfun_3D
-!        procedure :: scale_real_gridfun => scale_real_gridfun_3D
-!        procedure :: axpy_real_gridfun => axpy_real_gridfun_3D
-!        procedure :: copy_real_gridfun => copy_real_gridfun_3D
-!        procedure :: scale_complex_gridfun => scale_complex_gridfun_3D
-!        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_3D
-!        procedure :: copy_complex_gridfun => copy_complex_gridfun_3D
+        procedure :: scale_real_gridfun => scale_real_gridfun_3D
+        procedure :: axpy_real_gridfun => axpy_real_gridfun_3D
+        procedure :: copy_real_gridfun => copy_real_gridfun_3D
+        procedure :: scale_complex_gridfun => scale_complex_gridfun_3D
+        procedure :: axpy_complex_gridfun => axpy_complex_gridfun_3D
+        procedure :: copy_complex_gridfun => copy_complex_gridfun_3D
     end type grid_3D
 
 !    interface allocate_gridfun_1D
@@ -106,8 +100,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_equidistant_1D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_equidistant_1D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_equidistant_1D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_equidistant_1D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_equidistant_1D
+        procedure :: norm_real_gridfun => norm_real_gridfun_equidistant_1D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_equidistant_1D
         procedure :: inner_product_real_gridfun => inner_product_real_gridfun_equidistant_1D
         procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_equidistant_1D
     end type grid_equidistant_1D
@@ -134,8 +128,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_equidistant_2D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_equidistant_2D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_equidistant_2D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_equidistant_2D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_equidistant_2D
+        procedure :: norm_real_gridfun => norm_real_gridfun_equidistant_2D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_equidistant_2D
 !        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_equidistant_2D
 !        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_equidistant_2D
     end type grid_equidistant_2D
@@ -167,8 +161,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_equidistant_3D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_equidistant_3D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_equidistant_3D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_equidistant_3D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_equidistant_3D
+        procedure :: norm_real_gridfun => norm_real_gridfun_equidistant_3D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_equidistant_3D
 !        procedure :: inner_productinner_product_real_gridfun => inner_product_real_gridfun_equidistant_3D
 !        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_equidistant_3D
     end type grid_equidistant_3D
@@ -190,8 +184,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_1D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_1D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_1D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_cartesian_1D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_cartesian_1D
+        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_1D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_1D
 !        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_1D
 !        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_1D
     end type grid_cartesian_1D
@@ -216,8 +210,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_2D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_2D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_2D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_cartesian_2D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_cartesian_2D
+        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_2D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_2D
 !        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_2D
 !        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_2D
     end type grid_cartesian_2D
@@ -245,8 +239,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_3D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_3D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_3D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_cartesian_3D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_cartesian_3D
+        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_3D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_3D
 !        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_3D
 !        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_3D
     end type grid_cartesian_3D
@@ -273,8 +267,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_polar_2D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_polar_2D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_polar_2D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_polar_2D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_polar_2D
+        procedure :: norm_real_gridfun => norm_real_gridfun_polar_2D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_polar_2D
         procedure :: inner_product_real_gridfun => inner_product_real_gridfun_polar_2D
         procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_polar_2D
     end type grid_polar_2D
@@ -305,8 +299,8 @@ module tssm_grid
         procedure :: set_t_real_gridfun => set_t_real_gridfun_cylindrical_3D
         procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cylindrical_3D
         procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cylindrical_3D
-        procedure :: norm2_real_gridfun => norm2_real_gridfun_cylindrical_3D
-        procedure :: norm2_complex_gridfun => norm2_complex_gridfun_cylindrical_3D
+        procedure :: norm_real_gridfun => norm_real_gridfun_cylindrical_3D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_cylindrical_3D
         procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cylindrical_3D
         procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cylindrical_3D
     end type grid_cylindrical_3D
@@ -356,6 +350,542 @@ contains
         complex(kind=prec), intent(inout), pointer :: u(:,:,:)
         allocate ( u(this%n1min:this%n1max, this%n2min:this%n2max, this%n3min:this%n3max) )
     end subroutine allocate_complex_gridfun_3D
+
+
+!!!
+   subroutine scale_real_gridfun_1D(g, uu, factor)
+        class(grid_1D) :: g 
+        real(kind=prec), intent(inout), target :: uu(:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u(:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        uu = factor*uu
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(lbound(uu,1)+g%jj(j-1):lbound(uu,1)+g%jj(j)-1)
+              u = factor*u
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_real_gridfun_1D
+
+
+   subroutine scale_complex_gridfun_1D(g, uu, factor)
+        class(grid_1D) :: g 
+        complex(kind=prec), intent(inout), target :: uu(:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u(:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            uu = real(factor, kind=prec)*uu
+        else
+            uu = factor*uu
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(lbound(uu,1)+g%jj(j-1):lbound(uu,1)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  u = real(factor,kind=prec)*u
+              else
+                  u = factor*u
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_complex_gridfun_1D
+
+
+   subroutine scale_real_gridfun_2D(g, uu, factor)
+        class(grid_2D) :: g 
+        real(kind=prec), intent(inout), target :: uu(:,:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u(:,:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        uu = factor*uu
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(:,lbound(uu,2)+g%jj(j-1):lbound(uu,2)+g%jj(j)-1)
+              u = factor*u
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_real_gridfun_2D
+
+
+   subroutine scale_complex_gridfun_2D(g, uu, factor)
+        class(grid_2D) :: g 
+        complex(kind=prec), intent(inout), target :: uu(:,:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u(:,:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            uu = real(factor, kind=prec)*uu
+        else
+            uu = factor*uu
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(:,lbound(uu,2)+g%jj(j-1):lbound(uu,2)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  u = real(factor,kind=prec)*u
+              else
+                  u = factor*u
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_complex_gridfun_2D
+
+
+   subroutine scale_real_gridfun_3D(g, uu, factor)
+        class(grid_3D) :: g 
+        real(kind=prec), intent(inout), target :: uu(:,:,:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u(:,:,:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        uu = factor*uu
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(:,:,lbound(uu,3)+g%jj(j-1):lbound(uu,3)+g%jj(j)-1)
+              u = factor*u
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_real_gridfun_3D
+
+
+   subroutine scale_complex_gridfun_3D(g, uu, factor)
+        class(grid_3D) :: g 
+        complex(kind=prec), intent(inout), target :: uu(:,:,:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u(:,:,:)
+        integer :: j
+#endif      
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            uu = real(factor, kind=prec)*uu
+        else
+            uu = factor*uu
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u) 
+         do j=1,n_threads
+              u => uu(:,:,lbound(uu,3)+g%jj(j-1):lbound(uu,3)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  u = real(factor,kind=prec)*u
+              else
+                  u = factor*u
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine scale_complex_gridfun_3D
+
+
+   subroutine axpy_real_gridfun_1D(g, u_this, u_other, factor)
+        class(grid_1D) :: g 
+        real(kind=prec), intent(in), target :: u_other(:)
+        real(kind=prec), intent(inout), target :: u_this(:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:)
+        real(kind=prec), pointer :: u2(:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(factor==1.0_prec) then
+            u_this = u_this + u_other
+        elseif(factor==-1.0_prec) then
+             u_this = u_this - u_other
+        else
+            u_this = u_this + factor*u_other
+        end if   
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(lbound(u_this,1)+g%jj(j-1):lbound(u_this,1)+g%jj(j)-1)
+              u2 => u_other(lbound(u_other,1)+g%jj(j-1):lbound(u_other,1)+g%jj(j)-1)
+              if(factor==1.0_prec) then
+                 u1 = u1 + u2
+              elseif(factor==-1.0_prec) then
+                 u1 = u1 - u2
+              else
+                 u1 = u1 + factor*u2
+              end if   
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_real_gridfun_1D
+
+
+   subroutine axpy_complex_gridfun_1D(g, u_this, u_other, factor)
+        class(grid_1D) :: g 
+        complex(kind=prec), intent(in), target :: u_other(:)
+        complex(kind=prec), intent(inout), target :: u_this(:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:)
+        complex(kind=prec), pointer :: u2(:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            if(real(factor,prec)==1.0_prec) then
+               u_this = u_this + u_other
+            elseif(real(factor,prec)==-1.0_prec) then
+               u_this = u_this - u_other
+            else
+               u_this = u_this + real(factor, kind=prec)*u_other
+            end if   
+        else
+            u_this = u_this + factor*u_other
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(lbound(u_this,1)+g%jj(j-1):lbound(u_this,1)+g%jj(j)-1)
+              u2 => u_other(lbound(u_other,1)+g%jj(j-1):lbound(u_other,1)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  if(real(factor,prec)==1.0_prec) then
+                     u1 = u1 + u2
+                  elseif(real(factor,prec)==-1.0_prec) then
+                     u1 = u1 - u2
+                  else
+                     u1 = u1 + real(factor, kind=prec)*u2
+                  end if   
+              else
+                  u1 = u1 + factor*u2
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_complex_gridfun_1D
+   
+
+   subroutine axpy_real_gridfun_2D(g, u_this, u_other, factor)
+        class(grid_2D) :: g 
+        real(kind=prec), intent(in), target :: u_other(:,:)
+        real(kind=prec), intent(inout), target :: u_this(:,:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:,:)
+        real(kind=prec), pointer :: u2(:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(factor==1.0_prec) then
+            u_this = u_this + u_other
+        elseif(factor==-1.0_prec) then
+             u_this = u_this - u_other
+        else
+            u_this = u_this + factor*u_other
+        end if   
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(:,lbound(u_this,2)+g%jj(j-1):lbound(u_this,2)+g%jj(j)-1)
+              u2 => u_other(:,lbound(u_other,2)+g%jj(j-1):lbound(u_other,2)+g%jj(j)-1)
+              if(factor==1.0_prec) then
+                 u1 = u1 + u2
+              elseif(factor==-1.0_prec) then
+                 u1 = u1 - u2
+              else
+                 u1 = u1 + factor*u2
+              end if   
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_real_gridfun_2D
+
+
+   subroutine axpy_complex_gridfun_2D(g, u_this, u_other, factor)
+        class(grid_2D) :: g 
+        complex(kind=prec), intent(in), target :: u_other(:,:)
+        complex(kind=prec), intent(inout), target :: u_this(:,:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:,:)
+        complex(kind=prec), pointer :: u2(:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            if(real(factor,prec)==1.0_prec) then
+               u_this = u_this + u_other
+            elseif(real(factor,prec)==-1.0_prec) then
+               u_this = u_this - u_other
+            else
+               u_this = u_this + real(factor, kind=prec)*u_other
+            end if   
+        else
+            u_this = u_this + factor*u_other
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(:,lbound(u_this,2)+g%jj(j-1):lbound(u_this,2)+g%jj(j)-1)
+              u2 => u_other(:,lbound(u_other,2)+g%jj(j-1):lbound(u_other,2)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  if(real(factor,prec)==1.0_prec) then
+                     u1 = u1 + u2
+                  elseif(real(factor,prec)==-1.0_prec) then
+                     u1 = u1 - u2
+                  else
+                     u1 = u1 + real(factor, kind=prec)*u2
+                  end if   
+              else
+                  u1 = u1 + factor*u2
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_complex_gridfun_2D
+
+
+   subroutine axpy_real_gridfun_3D(g, u_this, u_other, factor)
+        class(grid_3D) :: g 
+        real(kind=prec), intent(in), target :: u_other(:,:,:)
+        real(kind=prec), intent(inout), target :: u_this(:,:,:)
+        real(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:,:,:)
+        real(kind=prec), pointer :: u2(:,:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(factor==1.0_prec) then
+            u_this = u_this + u_other
+        elseif(factor==-1.0_prec) then
+             u_this = u_this - u_other
+        else
+            u_this = u_this + factor*u_other
+        end if   
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(:,:,lbound(u_this,3)+g%jj(j-1):lbound(u_this,3)+g%jj(j)-1)
+              u2 => u_other(:,:,lbound(u_other,3)+g%jj(j-1):lbound(u_other,3)+g%jj(j)-1)
+              if(factor==1.0_prec) then
+                 u1 = u1 + u2
+              elseif(factor==-1.0_prec) then
+                 u1 = u1 - u2
+              else
+                 u1 = u1 + factor*u2
+              end if   
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_real_gridfun_3D
+
+
+   subroutine axpy_complex_gridfun_3D(g, u_this, u_other, factor)
+        class(grid_3D) :: g 
+        complex(kind=prec), intent(in), target :: u_other(:,:,:)
+        complex(kind=prec), intent(inout), target :: u_this(:,:,:)
+        complex(kind=prec), intent(in) :: factor
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:,:,:)
+        complex(kind=prec), pointer :: u2(:,:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+        if(aimag(factor)==0.0_prec) then
+            if(real(factor,prec)==1.0_prec) then
+               u_this = u_this + u_other
+            elseif(real(factor,prec)==-1.0_prec) then
+               u_this = u_this - u_other
+            else
+               u_this = u_this + real(factor, kind=prec)*u_other
+            end if   
+        else
+            u_this = u_this + factor*u_other
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_this(:,:,lbound(u_this,3)+g%jj(j-1):lbound(u_this,3)+g%jj(j)-1)
+              u2 => u_other(:,:,lbound(u_other,3)+g%jj(j-1):lbound(u_other,3)+g%jj(j)-1)
+              if(aimag(factor)==0.0_prec) then
+                  if(real(factor,prec)==1.0_prec) then
+                     u1 = u1 + u2
+                  elseif(real(factor,prec)==-1.0_prec) then
+                     u1 = u1 - u2
+                  else
+                     u1 = u1 + real(factor, kind=prec)*u2
+                  end if   
+              else
+                  u1 = u1 + factor*u2
+              end if
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine axpy_complex_gridfun_3D
+
+!!!
+
+   subroutine copy_real_gridfun_1D(g, u_target, u_source)
+        class(grid_1D) :: g 
+        real(kind=prec), intent(in), target :: u_source(:)
+        real(kind=prec), intent(out), target :: u_target(:)
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:)
+        real(kind=prec), pointer :: u2(:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(lbound(u_target,1)+g%jj(j-1):lbound(u_target,1)+g%jj(j)-1)
+              u2 => u_source(lbound(u_source,1)+g%jj(j-1):lbound(u_source,1)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_real_gridfun_1D
+
+
+   subroutine copy_complex_gridfun_1D(g, u_target, u_source)
+        class(grid_1D) :: g 
+        complex(kind=prec), intent(in), target :: u_source(:)
+        complex(kind=prec), intent(out), target :: u_target(:)
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:)
+        complex(kind=prec), pointer :: u2(:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(lbound(u_target,1)+g%jj(j-1):lbound(u_target,1)+g%jj(j)-1)
+              u2 => u_source(lbound(u_source,1)+g%jj(j-1):lbound(u_source,1)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_complex_gridfun_1D
+
+
+   subroutine copy_real_gridfun_2D(g, u_target, u_source)
+        class(grid_2D) :: g 
+        real(kind=prec), intent(in), target :: u_source(:,:)
+        real(kind=prec), intent(out), target :: u_target(:,:)
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:,:)
+        real(kind=prec), pointer :: u2(:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(:,lbound(u_target,2)+g%jj(j-1):lbound(u_target,2)+g%jj(j)-1)
+              u2 => u_source(:,lbound(u_source,2)+g%jj(j-1):lbound(u_source,2)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_real_gridfun_2D
+
+
+   subroutine copy_complex_gridfun_2D(g, u_target, u_source)
+        class(grid_2D) :: g 
+        complex(kind=prec), intent(in), target :: u_source(:,:)
+        complex(kind=prec), intent(out), target :: u_target(:,:)
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:,:)
+        complex(kind=prec), pointer :: u2(:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(:,lbound(u_target,2)+g%jj(j-1):lbound(u_target,2)+g%jj(j)-1)
+              u2 => u_source(:,lbound(u_source,2)+g%jj(j-1):lbound(u_source,2)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_complex_gridfun_2D
+
+
+   subroutine copy_real_gridfun_3D(g, u_target, u_source)
+        class(grid_3D) :: g 
+        real(kind=prec), intent(in), target :: u_source(:,:,:)
+        real(kind=prec), intent(out), target :: u_target(:,:,:)
+#ifdef _OPENMP
+        real(kind=prec), pointer :: u1(:,:,:)
+        real(kind=prec), pointer :: u2(:,:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(:,:,lbound(u_target,3)+g%jj(j-1):lbound(u_target,3)+g%jj(j)-1)
+              u2 => u_source(:,:,lbound(u_source,3)+g%jj(j-1):lbound(u_source,3)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_real_gridfun_3D
+
+
+   subroutine copy_complex_gridfun_3D(g, u_target, u_source)
+        class(grid_3D) :: g 
+        complex(kind=prec), intent(in), target :: u_source(:,:,:)
+        complex(kind=prec), intent(out), target :: u_target(:,:,:)
+#ifdef _OPENMP
+        complex(kind=prec), pointer :: u1(:,:,:)
+        complex(kind=prec), pointer :: u2(:,:,:)
+        integer :: j
+#endif        
+#ifndef _OPENMP
+         u_target = u_source
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) 
+         do j=1,n_threads
+              u1 => u_target(:,:,lbound(u_target,3)+g%jj(j-1):lbound(u_target,3)+g%jj(j)-1)
+              u2 => u_source(:,:,lbound(u_source,3)+g%jj(j-1):lbound(u_source,3)+g%jj(j)-1)
+              u1 = u2
+         end do
+!$OMP END PARALLEL DO 
+#endif
+   end subroutine copy_complex_gridfun_3D
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
    
    subroutine set_real_gridfun_equidistant_1D(this, u, f)
@@ -458,7 +988,7 @@ contains
     end subroutine rset_t_complex_gridfun_equidistant_1D
 
 
-    function norm2_real_gridfun_equidistant_1D(this, u) result(n)
+    function norm_real_gridfun_equidistant_1D(this, u) result(n)
         class(grid_equidistant_1D) :: this
         !real(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         real(kind=prec), intent(in), target :: u(:)
@@ -489,7 +1019,8 @@ contains
         call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif
         n = sqrt(s*this%dx)
-    end function norm2_real_gridfun_equidistant_1D
+    end function norm_real_gridfun_equidistant_1D
+
 
     function inner_product_real_gridfun_equidistant_1D(this, u1, u2) result(n)
         class(grid_equidistant_1D) :: this
@@ -529,7 +1060,7 @@ contains
 
 
 
-    function norm2_complex_gridfun_equidistant_1D(this, u) result(n)
+    function norm_complex_gridfun_equidistant_1D(this, u) result(n)
         class(grid_equidistant_1D) :: this
         !complex(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         complex(kind=prec), intent(in), target :: u(:)
@@ -560,7 +1091,7 @@ contains
         call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif        
         n = sqrt(s*this%dx)
-    end function norm2_complex_gridfun_equidistant_1D
+    end function norm_complex_gridfun_equidistant_1D
 
 
     function inner_product_complex_gridfun_equidistant_1D(this, u1, u2) result(n)
@@ -716,7 +1247,7 @@ end subroutine rset_complex_gridfun_equidistant_2D
 end subroutine rset_t_complex_gridfun_equidistant_2D
 
 
-function norm2_real_gridfun_equidistant_2D(this, u) result(n)
+function norm_real_gridfun_equidistant_2D(this, u) result(n)
 class(grid_equidistant_2D) :: this
 !real(kind=prec), intent(in) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
 real(kind=prec), intent(in), target :: u(:,:)
@@ -747,10 +1278,10 @@ s = s1
 call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif
 n = sqrt(s*this%dx*this%dy)
-end function norm2_real_gridfun_equidistant_2D
+end function norm_real_gridfun_equidistant_2D
 
 
-function norm2_complex_gridfun_equidistant_2D(this, u) result(n)
+function norm_complex_gridfun_equidistant_2D(this, u) result(n)
 class(grid_equidistant_2D) :: this
 !complex(kind=prec), intent(in) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
 complex(kind=prec), intent(in), target :: u(:,:)
@@ -781,7 +1312,7 @@ s = s1
 call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif        
 n = sqrt(s*this%dx*this%dy)
-end function norm2_complex_gridfun_equidistant_2D
+end function norm_complex_gridfun_equidistant_2D
 
 
 subroutine set_real_gridfun_equidistant_3D(this, u, f)
@@ -923,7 +1454,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
     end subroutine rset_t_complex_gridfun_equidistant_3D
 
     
-    function norm2_real_gridfun_equidistant_3D(this, u) result(n)
+    function norm_real_gridfun_equidistant_3D(this, u) result(n)
         class(grid_equidistant_3D) :: this
         !real(kind=prec), intent(in) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         real(kind=prec), intent(in), target :: u(:,:,:)
@@ -954,10 +1485,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif
         n = sqrt(s*this%dx*this%dy*this%dz)
-    end function norm2_real_gridfun_equidistant_3D
+    end function norm_real_gridfun_equidistant_3D
 
 
-    function norm2_complex_gridfun_equidistant_3D(this, u) result(n)
+    function norm_complex_gridfun_equidistant_3D(this, u) result(n)
         class(grid_equidistant_3D) :: this
         !complex(kind=prec), intent(in) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         complex(kind=prec), intent(in), target :: u(:,:,:)
@@ -988,7 +1519,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         call MPI_Bcast(s, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr) 
 #endif        
         n = sqrt(s*this%dx*this%dy*this%dz)
-    end function norm2_complex_gridfun_equidistant_3D
+    end function norm_complex_gridfun_equidistant_3D
 
 
     function new_grid_equidistant_1D(nx, xmin, xmax) result(this)
@@ -1101,7 +1632,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 
 
 
-    function norm2_real_gridfun_cartesian_1D(this, u) result(n)
+    function norm_real_gridfun_cartesian_1D(this, u) result(n)
         class(grid_cartesian_1D) :: this
         !real(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         real(kind=prec), intent(in), target :: u(:)
@@ -1136,10 +1667,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_real_gridfun_cartesian_1D
+    end function norm_real_gridfun_cartesian_1D
 
 
-    function norm2_complex_gridfun_cartesian_1D(this, u) result(n)
+    function norm_complex_gridfun_cartesian_1D(this, u) result(n)
         class(grid_cartesian_1D) :: this
         !complex(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         complex(kind=prec), intent(in), target :: u(:)
@@ -1174,10 +1705,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_complex_gridfun_cartesian_1D
+    end function norm_complex_gridfun_cartesian_1D
 
 
-   function norm2_real_gridfun_cartesian_2D(this, u) result(n)
+   function norm_real_gridfun_cartesian_2D(this, u) result(n)
         class(grid_cartesian_2D) :: this
         real(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
@@ -1215,10 +1746,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_real_gridfun_cartesian_2D
+    end function norm_real_gridfun_cartesian_2D
 
 
-    function norm2_complex_gridfun_cartesian_2D(this, u) result(n)
+    function norm_complex_gridfun_cartesian_2D(this, u) result(n)
         class(grid_cartesian_2D) :: this
         complex(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
@@ -1256,10 +1787,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_complex_gridfun_cartesian_2D
+    end function norm_complex_gridfun_cartesian_2D
 
 
-   function norm2_real_gridfun_cartesian_3D(this, u) result(n)
+   function norm_real_gridfun_cartesian_3D(this, u) result(n)
         class(grid_cartesian_3D) :: this
         real(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
@@ -1298,10 +1829,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_real_gridfun_cartesian_3D
+    end function norm_real_gridfun_cartesian_3D
 
 
-    function norm2_complex_gridfun_cartesian_3D(this, u) result(n)
+    function norm_complex_gridfun_cartesian_3D(this, u) result(n)
         class(grid_cartesian_3D) :: this
         complex(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
@@ -1341,7 +1872,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_complex_gridfun_cartesian_3D
+    end function norm_complex_gridfun_cartesian_3D
 
 !YYYYY
 
@@ -2110,7 +2641,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 !###
 
 
-   function norm2_real_gridfun_polar_2D(this, u) result(n)
+   function norm_real_gridfun_polar_2D(this, u) result(n)
         class(grid_polar_2D) :: this
         real(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
@@ -2142,7 +2673,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_real_gridfun_polar_2D
+    end function norm_real_gridfun_polar_2D
 
 
    function inner_product_real_gridfun_polar_2D(this, u1, u2) result(n)
@@ -2185,7 +2716,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 
 
 
-    function norm2_complex_gridfun_polar_2D(this, u) result(n)
+    function norm_complex_gridfun_polar_2D(this, u) result(n)
         class(grid_polar_2D) :: this
         complex(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
@@ -2219,7 +2750,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_complex_gridfun_polar_2D
+    end function norm_complex_gridfun_polar_2D
 
     function inner_product_complex_gridfun_polar_2D(this, u1, u2) result(n)
         class(grid_polar_2D) :: this
@@ -2262,7 +2793,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 
 
   
-   function norm2_real_gridfun_cylindrical_3D(this, u) result(n)
+   function norm_real_gridfun_cylindrical_3D(this, u) result(n)
         class(grid_cylindrical_3D) :: this
         real(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
@@ -2297,7 +2828,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_real_gridfun_cylindrical_3D
+    end function norm_real_gridfun_cylindrical_3D
 
    function inner_product_real_gridfun_cylindrical_3D(this, u1, u2) result(n)
         class(grid_cylindrical_3D) :: this
@@ -2341,7 +2872,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 
 
 
-    function norm2_complex_gridfun_cylindrical_3D(this, u) result(n)
+    function norm_complex_gridfun_cylindrical_3D(this, u) result(n)
         class(grid_cylindrical_3D) :: this
         complex(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
@@ -2377,7 +2908,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm2_complex_gridfun_cylindrical_3D
+    end function norm_complex_gridfun_cylindrical_3D
 
   
     function inner_product_complex_gridfun_cylindrical_3D(this, u1, u2) result(n)

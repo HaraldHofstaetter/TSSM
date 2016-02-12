@@ -329,20 +329,20 @@ void W(copy_wf_schroedinger)(void *psi, void *source)
 }    
 
 
-__float128 S(norm2_wf_schroedinger)(void *psi);
-myfloat128 W(norm2_wf_schroedinger)(void *psi)
+__float128 S(norm_wf_schroedinger)(void *psi);
+myfloat128 W(norm_wf_schroedinger)(void *psi)
 {
     myfloat128 res;
-    F(res) = S(norm2_wf_schroedinger)(psi);
+    F(res) = S(norm_wf_schroedinger)(psi);
     return res;
 }    
 
 
-__float128 S(norm2_in_frequency_space_wf_schroedinger)(void *psi);
-myfloat128 W(norm2_in_frequency_space_wf_schroedinger)(void *psi)
+__float128 S(norm_in_frequency_space_wf_schroedinger)(void *psi);
+myfloat128 W(norm_in_frequency_space_wf_schroedinger)(void *psi)
 {
     myfloat128 res;
-    F(res) = S(norm2_in_frequency_space_wf_schroedinger)(psi);
+    F(res) = S(norm_in_frequency_space_wf_schroedinger)(psi);
     return res;
 }
 

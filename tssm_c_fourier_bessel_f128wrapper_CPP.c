@@ -167,20 +167,20 @@ void W(copy_wf)(void *psi, void *source)
 }    
 
 
-__float128 S(norm2_wf)(void *psi);
-myfloat128 W(norm2_wf)(void *psi)
+__float128 S(norm_wf)(void *psi);
+myfloat128 W(norm_wf)(void *psi)
 {
     myfloat128 res;
-    F(res) = S(norm2_wf)(psi);
+    F(res) = S(norm_wf)(psi);
     return res;
 }    
 
 
-__float128 S(norm2_in_frequency_space_wf)(void *psi);
-myfloat128 W(norm2_in_frequency_space_wf)(void *psi)
+__float128 S(norm_in_frequency_space_wf)(void *psi);
+myfloat128 W(norm_in_frequency_space_wf)(void *psi)
 {
     myfloat128 res;
-    F(res) = S(norm2_in_frequency_space_wf)(psi);
+    F(res) = S(norm_in_frequency_space_wf)(psi);
     return res;
 }
 
@@ -203,7 +203,7 @@ myfloat128 W(distance_wf)(void* psi1, void* psi2)
 }    
 
 __float128 S(inner_product_wf)(void *psi, void *other);
-myfloat128 W(inner_product_norm2_wf)(void *psi, void *other)
+myfloat128 W(inner_product_wf)(void *psi, void *other)
 {
     myfloat128 res;
     F(res) = S(inner_product_wf)(psi, other);

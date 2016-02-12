@@ -73,7 +73,7 @@ program test_harmonic
     print *, "E_kin", E_kin 
     print *, "E_pot", E_pot
     print *, "E_tot", E_kin+E_pot
-    print *, "norm", psi%norm2()
+    print *, "norm", psi%norm()
     !call psi%save("xxx0.h5")
 
     !get exact final solution
@@ -84,7 +84,7 @@ program test_harmonic
     print *, "E_kin", E_kin 
     print *, "E_pot", E_pot
     print *, "E_tot", E_kin+E_pot
-    print *, "norm", psi_ex%norm2()
+    print *, "norm", psi_ex%norm()
     print *, "observable V", psi_ex%observable(harmonic_potential)
     print *, "observable x", psi_ex%observable(observable_x)
     !call psi_ex%save("xxx_ex.h5")

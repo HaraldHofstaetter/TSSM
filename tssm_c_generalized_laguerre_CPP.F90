@@ -331,7 +331,7 @@ contains
         call psip%load(fn)
     end subroutine S(c_load_wf)
 
-    function S(c_norm2_wf)(psi) &
+    function S(c_norm_wf)(psi) &
         result(ans) bind(c)
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -339,8 +339,8 @@ contains
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2()
-    end function S(c_norm2_wf)
+        ans = psip%norm()
+    end function S(c_norm_wf)
 
    function S(c_inner_product_wf)(psi, other) &
         result(ans) bind(c)
@@ -357,7 +357,7 @@ contains
    end function S(c_inner_product_wf)
 
 
-    function S(c_norm2_in_frequency_space_wf)(psi) &
+    function S(c_norm_in_frequency_space_wf)(psi) &
         result(ans) bind(c)
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -365,8 +365,8 @@ contains
         real(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%norm2_in_frequency_space()
-    end function S(c_norm2_in_frequency_space_wf)
+        ans = psip%norm_in_frequency_space()
+    end function S(c_norm_in_frequency_space_wf)
     
 
    function S(c_normalize_wf)(psi) &

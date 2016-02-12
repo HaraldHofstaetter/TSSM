@@ -503,7 +503,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
         call m%initialize_tmp
         call m%tmp%copy(this)
 
-        N = m%tmp%norm2()
+        N = m%tmp%norm()
 !#ifndef _REAL_
 !        if (aimag(dt1)>0.0_prec) then
 !            this%u = exp((-aimag(dt1)/(N**2*m%hbar)*m%cubic_coupling*(0.0_prec, 1.0_prec)) &
@@ -543,7 +543,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
             end do
 !$OMP END PARALLEL DO
 #endif    
-            N = m%tmp%norm2()
+            N = m%tmp%norm()
             if (abs(N-N0)<eps1) exit
         end do
 
@@ -619,7 +619,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
         end if                 
 #endif            
 !#ifndef _REAL_
-!        N = this%norm2()
+!        N = this%norm()
 !        if (aimag(dt-dt1)>0.0_prec) then
 !            this%u = exp((-aimag(dt-dt1)/(N**2*m%hbar)*m%cubic_coupling*(0.0_prec, 1.0_prec)) &
 !                         *(real(this%u, prec)**2+aimag(this%u)**2)) * this%u
@@ -672,7 +672,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
         select case(method_for_B_1)
         case(0) ! use norm of left endpoint
            if (m%cubic_coupling/=0.0_prec) then
-               N = this%norm2()
+               N = this%norm()
 #ifndef _OPENMP
 #ifdef _REAL_               
                this%u = exp((-dt/m%hbar*m%cubic_coupling/N**2)*this%u**2) * this%u
@@ -800,7 +800,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
         case(3) ! use norm of left and right endpoint
 
            if (m%cubic_coupling/=0.0_prec) then
-               N = this%norm2()
+               N = this%norm()
 #ifndef _OPENMP
 #ifdef _REAL_               
                this%u = exp((-0.5_prec*dt/m%hbar*m%cubic_coupling/N**2)*this%u**2) * this%u
@@ -3423,7 +3423,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
         end if   
 
         if (flag=="i" .or. flag=="I" .or. flag=="e" .or. flag=="E") then ! execute =====
-            norm = psi%norm2()
+            norm = psi%norm()
             E_kin = psi%kinetic_energy()
 #if(_DIM_==1)
             call psi%get_realspace_observables(E_pot, E_int, x_mean, x_dev)

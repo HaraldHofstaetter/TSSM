@@ -36,7 +36,7 @@ program test_hermite
     call psi%save("xxx1.h5")
     call psi_ex%set(coherent_state)
     call psi_ex%save("xxx2.h5")
-    print *, "N", psi%norm2(), psi_ex%norm2()
+    print *, "N", psi%norm(), psi_ex%norm()
 
     print *, "ERR", psi%distance(psi_ex)
 #else
@@ -80,7 +80,7 @@ program test_hermite
     print *, "E_kin", psi_f%kinetic_energy()
     print *, "E_pot", psi_f%potential_energy()
     print *, "E_int", psi_f%interaction_energy()
-    print *, "norm", psi_f%norm2()
+    print *, "norm", psi_f%norm()
 
     
 

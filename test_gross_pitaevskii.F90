@@ -135,7 +135,7 @@ program test_gross_pitaevskii
     !psi%u = 1.0_prec
     call psi%rset(init)
 !    call psi0%rset(init)
-!    print *, "N", psi%norm2()
+!    print *, "N", psi%norm()
 !    call psi%selfconsistent_nonlinear_step((0.001_prec,0.001_prec), (0.0005_prec,.0005_prec))
 !    call psi%selfconsistent_nonlinear_step((-0.001_prec,-0.001_prec), (-0.0005_prec,-.0005_prec))
 !    print *, "D", psi%distance(psi0)

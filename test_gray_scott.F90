@@ -117,8 +117,8 @@ contains
 
         if (flag=="e" .or. flag=="E") then ! execute =====
             step = step + 1
-               norm_U = psi%C(1)%p%norm2()
-               norm_V = psi%C(2)%p%norm2()
+               norm_U = psi%C(1)%p%norm()
+               norm_V = psi%C(2)%p%norm()
             write (*, '(I5,3E20.12)') step, t,  norm_U, norm_V
         end if
     

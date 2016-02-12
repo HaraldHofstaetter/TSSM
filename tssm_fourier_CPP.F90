@@ -160,8 +160,8 @@ module S(tssm_fourier)
         procedure :: clone => S(clone_wf_fourier)
         procedure :: finalize => S(finalize_wf_fourier)
         procedure :: copy => S(copy_wf_fourier)
-        procedure :: norm2 => S(norm2_wf_fourier)
-        procedure :: norm2_in_frequency_space => S(norm2_in_frequency_space_wf_fourier)
+        procedure :: norm => S(norm_wf_fourier)
+        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf_fourier)
         procedure :: normalize => S(normalize_wf_fourier)
         procedure :: distance => S(distance_wf_fourier)
         procedure :: axpy => S(axpy_wf_fourier)
@@ -1530,18 +1530,18 @@ contains
 
 #endif        
 
-    function S(norm2_wf_fourier)(this) result(n)
+    function S(norm_wf_fourier)(this) result(n)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec) :: n
         
         !!! TODO handle norm in frequency space without transforming
         call this%to_real_space 
 #ifdef _REAL_        
-        n = this%m%g%norm2_real_gridfun(this%u)
+        n = this%m%g%norm_real_gridfun(this%u)
 #else
-        n = this%m%g%norm2_complex_gridfun(this%u)
+        n = this%m%g%norm_complex_gridfun(this%u)
 #endif        
-    end function S(norm2_wf_fourier)
+    end function S(norm_wf_fourier)
 
 
     subroutine S(normalize_wf_fourier)(this, norm)
@@ -1549,7 +1549,7 @@ contains
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
 
-        n = this%norm2()
+        n = this%norm()
         if (present(norm)) then
             norm = n
         end if    
@@ -1863,7 +1863,7 @@ contains
         end do
 !$OMP END PARALLEL DO 
 #endif
-        n = this%norm2_in_frequency_space()
+        n = this%norm_in_frequency_space()
 #ifndef _OPENMP        
         this%uf = this%uf + wf%uf
 #else
@@ -1890,7 +1890,7 @@ contains
 
 
 
-    function S(norm2_in_frequency_space_wf_fourier)(this) result(N)
+    function S(norm_in_frequency_space_wf_fourier)(this) result(N)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec) :: N
 
@@ -1998,7 +1998,7 @@ contains
 #endif
 !TODO check for sqrt !!!
         N = sqrt(N)
-    end function S(norm2_in_frequency_space_wf_fourier)
+    end function S(norm_in_frequency_space_wf_fourier)
 
 
 

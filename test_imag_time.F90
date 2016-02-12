@@ -64,8 +64,8 @@ subroutine test_real_1D
    E_kin = psi%kinetic_energy()
    E_pot = psi%potential_energy()
    obs = psi%observable(h1)
-   N = psi%norm2()
-   Nf = psi%norm2_in_frequency_space()
+   N = psi%norm()
+   Nf = psi%norm_in_frequency_space()
    if (this_proc==0) then 
        print *, "1D E_KIN full", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    
@@ -81,8 +81,8 @@ subroutine test_real_1D
    E_kin = psir%kinetic_energy()
    E_pot = psir%potential_energy()
    obs = psir%observable(h1)
-   N = psir%norm2()
-   Nf = psir%norm2_in_frequency_space()
+   N = psir%norm()
+   Nf = psir%norm_in_frequency_space()
    if (this_proc==0) then 
        print *, "1D E_KIN real", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    
@@ -137,8 +137,8 @@ subroutine test_real_2D
    E_kin = psi%kinetic_energy()
    E_pot = psi%potential_energy()
    obs = psi%observable(h2)
-   N = psi%norm2()
-   Nf = psi%norm2_in_frequency_space()
+   N = psi%norm()
+   Nf = psi%norm_in_frequency_space()
    if (this_proc==0) then 
        print *, "2D E_KIN full", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    
@@ -154,8 +154,8 @@ subroutine test_real_2D
    E_kin = psir%kinetic_energy()
    E_pot = psir%potential_energy()
    obs = psir%observable(h2)
-   N = psir%norm2()
-   Nf = psir%norm2_in_frequency_space()
+   N = psir%norm()
+   Nf = psir%norm_in_frequency_space()
    if (this_proc==0) then 
        print *, "2D E_KIN real", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    
@@ -216,8 +216,8 @@ subroutine test_real_3D
    E_kin = psi%kinetic_energy()
    E_pot = psi%potential_energy()
    obs = psi%observable(h3)
-   N = psi%norm2()
-   Nf = psi%norm2_in_frequency_space()
+   N = psi%norm()
+   Nf = psi%norm_in_frequency_space()
    if (this_proc==0) then 
         print *, "3D E_KIN full", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    
@@ -233,8 +233,8 @@ subroutine test_real_3D
    E_kin = psir%kinetic_energy()
    E_pot = psir%potential_energy()
    obs = psir%observable(h3)
-   N = psir%norm2()
-   Nf = psir%norm2_in_frequency_space()
+   N = psir%norm()
+   Nf = psir%norm_in_frequency_space()
    if (this_proc==0) then 
         print *, "3D E_KIN real", E_kin+E_pot, E_exp, E_dev, E_pot, obs, N, Nf
    end if    

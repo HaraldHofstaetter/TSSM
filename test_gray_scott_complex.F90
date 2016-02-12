@@ -113,8 +113,8 @@ contains
 
         if (flag=="e" .or. flag=="E") then ! execute =====
             step = step + 1
-               norm_U = psi%C(1)%norm2()
-               norm_V = psi%C(2)%norm2()
+               norm_U = psi%C(1)%norm()
+               norm_V = psi%C(2)%norm()
              !  if (this_proc==0) then
                    write (*, '(I5,3E20.12)') step, t,  norm_U, norm_V
              !  end if

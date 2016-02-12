@@ -34,7 +34,7 @@ module S(tssm)
 !        procedure(S(to_rf_space_interface)), deferred :: to_frequency_space 
         procedure(S(save_load_interface)), deferred :: save
         procedure(S(save_load_interface)), deferred :: load
-        procedure(S(norm2_interface)), deferred :: norm2
+        procedure(S(norm_interface)), deferred :: norm
         procedure(S(distance_interface)), deferred :: distance
         procedure(S(normalize_interface)), deferred :: normalize
         procedure(S(axpy_interface)), deferred :: axpy
@@ -65,11 +65,11 @@ module S(tssm)
             class(_WAVE_FUNCTION_), intent(inout) :: this
             _COMPLEX_OR_REAL_(kind=prec), external :: f
         end subroutine S(set_interface)
-        function S(norm2_interface)(this)
+        function S(norm_interface)(this)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this
-            real(kind=prec) :: S(norm2_interface)
-        end function S(norm2_interface)
+            real(kind=prec) :: S(norm_interface)
+        end function S(norm_interface)
         subroutine S(normalize_interface)(this, norm)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this

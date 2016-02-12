@@ -179,8 +179,8 @@ module _MODULE_
         procedure :: clone => S(clone_wf)
         procedure :: finalize => S(finalize_wf)
         procedure :: copy => S(copy_wf)
-        procedure :: norm2 => S(norm2_wf)
-        procedure :: norm2_in_frequency_space => S(norm2_in_frequency_space_wf)
+        procedure :: norm => S(norm_wf)
+        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf)
         procedure :: normalize => S(normalize_wf)
         procedure :: inner_product => S(inner_product_wf)
         !procedure :: ip_in_frequency_space_ => S(ip_in_frequency_space_wf) !TODO
@@ -1181,18 +1181,18 @@ contains
     end subroutine S(copy_wf)
 
     
-    function S(norm2_wf)(this) result(n)
+    function S(norm_wf)(this) result(n)
         class(_WF_), intent(inout) :: this
         real(kind=prec) :: n
         !!! TODO handle norm in frequency space without transforming
         call this%to_real_space 
 #ifdef _REAL_        
-        n = this%m%g%norm2_real_gridfun(this%u)
+        n = this%m%g%norm_real_gridfun(this%u)
 #else
-        n = this%m%g%norm2_complex_gridfun(this%u)
+        n = this%m%g%norm_complex_gridfun(this%u)
 #endif        
         
-    end function S(norm2_wf)
+    end function S(norm_wf)
 
 
     function S(inner_product_wf)(this, wf) result(n)
@@ -1220,7 +1220,7 @@ contains
 
 
 
-    function S(norm2_in_frequency_space_wf)(this) result(n)
+    function S(norm_in_frequency_space_wf)(this) result(n)
         class(_WF_), intent(inout) :: this
         real(kind=prec) :: n
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
@@ -1326,7 +1326,7 @@ contains
         n = sqrt(n)
 #endif
         
-    end function S(norm2_in_frequency_space_wf)
+    end function S(norm_in_frequency_space_wf)
 
 
     subroutine S(normalize_wf)(this, norm)
@@ -1334,7 +1334,7 @@ contains
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
 
-        n = this%norm2()
+        n = this%norm()
         if (present(norm)) then
             norm = n
         end if    
@@ -1363,11 +1363,11 @@ contains
 
 #ifdef _REAL_
         call this%axpy(wf, -1.0_prec)
-        n = this%norm2()
+        n = this%norm()
         call this%axpy(wf, +1.0_prec)
 #else
         call this%axpy(wf, cmplx(-1.0_prec, 0.0_prec, kind=prec))
-        n = this%norm2()
+        n = this%norm()
         call this%axpy(wf, cmplx(-1.0_prec, 0.0_prec, kind=prec))
 #endif        
 

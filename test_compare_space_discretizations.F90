@@ -133,7 +133,7 @@ subroutine propagate_gpe_parallel_and_compare
         do ex = ex0, ex1-1
             call psi(ex)%to_real_space
             psi(ex)%u = psi(ex)%u-psi(ex1)%u(lbound(psi(ex1)%u,1)+2**(ex1-ex)-1::2**(ex1-ex))
-            d(ex) = psi(ex)%norm2()
+            d(ex) = psi(ex)%norm()
             psi(ex)%u = psi(ex)%u+psi(ex1)%u(lbound(psi(ex1)%u,1)+2**(ex1-ex)-1::2**(ex1-ex))
         end do
         calc_time = tock(calc)
@@ -152,7 +152,7 @@ subroutine propagate_gpe_parallel_and_compare
         do ex = ex0, ex1-1
             call psi(ex)%to_real_space
             psi(ex)%u = psi(ex)%u-psi(ex1)%u(lbound(psi(ex1)%u,1)+2**(ex1-ex)-1::2**(ex1-ex))
-            d(ex) = psi(ex)%norm2()
+            d(ex) = psi(ex)%norm()
             psi(ex)%u = psi(ex)%u+psi(ex1)%u(lbound(psi(ex1)%u,1)+2**(ex1-ex)-1::2**(ex1-ex))
         end do
         t = t + dt
