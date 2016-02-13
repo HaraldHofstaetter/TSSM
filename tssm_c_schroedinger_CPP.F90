@@ -486,7 +486,7 @@ contains
         integer :: nx
         type(S(schroedinger)), pointer :: mp
         call c_f_pointer(m, mp)
-        nx = mp%g%nx
+        nx = mp%g%nx 
     end function S(c_get_nx_schroedinger)   
 
 #if(_DIM_>=2)
@@ -662,18 +662,18 @@ contains
         call c_f_pointer(m, mp)
         select case (which)
         case (1)
-            np = c_loc(mp%H_x)
+            np = c_loc(mp%H1)
             dim(1) = mp%g%n1max-mp%g%n1min+1
             dim(2) = mp%nf1max-mp%nf1min+1
 #if(_DIM_>=2)        
         case (2)
-            np = c_loc(mp%H_y)
+            np = c_loc(mp%H2)
             dim(1) = mp%g%n2max-mp%g%n2min+1
             dim(2) = mp%nf2max-mp%nf2min+1
 #endif
 #if(_DIM_>=3)        
         case (3)
-            np = c_loc(mp%H_z)
+            np = c_loc(mp%H3)
             dim(1) = mp%g%n3max-mp%g%n3min+1
             dim(2) = mp%nf3max-mp%nf3min+1
 #endif

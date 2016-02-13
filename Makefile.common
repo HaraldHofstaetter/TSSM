@@ -13,6 +13,9 @@ OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
        tssm_c_fourier_real_1d.o tssm_c_fourier_real_2d.o tssm_c_fourier_real_3d.o \
        tssm_c.o tssm_c_fourier.o \
        lapack_dsterf.o \
+       tssm_tensorial_1d.o tssm_tensorial_2d.o tssm_tensorial_3d.o \
+       tssm_tensorial_real_1d.o tssm_tensorial_real_2d.o tssm_tensorial_real_3d.o \
+       tssm_tensorial.o \
        tssm_hermite_common.o \
        tssm_hermite_1d.o tssm_hermite_2d.o tssm_hermite_3d.o \
        tssm_hermite_real_1d.o tssm_hermite_real_2d.o tssm_hermite_real_3d.o \
@@ -161,6 +164,46 @@ tssm_multicomponent_fourier_real_3d.o: tssm_multicomponent_fourier_real_3d.f90
 
 tssm_fourier.o: ../tssm_fourier.F90
 	$(FC) $(FOPTS) -c ../tssm_fourier.F90 -o tssm_fourier.o
+
+
+tssm_tensorial_1d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_DIM_=1 ../tssm_tensorial_CPP.F90 > tssm_tensorial_1d.f90
+
+tssm_tensorial_1d.o: tssm_tensorial_1d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_1d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_1d.o
+
+tssm_tensorial_2d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_tensorial_CPP.F90 > tssm_tensorial_2d.f90
+
+tssm_tensorial_2d.o: tssm_tensorial_2d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_2d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_2d.o
+
+tssm_tensorial_3d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_tensorial_CPP.F90 > tssm_tensorial_3d.f90
+
+tssm_tensorial_3d.o: tssm_tensorial_3d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_3d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_3d.o
+
+tssm_tensorial_real_1d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=1 ../tssm_tensorial_CPP.F90 > tssm_tensorial_real_1d.f90
+
+tssm_tensorial_real_1d.o: tssm_tensorial_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_real_1d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_real_1d.o
+
+tssm_tensorial_real_2d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=2 ../tssm_tensorial_CPP.F90 > tssm_tensorial_real_2d.f90
+
+tssm_tensorial_real_2d.o: tssm_tensorial_real_2d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_real_2d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_real_2d.o
+
+tssm_tensorial_real_3d.f90: ../tssm_tensorial_CPP.F90
+	$(CPP) -D_REAL_ -D_DIM_=3 ../tssm_tensorial_CPP.F90 > tssm_tensorial_real_3d.f90
+
+tssm_tensorial_real_3d.o: tssm_tensorial_real_3d.f90
+	$(FC) $(FOPTS) -c tssm_tensorial_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_tensorial_real_3d.o
+
+tssm_tensorial.o: ../tssm_tensorial.F90
+	$(FC) $(FOPTS) -c ../tssm_tensorial.F90 -o tssm_tensorial.o
 
 
 tssm_hermite_common.o: ../tssm_hermite_common.F90

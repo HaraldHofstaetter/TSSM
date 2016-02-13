@@ -172,30 +172,30 @@ module tssm_grid
     end interface grid_equidistant_3D
 
 
-    type, extends(grid_1D) :: grid_cartesian_1D
+    type, extends(grid_1D) :: grid_tensorial_1D
         integer :: nx
         real(kind=prec), allocatable :: nodes_x(:)
         !real(kind=prec), allocatable :: weights_x(:)
         real(kind=prec), pointer :: weights_x(:)
     contains
-        procedure :: set_real_gridfun => set_real_gridfun_cartesian_1D
-        procedure :: set_complex_gridfun => set_complex_gridfun_cartesian_1D
-        procedure :: rset_complex_gridfun => rset_complex_gridfun_cartesian_1D
-        procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_1D
-        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_1D
-        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_1D
-        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_1D
-        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_1D
-!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_1D
-!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_1D
-    end type grid_cartesian_1D
+        procedure :: set_real_gridfun => set_real_gridfun_tensorial_1D
+        procedure :: set_complex_gridfun => set_complex_gridfun_tensorial_1D
+        procedure :: rset_complex_gridfun => rset_complex_gridfun_tensorial_1D
+        procedure :: set_t_real_gridfun => set_t_real_gridfun_tensorial_1D
+        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_tensorial_1D
+        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_tensorial_1D
+        procedure :: norm_real_gridfun => norm_real_gridfun_tensorial_1D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_tensorial_1D
+!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_tensorial_1D
+!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_tensorial_1D
+    end type grid_tensorial_1D
     
-!    interface grid_cartesian_1D
-!        module procedure new_grid_cartesian_1D 
-!    end interface grid_cartesian_1D
+!    interface grid_tensorial_1D
+!        module procedure new_grid_tensorial_1D 
+!    end interface grid_tensorial_1D
 
 
-    type, extends(grid_2D) :: grid_cartesian_2D
+    type, extends(grid_2D) :: grid_tensorial_2D
         integer :: nx
         real(kind=prec), allocatable :: nodes_x(:)
         real(kind=prec), allocatable :: weights_x(:)
@@ -204,24 +204,24 @@ module tssm_grid
         !real(kind=prec), allocatable :: weights_y(:)
         real(kind=prec), pointer :: weights_y(:)
     contains
-        procedure :: set_real_gridfun => set_real_gridfun_cartesian_2D
-        procedure :: set_complex_gridfun => set_complex_gridfun_cartesian_2D
-        procedure :: rset_complex_gridfun => rset_complex_gridfun_cartesian_2D
-        procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_2D
-        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_2D
-        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_2D
-        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_2D
-        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_2D
-!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_2D
-!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_2D
-    end type grid_cartesian_2D
+        procedure :: set_real_gridfun => set_real_gridfun_tensorial_2D
+        procedure :: set_complex_gridfun => set_complex_gridfun_tensorial_2D
+        procedure :: rset_complex_gridfun => rset_complex_gridfun_tensorial_2D
+        procedure :: set_t_real_gridfun => set_t_real_gridfun_tensorial_2D
+        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_tensorial_2D
+        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_tensorial_2D
+        procedure :: norm_real_gridfun => norm_real_gridfun_tensorial_2D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_tensorial_2D
+!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_tensorial_2D
+!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_tensorial_2D
+    end type grid_tensorial_2D
     
-!    interface grid_cartesian_2D
-!        module procedure new_grid_cartesian_2D 
-!    end interface grid_cartesian_2D
+!    interface grid_tensorial_2D
+!        module procedure new_grid_tensorial_2D 
+!    end interface grid_tensorial_2D
 
 
-    type, extends(grid_3D) :: grid_cartesian_3D
+    type, extends(grid_3D) :: grid_tensorial_3D
         integer :: nx
         real(kind=prec), allocatable :: nodes_x(:)
         real(kind=prec), allocatable :: weights_x(:)
@@ -233,21 +233,21 @@ module tssm_grid
         !real(kind=prec), allocatable :: weights_z(:)
         real(kind=prec), pointer :: weights_z(:)
     contains
-        procedure :: set_real_gridfun => set_real_gridfun_cartesian_3D
-        procedure :: set_complex_gridfun => set_complex_gridfun_cartesian_3D
-        procedure :: rset_complex_gridfun => rset_complex_gridfun_cartesian_3D
-        procedure :: set_t_real_gridfun => set_t_real_gridfun_cartesian_3D
-        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_cartesian_3D
-        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_cartesian_3D
-        procedure :: norm_real_gridfun => norm_real_gridfun_cartesian_3D
-        procedure :: norm_complex_gridfun => norm_complex_gridfun_cartesian_3D
-!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_cartesian_3D
-!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_cartesian_3D
-    end type grid_cartesian_3D
+        procedure :: set_real_gridfun => set_real_gridfun_tensorial_3D
+        procedure :: set_complex_gridfun => set_complex_gridfun_tensorial_3D
+        procedure :: rset_complex_gridfun => rset_complex_gridfun_tensorial_3D
+        procedure :: set_t_real_gridfun => set_t_real_gridfun_tensorial_3D
+        procedure :: set_t_complex_gridfun => set_t_complex_gridfun_tensorial_3D
+        procedure :: rset_t_complex_gridfun => rset_t_complex_gridfun_tensorial_3D
+        procedure :: norm_real_gridfun => norm_real_gridfun_tensorial_3D
+        procedure :: norm_complex_gridfun => norm_complex_gridfun_tensorial_3D
+!        procedure :: inner_product_real_gridfun => inner_product_real_gridfun_tensorial_3D
+!        procedure :: inner_product_complex_gridfun => inner_product_complex_gridfun_tensorial_3D
+    end type grid_tensorial_3D
     
-!    interface grid_cartesian_3D
-!        module procedure new_grid_cartesian_3D 
-!    end interface grid_cartesian_3D
+!    interface grid_tensorial_3D
+!        module procedure new_grid_tensorial_3D 
+!    end interface grid_tensorial_3D
 
 
     type, extends(grid_2D) :: grid_polar_2D
@@ -1609,31 +1609,9 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         this%dz = (this%zmax-this%zmin)/this%nz
     end function new_grid_equidistant_3D
 
-#if 0
-   function new_grid_cartesian_1D(nx, xmin, xmax) result(this)
-        type(grid_equidistant_1D) :: this
-        integer, intent(in) :: nx
-        real(kind=prec), intent(in) :: xmin, xmax
 
-        this%nx =nx
-        this%xmin = xmin
-        this%xmax = xmax
-
-        this%nn1min = 1
-        this%nn1max = this%nx         
-        this%n1min = this%nn1min
-        this%n1max = this%nn1max
-        this%m1min = this%nn1min
-        this%m1max = this%nn1max
-
-        this%dx = (this%xmax-this%xmin)/this%nx
-    end function new_grid_cartesian_1D
-#endif
-
-
-
-    function norm_real_gridfun_cartesian_1D(this, u) result(n)
-        class(grid_cartesian_1D) :: this
+    function norm_real_gridfun_tensorial_1D(this, u) result(n)
+        class(grid_tensorial_1D) :: this
         !real(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         real(kind=prec), intent(in), target :: u(:)
         real(kind=prec) :: n
@@ -1667,11 +1645,11 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_real_gridfun_cartesian_1D
+    end function norm_real_gridfun_tensorial_1D
 
 
-    function norm_complex_gridfun_cartesian_1D(this, u) result(n)
-        class(grid_cartesian_1D) :: this
+    function norm_complex_gridfun_tensorial_1D(this, u) result(n)
+        class(grid_tensorial_1D) :: this
         !complex(kind=prec), intent(in) :: u(this%n1min:this%n1max)
         complex(kind=prec), intent(in), target :: u(:)
         real(kind=prec) :: n
@@ -1705,11 +1683,11 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_complex_gridfun_cartesian_1D
+    end function norm_complex_gridfun_tensorial_1D
 
 
-   function norm_real_gridfun_cartesian_2D(this, u) result(n)
-        class(grid_cartesian_2D) :: this
+   function norm_real_gridfun_tensorial_2D(this, u) result(n)
+        class(grid_tensorial_2D) :: this
         real(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
 #ifdef _OPENMP
@@ -1746,11 +1724,11 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_real_gridfun_cartesian_2D
+    end function norm_real_gridfun_tensorial_2D
 
 
-    function norm_complex_gridfun_cartesian_2D(this, u) result(n)
-        class(grid_cartesian_2D) :: this
+    function norm_complex_gridfun_tensorial_2D(this, u) result(n)
+        class(grid_tensorial_2D) :: this
         complex(kind=prec), intent(in), target :: u(:,:)
         real(kind=prec) :: n
 #ifdef _OPENMP
@@ -1787,11 +1765,11 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_complex_gridfun_cartesian_2D
+    end function norm_complex_gridfun_tensorial_2D
 
 
-   function norm_real_gridfun_cartesian_3D(this, u) result(n)
-        class(grid_cartesian_3D) :: this
+   function norm_real_gridfun_tensorial_3D(this, u) result(n)
+        class(grid_tensorial_3D) :: this
         real(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
 #ifdef _OPENMP
@@ -1829,11 +1807,11 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_real_gridfun_cartesian_3D
+    end function norm_real_gridfun_tensorial_3D
 
 
-    function norm_complex_gridfun_cartesian_3D(this, u) result(n)
-        class(grid_cartesian_3D) :: this
+    function norm_complex_gridfun_tensorial_3D(this, u) result(n)
+        class(grid_tensorial_3D) :: this
         complex(kind=prec), intent(in), target :: u(:,:,:)
         real(kind=prec) :: n
 #ifdef _OPENMP
@@ -1872,12 +1850,12 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 #else
         n = sqrt(n)
 #endif        
-    end function norm_complex_gridfun_cartesian_3D
+    end function norm_complex_gridfun_tensorial_3D
 
 !YYYYY
 
-   subroutine set_real_gridfun_cartesian_1D(this, u, f)
-        class(grid_cartesian_1D) :: this
+   subroutine set_real_gridfun_tensorial_1D(this, u, f)
+        class(grid_tensorial_1D) :: this
         real(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         real(kind=prec), external :: f
 
@@ -1888,10 +1866,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = f(this%nodes_x(ix))
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_real_gridfun_cartesian_1D
+    end subroutine set_real_gridfun_tensorial_1D
 
-    subroutine set_complex_gridfun_cartesian_1D(this, u, f)
-        class(grid_cartesian_1D) :: this
+    subroutine set_complex_gridfun_tensorial_1D(this, u, f)
+        class(grid_tensorial_1D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         complex(kind=prec), external :: f
 
@@ -1902,10 +1880,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = f(this%nodes_x(ix))
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_complex_gridfun_cartesian_1D
+    end subroutine set_complex_gridfun_tensorial_1D
 
-    subroutine rset_complex_gridfun_cartesian_1D(this, u, f)
-        class(grid_cartesian_1D) :: this
+    subroutine rset_complex_gridfun_tensorial_1D(this, u, f)
+        class(grid_tensorial_1D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         real(kind=prec), external :: f
 
@@ -1916,12 +1894,12 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = cmplx(f(this%nodes_x(ix)), kind=prec)
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_complex_gridfun_cartesian_1D
+    end subroutine rset_complex_gridfun_tensorial_1D
 
 
 
-    subroutine set_real_gridfun_cartesian_2D(this, u, f)
-        class(grid_cartesian_2D) :: this
+    subroutine set_real_gridfun_tensorial_2D(this, u, f)
+        class(grid_tensorial_2D) :: this
         real(kind=prec), intent(out) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         real(kind=prec), external :: f
 
@@ -1934,10 +1912,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_real_gridfun_cartesian_2D
+    end subroutine set_real_gridfun_tensorial_2D
 
-    subroutine set_complex_gridfun_cartesian_2D(this, u, f)
-        class(grid_cartesian_2D) :: this
+    subroutine set_complex_gridfun_tensorial_2D(this, u, f)
+        class(grid_tensorial_2D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         complex(kind=prec), external :: f
 
@@ -1950,10 +1928,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_complex_gridfun_cartesian_2D
+    end subroutine set_complex_gridfun_tensorial_2D
 
-    subroutine rset_complex_gridfun_cartesian_2D(this, u, f)
-        class(grid_cartesian_2D) :: this
+    subroutine rset_complex_gridfun_tensorial_2D(this, u, f)
+        class(grid_tensorial_2D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         real(kind=prec), external :: f
 
@@ -1966,10 +1944,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_complex_gridfun_cartesian_2D
+    end subroutine rset_complex_gridfun_tensorial_2D
 
-    subroutine set_real_gridfun_cartesian_3D(this, u, f)
-        class(grid_cartesian_3D) :: this
+    subroutine set_real_gridfun_tensorial_3D(this, u, f)
+        class(grid_tensorial_3D) :: this
         real(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         real(kind=prec), external :: f
 
@@ -1979,16 +1957,16 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         do iz = this%n3min, this%n3max
             do iy = this%n2min, this%n2max
                 do ix = this%n1min,this%n1max
-                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_x(iz))
+                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_z(iz))
                 end do
             end do
         end do
 !$OMP END PARALLEL DO
         
-    end subroutine set_real_gridfun_cartesian_3D
+    end subroutine set_real_gridfun_tensorial_3D
 
-    subroutine set_complex_gridfun_cartesian_3D(this, u, f)
-        class(grid_cartesian_3D) :: this
+    subroutine set_complex_gridfun_tensorial_3D(this, u, f)
+        class(grid_tensorial_3D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         complex(kind=prec), external :: f
 
@@ -1998,15 +1976,15 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         do iz = this%n3min, this%n3max
             do iy = this%n2min, this%n2max
                 do ix = this%n1min,this%n1max
-                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_x(iz))
+                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_z(iz))
                 end do
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_complex_gridfun_cartesian_3D
+    end subroutine set_complex_gridfun_tensorial_3D
 
-    subroutine rset_complex_gridfun_cartesian_3D(this, u, f)
-        class(grid_cartesian_3D) :: this
+    subroutine rset_complex_gridfun_tensorial_3D(this, u, f)
+        class(grid_tensorial_3D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         real(kind=prec), external :: f
 
@@ -2021,7 +1999,7 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_complex_gridfun_cartesian_3D
+    end subroutine rset_complex_gridfun_tensorial_3D
 
 
     subroutine set_real_gridfun_polar_2D(this, u, f, polar_coordinates)
@@ -2251,8 +2229,8 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
 !###
 !YYYYY
 
-   subroutine set_t_real_gridfun_cartesian_1D(this, u, f, t)
-        class(grid_cartesian_1D) :: this
+   subroutine set_t_real_gridfun_tensorial_1D(this, u, f, t)
+        class(grid_tensorial_1D) :: this
         real(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2264,10 +2242,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = f(this%nodes_x(ix), t)
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_t_real_gridfun_cartesian_1D
+    end subroutine set_t_real_gridfun_tensorial_1D
 
-    subroutine set_t_complex_gridfun_cartesian_1D(this, u, f, t)
-        class(grid_cartesian_1D) :: this
+    subroutine set_t_complex_gridfun_tensorial_1D(this, u, f, t)
+        class(grid_tensorial_1D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         complex(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2279,10 +2257,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = f(this%nodes_x(ix), t)
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_t_complex_gridfun_cartesian_1D
+    end subroutine set_t_complex_gridfun_tensorial_1D
 
-    subroutine rset_t_complex_gridfun_cartesian_1D(this, u, f, t)
-        class(grid_cartesian_1D) :: this
+    subroutine rset_t_complex_gridfun_tensorial_1D(this, u, f, t)
+        class(grid_tensorial_1D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2294,12 +2272,12 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             u(ix) = cmplx(f(this%nodes_x(ix), t), kind=prec)
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_t_complex_gridfun_cartesian_1D
+    end subroutine rset_t_complex_gridfun_tensorial_1D
 
 
 
-    subroutine set_t_real_gridfun_cartesian_2D(this, u, f, t)
-        class(grid_cartesian_2D) :: this
+    subroutine set_t_real_gridfun_tensorial_2D(this, u, f, t)
+        class(grid_tensorial_2D) :: this
         real(kind=prec), intent(out) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2313,10 +2291,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_t_real_gridfun_cartesian_2D
+    end subroutine set_t_real_gridfun_tensorial_2D
 
-    subroutine set_t_complex_gridfun_cartesian_2D(this, u, f, t)
-        class(grid_cartesian_2D) :: this
+    subroutine set_t_complex_gridfun_tensorial_2D(this, u, f, t)
+        class(grid_tensorial_2D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         complex(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2330,10 +2308,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_t_complex_gridfun_cartesian_2D
+    end subroutine set_t_complex_gridfun_tensorial_2D
 
-    subroutine rset_t_complex_gridfun_cartesian_2D(this, u, f, t)
-        class(grid_cartesian_2D) :: this
+    subroutine rset_t_complex_gridfun_tensorial_2D(this, u, f, t)
+        class(grid_tensorial_2D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2347,10 +2325,10 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_t_complex_gridfun_cartesian_2D
+    end subroutine rset_t_complex_gridfun_tensorial_2D
 
-    subroutine set_t_real_gridfun_cartesian_3D(this, u, f, t)
-        class(grid_cartesian_3D) :: this
+    subroutine set_t_real_gridfun_tensorial_3D(this, u, f, t)
+        class(grid_tensorial_3D) :: this
         real(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2361,16 +2339,16 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         do iz = this%n3min, this%n3max
             do iy = this%n2min, this%n2max
                 do ix = this%n1min,this%n1max
-                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_x(iz), t)
+                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_z(iz), t)
                 end do
             end do
         end do
 !$OMP END PARALLEL DO
         
-    end subroutine set_t_real_gridfun_cartesian_3D
+    end subroutine set_t_real_gridfun_tensorial_3D
 
-    subroutine set_t_complex_gridfun_cartesian_3D(this, u, f, t)
-        class(grid_cartesian_3D) :: this
+    subroutine set_t_complex_gridfun_tensorial_3D(this, u, f, t)
+        class(grid_tensorial_3D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         complex(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2381,15 +2359,15 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         do iz = this%n3min, this%n3max
             do iy = this%n2min, this%n2max
                 do ix = this%n1min,this%n1max
-                    u(ix, iy, iz) = f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_x(iz), t)
+                    u(ix, iy, iz) = f(this%nodes_z(ix), this%nodes_y(iy), this%nodes_z(iz), t)
                 end do
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine set_t_complex_gridfun_cartesian_3D
+    end subroutine set_t_complex_gridfun_tensorial_3D
 
-    subroutine rset_t_complex_gridfun_cartesian_3D(this, u, f, t)
-        class(grid_cartesian_3D) :: this
+    subroutine rset_t_complex_gridfun_tensorial_3D(this, u, f, t)
+        class(grid_tensorial_3D) :: this
         complex(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max,this%n3min:this%n3max)
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -2400,12 +2378,12 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         do iz = this%n3min, this%n3max
             do iy = this%n2min, this%n2max
                 do ix = this%n1min,this%n1max
-                    u(ix, iy, iz) = cmplx(f(this%nodes_x(ix), this%nodes_y(iy), this%nodes_z(iz), t), kind=prec)
+                    u(ix, iy, iz) = cmplx(f(this%nodes_z(ix), this%nodes_y(iy), this%nodes_z(iz), t), kind=prec)
                 end do
             end do
         end do
 !$OMP END PARALLEL DO
-    end subroutine rset_t_complex_gridfun_cartesian_3D
+    end subroutine rset_t_complex_gridfun_tensorial_3D
 
 
     subroutine set_t_real_gridfun_polar_2D(this, u, f, t, polar_coordinates)

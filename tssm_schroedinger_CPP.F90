@@ -2874,7 +2874,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
 !$OMP PARALLEL DO PRIVATE(ix, iy) REDUCTION(+:obs)
         do iy = n2+oy, m%g%n2max+oy
             do ix = n1+ox,m%g%n1max+ox
-                obs = obs + f(m%g%nodes_x(ix-ox),m%g%nodes_y(iy-oy)) &
+                obs = obs + f(m%g%nodes_x(ix-ox),m%g%nodes_x(iy-oy)) &
                       *m%g%weights_x(ix-ox)*m%g%weights_y(iy-oy) &
 #ifdef _REAL_
                       *this%u(ix,iy)**2

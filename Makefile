@@ -14,6 +14,7 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             tssm_c_schroedinger_f128wrapper_CPP.c \
 	    propagate_b_2components_complex_2d.inc \
 	    propagate_b_2components_real_2d.inc \
+            tssm_tensorial.F90 tssm_tensorial_CPP.F90 \
             tssm_hermite.F90 tssm_hermite_common.F90 tssm_hermite_CPP.F90 \
             tssm_polar.F90 tssm_polar_CPP.F90 \
             tssm_generalized_laguerre.F90 tssm_generalized_laguerre_common.F90 tssm_generalized_laguerre_CPP.F90 \
