@@ -1,27 +1,25 @@
 #ifdef _REAL_
 #ifdef _QUADPRECISION_
-    #define _MODULE_ tssmq_fourier_bessel_real_2d
+ #define _MODULE_ tssmq_fourier_bessel_real_2d
 #else
-    #define _MODULE_ tssm_fourier_bessel_real_2d
-#endif    
-    #define _METHOD_ fourier_bessel_real_2d
-    #define _WF_ wf_fourier_bessel_real_2d
-    #define _BASE_METHOD_ polar_real_2d
-    #define _BASE_WF_ wf_polar_real_2d
-    #define S(x) x ## _fourier_bessel_real_2d
+ #define _MODULE_ tssm_fourier_bessel_real_2d
+#endif
  #define _COMPLEX_OR_REAL_ real
+ #define _METHOD_ fourier_bessel_real_2d
+ #define _WF_ wf_fourier_bessel_real_2d
+ #define _BASE_METHOD_ polar_real_2d
+ #define _BASE_WF_ wf_polar_real_2d
 #else
 #ifdef _QUADPRECISION_
-    #define _MODULE_ tssmq_fourier_bessel_2d
+ #define _MODULE_ tssmq_fourier_bessel_2d
 #else
-    #define _MODULE_ tssm_fourier_bessel_2d
-#endif    
-    #define _METHOD_ fourier_bessel_2d
-    #define _WF_ wf_fourier_bessel_2d
-    #define _BASE_METHOD_ polar_2d
-    #define _BASE_WF_ wf_polar_2d
-    #define S(x) x ## _fourier_bessel_2d
+ #define _MODULE_ tssm_fourier_bessel_2d
+#endif
  #define _COMPLEX_OR_REAL_ complex
+ #define _METHOD_ fourier_bessel_2d
+ #define _WF_ wf_fourier_bessel_2d
+ #define _BASE_METHOD_ polar_2d
+ #define _BASE_WF_ wf_polar_2d
 #endif
 
 
@@ -41,6 +39,9 @@ module _MODULE_
 #endif    
     implicit none
 
+    private
+    public ::  _METHOD_, _WF_
+
     type, extends(_BASE_METHOD_) :: _METHOD_ 
         real(kind=prec) :: rmax = 1.0_prec
         integer :: boundary_conditions = dirichlet 
@@ -51,31 +52,31 @@ module _MODULE_
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :
-        procedure :: finalize => S(finalize)
+        procedure :: finalize 
     end type _METHOD_
 
     interface _METHOD_ ! constructor
-        module procedure S(new)
+        module procedure new_method
     end interface _METHOD_
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     type, extends(_BASE_WF_) ::  _WF_ 
     contains
-        procedure :: save => S(save_wf)
-        procedure :: load => S(load_wf)
-        procedure :: evaluate => S(evaluate_wf)
+        procedure :: save
+        procedure :: load
+        procedure :: evaluate
     end type _WF_ 
 
     interface _WF_ ! constructor
-        module procedure S(new_wf)
+        module procedure new_wf 
     end interface _WF_
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 contains
 
 
-    function S(new)(M, nr, nfr, rmax, boundary_conditions, quadrature_formula) result(this)
+    function new_method(M, nr, nfr, rmax, boundary_conditions, quadrature_formula) result(this)
         type(_METHOD_) :: this
         integer, intent(in) :: M
         integer, intent(in) :: nr 
@@ -109,19 +110,19 @@ contains
                                   this%eigenvalues_r_theta, this%normalization_factors, this%nfthetamin, this%nfthetamax, &
                                   this%boundary_conditions, this%quadrature_formula) 
 
-    end function S(new)
+    end function new_method 
 
-    subroutine S(finalize)(this)
+    subroutine finalize(this)
         class(_METHOD_), intent(inout) :: this
 
         call this%_BASE_METHOD_%finalize()
         deallocate( this%normalization_factors )
 
-    end subroutine S(finalize)
+    end subroutine finalize
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    function S(new_wf)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(_WF_) :: this
         class(_METHOD_), target, intent(inout) :: m
@@ -133,11 +134,11 @@ contains
         complex(kind=prec), optional, intent(in) :: coefficient
 #endif
         this%_BASE_WF_ = _BASE_WF_(m, u, coefficient)
-    end function S(new_wf)
+    end function new_wf
 
 
 
-    subroutine S(save_wf)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -162,10 +163,10 @@ contains
         end select
 !TODO save nodes !!!
 #endif        
-    end subroutine S(save_wf)
+    end subroutine save
 
 
-   subroutine S(load_wf)(this, filename)
+   subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -198,9 +199,10 @@ contains
 
        call this%_BASE_WF_%save(filename)
 #endif
-    end subroutine S(load_wf)
+    end subroutine load
 
-    function S(evaluate_wf)(this, x, y) result(z)
+
+    function evaluate(this, x, y) result(z)
         class(_WF_), intent(inout) :: this
         real(kind=prec), intent(in) :: x, y
         _COMPLEX_OR_REAL_(kind=prec) :: z
@@ -257,7 +259,7 @@ contains
 #endif                
         end select
         
-    end function S(evaluate_wf)
+    end function evaluate
 
 
-end module _MODULE_ 
+end module _MODULE_

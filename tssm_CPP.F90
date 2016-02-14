@@ -17,139 +17,143 @@ module S(tssm)
 #endif
      implicit none
 
+     private
+     public :: _WAVE_FUNCTION_ 
+
      type, abstract :: _WAVE_FUNCTION_
         logical :: is_real_space = .true.
      contains 
-        procedure :: propagate_A => S(propagate_A_wf)
-        procedure :: propagate_B => S(propagate_B_wf)
-        procedure :: propagate_C => S(propagate_C_wf)
-        procedure :: step => S(step_wf)
-        procedure :: run => S(run_wf)
-        procedure :: run_adaptive => S(run_adaptive_wf)
-        procedure :: print_orders => S(print_orders_wf)
-        procedure :: print_local_orders => S(print_local_orders_wf)
-!        procedure(S(proagate_AB_interface)), deferred :: propagate_A 
-!        procedure(S(proagate_AB_interface)), deferred :: propagate_B
-!        procedure(S(to_rf_space_interface)), deferred :: to_real_space 
-!        procedure(S(to_rf_space_interface)), deferred :: to_frequency_space 
-        procedure(S(save_load_interface)), deferred :: save
-        procedure(S(save_load_interface)), deferred :: load
-        procedure(S(norm_interface)), deferred :: norm
-        procedure(S(distance_interface)), deferred :: distance
-        procedure(S(normalize_interface)), deferred :: normalize
-        procedure(S(axpy_interface)), deferred :: axpy
-        procedure(S(scale_interface)), deferred :: scale
-!        procedure(S(set_interface)), deferred :: set
-        procedure(S(clone_interface)), deferred :: clone 
-        procedure(S(copy_interface)), deferred :: copy
-        procedure(S(finalize_interface)), deferred :: finalize 
+        procedure :: propagate_A
+        procedure :: propagate_B
+        procedure :: propagate_C
+        procedure :: step
+        procedure :: run
+        procedure :: run_adaptive
+        procedure :: run_adaptive_0
+        procedure :: print_orders
+        procedure :: print_local_orders
+!        procedure(proagate_AB_interface), deferred :: propagate_A 
+!        procedure(proagate_AB_interface), deferred :: propagate_B
+!        procedure(to_rf_space_interface), deferred :: to_real_space 
+!        procedure(to_rf_space_interface), deferred :: to_frequency_space 
+        procedure(save_load_interface), deferred :: save
+        procedure(save_load_interface), deferred :: load
+        procedure(norm_interface), deferred :: norm
+        procedure(distance_interface), deferred :: distance
+        procedure(normalize_interface), deferred :: normalize
+        procedure(axpy_interface), deferred :: axpy
+        procedure(scale_interface), deferred :: scale
+!        procedure(set_interface), deferred :: set
+        procedure(clone_interface), deferred :: clone 
+        procedure(copy_interface), deferred :: copy
+        procedure(finalize_interface), deferred :: finalize 
      end type _WAVE_FUNCTION_
 
      abstract interface
-        subroutine S(to_rf_space_interface)(this)
+        subroutine to_rf_space_interface(this)
             import _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
-        end subroutine S(to_rf_space_interface)
-        subroutine S(proagate_AB_interface)(this, dt)
+        end subroutine to_rf_space_interface
+        subroutine proagate_AB_interface(this, dt)
             import _WAVE_FUNCTION_, prec 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
-        end subroutine S(proagate_AB_interface)
-        subroutine S(save_load_interface)(this, filename)
+        end subroutine proagate_AB_interface
+        subroutine save_load_interface(this, filename)
             import  _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             character(len=*), intent(in) :: filename
-        end subroutine S(save_load_interface)
-        subroutine S(set_interface)(this, f)
+        end subroutine save_load_interface
+        subroutine set_interface(this, f)
             import _WAVE_FUNCTION_, prec 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             _COMPLEX_OR_REAL_(kind=prec), external :: f
-        end subroutine S(set_interface)
-        function S(norm_interface)(this)
+        end subroutine set_interface
+        function norm_interface(this)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this
-            real(kind=prec) :: S(norm_interface)
-        end function S(norm_interface)
-        subroutine S(normalize_interface)(this, norm)
+            real(kind=prec) :: norm_interface
+        end function norm_interface
+        subroutine normalize_interface(this, norm)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this
             real(kind=prec), intent(out) , optional :: norm
-        end subroutine S(normalize_interface)
-        subroutine S(scale_interface)(this, factor)
+        end subroutine normalize_interface
+        subroutine scale_interface(this, factor)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this
             _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
-        end subroutine S(scale_interface)
-        subroutine S(axpy_interface)(this, other, factor)
+        end subroutine scale_interface
+        subroutine axpy_interface(this, other, factor)
             import _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: this
             class(_WAVE_FUNCTION_), intent(inout) :: other
             _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
-        end subroutine S(axpy_interface)
-        function S(distance_interface)(this, wf)
+        end subroutine axpy_interface
+        function distance_interface(this, wf)
             import  _WAVE_FUNCTION_, prec 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             class(_WAVE_FUNCTION_), intent(inout) :: wf
-            real(kind=prec) :: S(distance_interface)
-        end function S(distance_interface)
-        function S(clone_interface)(this) result(clone)
+            real(kind=prec) :: distance_interface
+        end function distance_interface
+        function clone_interface(this) result(clone)
             import  _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             class(_WAVE_FUNCTION_), pointer :: clone
-        end function S(clone_interface)
-        subroutine S(copy_interface)(this, source)
+        end function clone_interface
+        subroutine copy_interface(this, source)
             import  _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             class(_WAVE_FUNCTION_), intent(inout) :: source 
-        end subroutine S(copy_interface)
-        subroutine S(finalize_interface)(this)
+        end subroutine copy_interface
+        subroutine finalize_interface(this)
             import  _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
-        end subroutine S(finalize_interface)
+        end subroutine finalize_interface
     end interface
 
     interface
-        subroutine S(solution_out_interface)(psi, t, dt, flag, abort_flag)
+        subroutine solution_out_interface(psi, t, dt, flag, abort_flag)
             import :: _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: psi 
             real(kind=prec), intent(in) :: t
             real(kind=prec), intent(in) :: dt
             character, intent(in) :: flag
             logical, intent(out) :: abort_flag
-        end subroutine S(solution_out_interface)
+        end subroutine solution_out_interface
 
-        subroutine S(get_reference_solution_interface)(psi, t)
+        subroutine get_reference_solution_interface(psi, t)
             import :: _WAVE_FUNCTION_, prec
             class(_WAVE_FUNCTION_), intent(inout) :: psi 
             real(kind=prec), intent(in) :: t
-        end subroutine S(get_reference_solution_interface)
+        end subroutine get_reference_solution_interface
     end interface
 
 contains 
 
-    subroutine S(propagate_A_wf)(this, dt)
+    subroutine propagate_A(this, dt)
         class(_WAVE_FUNCTION_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         ! dummy routine, do nothing
-    end subroutine S(propagate_A_wf)
+    end subroutine propagate_A
 
-    subroutine S(propagate_B_wf)(this, dt)
+    subroutine propagate_B(this, dt)
         class(_WAVE_FUNCTION_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         ! dummy routine, do nothing
-    end subroutine S(propagate_B_wf)
+    end subroutine propagate_B
 
-   subroutine S(propagate_C_wf)(this, dt)
+   subroutine propagate_C(this, dt)
         class(_WAVE_FUNCTION_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         ! dummy routine, do nothing
-    end subroutine S(propagate_C_wf)
+    end subroutine propagate_C
 
 
 #ifdef _REAL_
-    subroutine S(step_wf)(this, dt, t0, steps, splitting_scheme, operator_sequence, solution_out) 
+    subroutine step(this, dt, t0, steps, splitting_scheme, operator_sequence, solution_out) 
 #else    
-    subroutine S(step_wf)(this, dt, t0, steps, splitting_scheme, complex_splitting_scheme, operator_sequence, solution_out) 
+    subroutine step(this, dt, t0, steps, splitting_scheme, complex_splitting_scheme, operator_sequence, solution_out) 
 #endif    
         class(_WAVE_FUNCTION_), intent(inout) :: this
         real(kind=prec), intent(in) :: dt
@@ -160,15 +164,15 @@ contains
 #ifndef _REAL_        
         complex(kind=prec), intent(in), target, optional :: complex_splitting_scheme(:)
 #endif        
-        procedure(S(solution_out_interface)), optional :: solution_out
+        procedure(solution_out_interface), optional :: solution_out
 
         integer :: nsteps = 1
         integer :: op, ops
         integer :: split_steps
-        integer :: step, split_step
+        integer :: st, split_step
         real(kind=prec) :: t
         logical :: abort_flag
-        procedure(S(solution_out_interface)), pointer :: sol_out => null()
+        procedure(solution_out_interface), pointer :: sol_out => null()
         character(len=10) :: seq
 #ifdef _REAL_
         real(kind=prec), pointer :: scheme(:)
@@ -216,7 +220,7 @@ contains
 
         t = t0
 
-        do step=1, nsteps
+        do st=1, nsteps
             op = 1 
             do split_step=1, split_steps
                 select case(seq(op:op))
@@ -242,10 +246,10 @@ contains
             deallocate( scheme ) 
         end if    
 #endif
-    end subroutine S(step_wf)
+    end subroutine step
 
 
-    subroutine S(run_wf)(this, dt, times, splitting_scheme, &
+    subroutine run(this, dt, times, splitting_scheme, &
 #ifndef _REAL_
                  complex_splitting_scheme, &
 #endif
@@ -258,7 +262,7 @@ contains
 #ifndef _REAL_
         complex(kind=prec), intent(in), optional :: complex_splitting_scheme(:)
 #endif
-        procedure(S(solution_out_interface)), optional :: solution_out
+        procedure(solution_out_interface), optional :: solution_out
 
         logical :: abort_flag
         integer :: step, steps
@@ -273,7 +277,7 @@ contains
             tend = times(step)
             steps = ceiling(abs(tend-t0)/dt)
             dt = (tend-t0)/real(steps, kind=prec)
-            call S(step_wf)(this, dt, t0, steps, splitting_scheme, &
+            call this%step(dt, t0, steps, splitting_scheme, &
 #ifndef _REAL_
                  complex_splitting_scheme, &
 #endif                  
@@ -289,11 +293,11 @@ contains
             call solution_out(this, times(ubound(times,1)), dt, "finish", abort_flag)
         end if    
 
-    end subroutine S(run_wf)
+    end subroutine run
 
 
 
-    subroutine S(run_adaptive_wf)(this, dt, times, tol, &
+    subroutine run_adaptive(this, dt, times, tol, &
                  splitting_scheme, controller_scheme, order, operator_sequence, solution_out) 
         class(_WAVE_FUNCTION_), intent(inout) :: this
         real(kind=prec), intent(inout) :: dt
@@ -303,7 +307,7 @@ contains
         real(kind=prec), intent(in) :: splitting_scheme(:)
         real(kind=prec), intent(in), optional :: controller_scheme(:)
         integer, intent(in)  :: order
-        procedure(S(solution_out_interface)), optional :: solution_out
+        procedure(solution_out_interface), optional :: solution_out
 
 
         logical :: abort_flag
@@ -322,7 +326,7 @@ contains
             else
                 dt = abs(dt)
             endif    
-            call S(run_adaptive_wf_0)(this, dt, t0, tend, tol, &
+            call this%run_adaptive_0(dt, t0, tend, tol, &
                  splitting_scheme, controller_scheme, order, operator_sequence, solution_out)
             if (present(solution_out)) then
                 call solution_out(this, tend, dt, "checkpoint", abort_flag)
@@ -334,11 +338,11 @@ contains
             call solution_out(this, times(ubound(times,1)), dt, "finish", abort_flag)
         end if    
 
-    end subroutine S(run_adaptive_wf)
+    end subroutine run_adaptive
 
    
 
-    subroutine S(run_adaptive_wf_0)(this, dt, t0, tend, tol, &
+    subroutine run_adaptive_0(this, dt, t0, tend, tol, &
                  splitting_scheme, controller_scheme, order, operator_sequence, solution_out) 
         class(_WAVE_FUNCTION_), intent(inout) :: this
         real(kind=prec), intent(inout) :: dt
@@ -349,7 +353,7 @@ contains
         real(kind=prec), intent(in) :: splitting_scheme(:)
         real(kind=prec), intent(in), optional :: controller_scheme(:)
         integer, intent(in)  :: order
-        procedure(S(solution_out_interface)), optional :: solution_out
+        procedure(solution_out_interface), optional :: solution_out
 
         !real(kind=prec), parameter :: fac = 0.8_prec
         real(kind=prec), parameter :: facmin = 0.25_prec
@@ -537,14 +541,14 @@ contains
         call psi0%finalize
         call psi_AS%finalize
 
-    end subroutine S(run_adaptive_wf_0)
+    end subroutine run_adaptive_0
 
 
 
 #ifdef _REAL_
-    subroutine S(print_orders_wf)(this, reference_solution, t0, tend, rows, dt, splitting_scheme, operator_sequence) 
+    subroutine print_orders(this, reference_solution, t0, tend, rows, dt, splitting_scheme, operator_sequence) 
 #else
-    subroutine S(print_orders_wf)(this, reference_solution, t0, tend, rows, dt, &
+    subroutine print_orders(this, reference_solution, t0, tend, rows, dt, &
                                   splitting_scheme, complex_splitting_scheme, operator_sequence) 
 #endif
         class(_WAVE_FUNCTION_), intent(inout) :: this
@@ -596,14 +600,14 @@ contains
             call this%copy(wf_save_initial_value)
         end do
         call wf_save_initial_value%finalize
-    end subroutine S(print_orders_wf)
+    end subroutine print_orders
 
 #ifdef _REAL_
-    subroutine S(print_local_orders_wf)(this, rows, dt, splitting_scheme, operator_sequence, &
+    subroutine print_local_orders(this, rows, dt, splitting_scheme, operator_sequence, &
                                         controller_scheme, &
                                         fraunz, reference_scheme, get_reference_solution) 
 #else
-    subroutine S(print_local_orders_wf)(this, rows, dt, &
+    subroutine print_local_orders(this, rows, dt, &
                                         splitting_scheme, complex_splitting_scheme, operator_sequence, &
                                         controller_scheme, complex_controller_scheme, &
                                         fraunz, reference_scheme, complex_reference_scheme, get_reference_solution) 
@@ -621,7 +625,7 @@ contains
 #endif        
         character(len=*), intent(in), optional :: operator_sequence
         integer, intent(in), optional :: fraunz
-        procedure(S(get_reference_solution_interface)), optional :: get_reference_solution
+        procedure(get_reference_solution_interface), optional :: get_reference_solution
 
         integer :: row, fraunz1, rows1
         real(kind=prec) :: dt1, err, err_old, p
@@ -792,7 +796,7 @@ contains
         call reference_solution%finalize 
         call wf_save_initial_value%finalize
 
-    end subroutine S(print_local_orders_wf)
+    end subroutine print_local_orders
 
 
 #ifdef _QUADPRECISION_

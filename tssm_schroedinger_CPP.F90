@@ -81,6 +81,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #endif
     implicit none
 
+    private
+    public :: S(schroedinger), S(wf_schroedinger)
+
 #if defined(_HERMITE_)
     type, extends(SB(hermite)) :: S(schroedinger)
 #else
@@ -111,21 +114,21 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         type(S(wf_schroedinger)), pointer :: tmp => null()
 
     contains
-        procedure :: finalize => S(finalize_schroedinger) 
-        procedure :: set_potential => S(set_potential_schroedinger) 
-        procedure :: save_potential => S(save_potential_schroedinger) 
-        procedure :: load_potential => S(load_potential_schroedinger) 
+        procedure :: finalize => finalize_method
+        procedure :: set_potential
+        procedure :: save_potential
+        procedure :: load_potential
 #ifndef _REAL_
-        procedure :: set_imaginary_potential => S(set_imaginary_potential_schroedinger)
-        !procedure :: save_maginary_potential => S(save_imaginary_potential_schroedinger)
-        !procedure :: load_maginary_potential => S(load_imaginary_potential_schroedinger)
+        procedure :: set_imaginary_potential
+        !procedure :: save_maginary_potential
+        !procedure :: load_maginary_potential
 #endif
-        procedure :: initialize_tmp => S(initialize_tmp)
-        procedure :: finalize_tmp => S(finalize_tmp)
+        procedure :: initialize_tmp
+        procedure :: finalize_tmp
     end type S(schroedinger)
 
     interface S(schroedinger)
-        module procedure S(new_schroedinger)
+        module procedure new_method 
     end interface S(schroedinger)
 
 
@@ -135,28 +138,28 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     type, extends(SB(wf_fourier)) :: S(wf_schroedinger)
 #endif
     contains
-        procedure :: clone => S(clone_wfs)
+        procedure :: clone
 #ifndef _REAL_
-        procedure :: propagate_B => S(propagate_B_wfs)
+        procedure :: propagate_B
 #endif
-        procedure :: imaginary_time_propagate_A => S(imaginary_time_propagate_A_wfs)
-        procedure :: imaginary_time_propagate_B => S(imaginary_time_propagate_B_wfs)
-        procedure :: add_apply_B => S(add_apply_B_wfs)
-        procedure :: kinetic_energy => S(kinetic_energy_wfs)
-        procedure :: potential_energy => S(potential_energy_wfs)
-        procedure :: interaction_energy => S(interaction_energy_wfs)
-        procedure :: observable => S(observable_wfs)
-        procedure :: get_energy_expectation_deviation => S(get_energy_expectation_deviation_wfs)
-        procedure :: get_realspace_observables => S(get_realspace_observables_wfs)
-        procedure :: selfconsistent_nonlinear_step => S(selfconsistent_nonlinear_step_wfs)
-        procedure :: extrapolation_imaginary_time_step => S(extrapolation_imaginary_time_step_wfs)
-        procedure :: splitting_imaginary_time_step => S(splitting_imaginary_time_step_wfs)
-        procedure :: compute_groundstate => S(compute_groundstate_wfs)
-        procedure :: print_local_imaginary_time_orders => S(print_local_imaginary_time_orders_wfs)
+        procedure :: imaginary_time_propagate_A
+        procedure :: imaginary_time_propagate_B
+        procedure :: add_apply_B
+        procedure :: kinetic_energy
+        procedure :: potential_energy
+        procedure :: interaction_energy
+        procedure :: observable
+        procedure :: get_energy_expectation_deviation
+        procedure :: get_realspace_observables
+        procedure :: selfconsistent_nonlinear_step
+        procedure :: extrapolation_imaginary_time_step
+        procedure :: splitting_imaginary_time_step
+        procedure :: compute_groundstate
+        procedure :: print_local_imaginary_time_orders
     end type S(wf_schroedinger)
 
     interface S(wf_schroedinger)
-        module procedure S(new_wf_schroedinger)
+        module procedure new_wf
     end interface S(wf_schroedinger)
 
 contains
@@ -164,13 +167,13 @@ contains
 #if defined(_HERMITE_)
 
 #if(_DIM_==1)
-    function S(new_schroedinger)(nx, omega_x, &
+    function new_method(nx, omega_x, &
                hbar, mass, potential, cubic_coupling) result(this)
 #elif(_DIM_==2)
-    function S(new_schroedinger)(nx, omega_x, ny, omega_y, &
+    function new_method(nx, omega_x, ny, omega_y, &
                hbar, mass, potential, cubic_coupling) result(this)
 #elif(_DIM_==3)
-    function S(new_schroedinger)(nx, omega_x, ny, omega_y, nz, omega_z,  &
+    function new_method(nx, omega_x, ny, omega_y, nz, omega_z,  &
                hbar, mass, potential, cubic_coupling) result(this)
 #endif
         type(S(schroedinger)) :: this
@@ -221,19 +224,19 @@ contains
         if (present(potential)) then
             call S(set_potential_schroedinger)(this, potential) 
         end if
-    end function S(new_schroedinger)
+    end function new_method
 
 
 #else
 
 #if(_DIM_==1)
-    function S(new_schroedinger)(nx, xmin, xmax, &
+    function new_method(nx, xmin, xmax, &
                hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
 #elif(_DIM_==2)
-    function S(new_schroedinger)(nx, xmin, xmax, ny, ymin, ymax, &
+    function new_method(nx, xmin, xmax, ny, ymin, ymax, &
                hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
 #elif(_DIM_==3)
-    function S(new_schroedinger)(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
+    function new_method(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
                hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
 #endif
         type(S(schroedinger)) :: this
@@ -273,14 +276,14 @@ contains
             this%cubic_coupling = cubic_coupling
         end if
         if (present(potential)) then
-            call S(set_potential_schroedinger)(this, potential) 
+            call this%set_potential(potential) 
         end if
-    end function S(new_schroedinger)
+    end function new_method
 
 #endif
 
 
-    subroutine S(finalize_schroedinger)(this)
+    subroutine finalize_method(this)
         class(S(schroedinger)), intent(inout) :: this
 
 #if defined(_HERMITE_)
@@ -295,10 +298,10 @@ contains
             deallocate( this%V_imag)
         end if 
         call this%finalize_tmp
-    end subroutine S(finalize_schroedinger)
+    end subroutine finalize_method
 
 
-    function S(new_wf_schroedinger)(m) result(this)
+    function new_wf(m) result(this)
         type(S(wf_schroedinger)) :: this
         class(S(schroedinger)), target, intent(inout) :: m
 #if defined(_HERMITE_)
@@ -315,10 +318,10 @@ contains
         this%SB(wf_fourier) = SB(wf_fourier)(m, coefficient=cmplx(0.0_prec, m%hbar/(2.0_prec*m%mass), kind=prec))
 #endif
 #endif 
-    end function S(new_wf_schroedinger)
+    end function new_wf
 
 
-    function S(clone_wfs)(this) result(clone)
+    function clone(this) 
         class(S(wf_schroedinger)), intent(inout) :: this
         class(_WAVE_FUNCTION_), pointer :: clone
         type(S(wf_schroedinger)), pointer :: p
@@ -328,11 +331,11 @@ contains
         p = S(wf_schroedinger)(m)
         clone => p
         end select
-    end function S(clone_wfs)
+    end function clone
 
 
 
-    subroutine S(set_potential_schroedinger)(this, f)
+    subroutine set_potential(this, f)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
 
@@ -340,9 +343,9 @@ contains
         call this%g%allocate_real_gridfun(this%V)
         end if
         call this%g%set_real_gridfun(this%V, f)
-    end subroutine S(set_potential_schroedinger)
+    end subroutine set_potential
 
-subroutine S(save_potential_schroedinger)(this, filename)
+    subroutine save_potential(this, filename)
 #ifdef _NO_HDF5_
         class(S(schroedinger)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -362,11 +365,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         call hdf5_write_grid_attributes(this%g, filename)
 #endif
 #endif
-    end subroutine S(save_potential_schroedinger)
+    end subroutine save_potential
 
 
 !TODO slightly incompatible grids need not be allowed !
-    subroutine S(load_potential_schroedinger)(this, filename)
+    subroutine load_potential(this, filename)
 #ifdef _NO_HDF5_
         class(S(schroedinger)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -435,13 +438,13 @@ subroutine S(save_potential_schroedinger)(this, filename)
         call hdf5_load_real_gridfun(this%g, this%V, filename, "potential", offset=offset)
 #endif
 #endif
-    end subroutine S(load_potential_schroedinger)
+    end subroutine load_potential
 
 
 
 #ifndef _REAL_
 
-    subroutine S(set_imaginary_potential_schroedinger)(this, f)
+    subroutine set_imaginary_potential(this, f)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
 
@@ -449,11 +452,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
             call this%g%allocate_real_gridfun(this%V)
         end if
         call this%g%set_real_gridfun(this%V_imag, f)
-    end subroutine S(set_imaginary_potential_schroedinger)
+    end subroutine set_imaginary_potential
 
 #endif
 
-    subroutine S(imaginary_time_propagate_A_wfs)(this, dt)
+    subroutine imaginary_time_propagate_A(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
 #ifdef _REAL_
@@ -461,10 +464,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
 #else
         call this%propagate_A(dt*cmplx(0.0_prec,-1.0_prec, kind=prec)) 
 #endif
-    end subroutine S(imaginary_time_propagate_A_wfs)
+    end subroutine imaginary_time_propagate_A
 
 
-    subroutine S(selfconsistent_nonlinear_step_wfs)(this, dt, dt1, eps, max_iters) 
+    subroutine selfconsistent_nonlinear_step(this, dt, dt1, eps, max_iters) 
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt1
@@ -633,10 +636,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end subroutine S(selfconsistent_nonlinear_step_wfs)
+    end subroutine selfconsistent_nonlinear_step
 
 
-    subroutine S(imaginary_time_propagate_B_wfs)(this, dt, method_for_B)
+    subroutine imaginary_time_propagate_B(this, dt, method_for_B)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         integer, intent(in), optional :: method_for_B
@@ -861,13 +864,13 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end subroutine S(imaginary_time_propagate_B_wfs)
+    end subroutine imaginary_time_propagate_B
 
 
 
 #ifndef _REAL_
     
-    subroutine S(propagate_B_wfs)(this, dt)
+    subroutine propagate_B(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
 #ifndef _REAL_
@@ -990,20 +993,20 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end subroutine S(propagate_B_wfs)
+    end subroutine propagate_B
 
 #endif
 
 
-    subroutine S(initialize_tmp)(this)
+    subroutine initialize_tmp(this)
         class(S(schroedinger)), intent(inout) :: this
         if (associated(this%tmp)) return 
         allocate( this%tmp )
         this%tmp = S(wf_schroedinger)(this)
-    end subroutine S(initialize_tmp)
+    end subroutine initialize_tmp
 
 
-    subroutine S(finalize_tmp)(this)
+    subroutine finalize_tmp(this)
         use, intrinsic :: iso_c_binding, only: c_loc
         class(S(schroedinger)), intent(inout) :: this
         if (.not.associated(this%tmp)) return
@@ -1015,10 +1018,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
         call fftw_free(c_loc(this%tmp%up(1)))
         deallocate( this%tmp )
         this%tmp => null()
-    end subroutine S(finalize_tmp)
+    end subroutine finalize_tmp
 
 
-    subroutine S(add_apply_B_wfs)(this, wf, coefficient)
+    subroutine add_apply_B(this, wf, coefficient)
         class(S(wf_schroedinger)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec), intent(in), optional :: coefficient
@@ -1131,11 +1134,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end subroutine S(add_apply_B_wfs)
+    end subroutine add_apply_B
  
 
 
-    function S(kinetic_energy_wfs)(this) result(E_kin)
+    function kinetic_energy(this) result(E_kin)
         class(S(wf_schroedinger)), intent(inout) :: this
         real(kind=prec) :: E_kin
         real(kind=prec) :: h 
@@ -1428,11 +1431,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end function S(kinetic_energy_wfs)
+    end function kinetic_energy
 
 
 
-    function S(potential_energy_wfs)(this) result(E_pot)
+    function potential_energy(this) result(E_pot)
         class(S(wf_schroedinger)), intent(inout) :: this
         real(kind=prec) :: E_pot
         real(kind=prec) :: dV 
@@ -1649,10 +1652,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end function S(potential_energy_wfs)
+    end function potential_energy
 
     
-    function S(interaction_energy_wfs)(this) result(E_int)
+    function interaction_energy(this) result(E_int)
         class(S(wf_schroedinger)), intent(inout) :: this
         real(kind=prec) :: E_int
         real(kind=prec) :: dV 
@@ -1858,16 +1861,16 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end function S(interaction_energy_wfs)
+    end function interaction_energy
 
 
 
 #if(_DIM_==1)
-   subroutine S(get_realspace_observables_wfs)(this, E_pot, E_int, x_mean, x_dev)
+   subroutine get_realspace_observables(this, E_pot, E_int, x_mean, x_dev)
 #elif(_DIM_==2)
-   subroutine S(get_realspace_observables_wfs)(this, E_pot, E_int, x_mean, x_dev, y_mean, y_dev)
+   subroutine get_realspace_observables(this, E_pot, E_int, x_mean, x_dev, y_mean, y_dev)
 #elif(_DIM_==3)
-   subroutine S(get_realspace_observables_wfs)(this, E_pot, E_int, x_mean, x_dev, y_mean, y_dev, z_mean, z_dev)
+   subroutine get_realspace_observables(this, E_pot, E_int, x_mean, x_dev, y_mean, y_dev, z_mean, z_dev)
 #endif
         class(S(wf_schroedinger)), intent(inout) :: this
         real(kind=prec), intent(out) :: E_pot
@@ -2816,11 +2819,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-   end subroutine S(get_realspace_observables_wfs)
+   end subroutine get_realspace_observables
 
 
 
-    function S(observable_wfs)(this, f) result(obs)
+    function observable(this, f) result(obs)
         class(S(wf_schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
         real(kind=prec) :: obs
@@ -2973,11 +2976,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
-    end function S(observable_wfs)
+    end function observable
 
 
 
-    subroutine S(get_energy_expectation_deviation_wfs)(this, E_expectation, E_deviation)
+    subroutine get_energy_expectation_deviation(this, E_expectation, E_deviation)
        class(S(wf_schroedinger)), intent(inout) :: this
        real(kind=prec), intent(out) :: E_expectation
        real(kind=prec), intent(out) :: E_deviation
@@ -3375,14 +3378,14 @@ subroutine S(save_potential_schroedinger)(this, filename)
        class default
            stop "E: wrong spectral method for schroedinger wave function"
        end select
-    end subroutine S(get_energy_expectation_deviation_wfs)
+    end subroutine get_energy_expectation_deviation
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-    subroutine S(solution_out_schroedinger)(psi, t, dt, flag, abort_flag)
+    subroutine solution_out(psi, t, dt, flag, abort_flag)
         class(_WAVE_FUNCTION_), intent(inout) :: psi
         real(kind=prec), intent(in) :: t 
         real(kind=prec), intent(in) :: dt 
@@ -3456,10 +3459,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
         end select
 
         abort_flag = .false.
-    end subroutine S(solution_out_schroedinger)
+    end subroutine solution_out
 
 
-    subroutine S(extrapolation_imaginary_time_step_wfs)(this, dt, extrapolation_order, psi0, psi1, start_with_B)
+    subroutine extrapolation_imaginary_time_step(this, dt, extrapolation_order, psi0, psi1, start_with_B)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         integer, intent(in) :: extrapolation_order
@@ -3559,12 +3562,12 @@ subroutine S(save_potential_schroedinger)(this, filename)
            end do
         end if
 
-    end subroutine S(extrapolation_imaginary_time_step_wfs)
+    end subroutine extrapolation_imaginary_time_step
     
 
 
 
-    subroutine S(splitting_imaginary_time_step_wfs)(this, dt, splitting_scheme, start_with_B)
+    subroutine splitting_imaginary_time_step(this, dt, splitting_scheme, start_with_B)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: splitting_scheme(:)
@@ -3595,10 +3598,10 @@ subroutine S(save_potential_schroedinger)(this, filename)
             end if
             opA = .not.opA
         end do
-    end subroutine S(splitting_imaginary_time_step_wfs)
+    end subroutine splitting_imaginary_time_step
 
 
-    subroutine S(print_local_imaginary_time_orders_wfs)(this, dt0, rows, &
+    subroutine print_local_imaginary_time_orders(this, dt0, rows, &
                            start_with_B, splitting_scheme, extrapolation_order, fraunz)
        class(S(wf_schroedinger)), intent(inout) :: this
        real(kind=prec), intent(in) :: dt0
@@ -3644,11 +3647,11 @@ subroutine S(save_potential_schroedinger)(this, filename)
        endif
 
        select type (m=>this%m); class is (S(schroedinger))
-       psi0 =  S(new_wf_schroedinger)(m)
-       psi1 =  S(new_wf_schroedinger)(m)
+       psi0 =  S(wf_schroedinger)(m)
+       psi1 =  S(wf_schroedinger)(m)
        if (extrapolation_order_1>=2) then
-          psi2 =  S(new_wf_schroedinger)(m)
-          psi3 =  S(new_wf_schroedinger)(m)
+          psi2 =  S(wf_schroedinger)(m)
+          psi3 =  S(wf_schroedinger)(m)
        end if   
        end select
        
@@ -3691,12 +3694,12 @@ subroutine S(save_potential_schroedinger)(this, filename)
 
        !TODO finalize psi0, psi1, psi2, psi3
 
-    end subroutine S(print_local_imaginary_time_orders_wfs)
+    end subroutine print_local_imaginary_time_orders
 
 
 
 
-    subroutine S(compute_groundstate_wfs)(this, dt0, tol, max_iters, &
+    subroutine compute_groundstate(this, dt0, tol, max_iters, &
                                                       start_with_B, splitting_scheme, extrapolation_order)
 #ifdef _QUADPRECISION_
        use tssmq_common
@@ -3751,12 +3754,12 @@ subroutine S(save_potential_schroedinger)(this, filename)
 
 
        select type (m=>this%m); class is (S(schroedinger))
-       psi1 =  S(new_wf_schroedinger)(m)
+       psi1 =  S(wf_schroedinger)(m)
        if (extrapolation_order_1>=2) then
-          psi2 =  S(new_wf_schroedinger)(m)
-          psi3 =  S(new_wf_schroedinger)(m)
+          psi2 =  S(wf_schroedinger)(m)
+          psi3 =  S(wf_schroedinger)(m)
        end if   
-       psi_old =  S(new_wf_schroedinger)(m)       
+       psi_old =  S(wf_schroedinger)(m)       
        end select
 
 #ifdef _REAL_
@@ -3863,7 +3866,7 @@ subroutine S(save_potential_schroedinger)(this, filename)
 
        !TODO finalize psi1, psi2, psi3
 
-    end subroutine S(compute_groundstate_wfs)
+    end subroutine compute_groundstate
 
 #ifdef _QUADPRECISION_
 end module S(tssmq_schroedinger)

@@ -1,6 +1,7 @@
 #ifdef _QUADPRECISION_
 
 module tssmq_fourier
+    use tssmq_fourier_common
     use tssmq_fourier_1D
     use tssmq_fourier_2D
     use tssmq_fourier_3D
@@ -18,6 +19,7 @@ end module tssmq_fourier
 #else
 
 module tssm_fourier
+    use tssm_fourier_common
     use tssm_fourier_1D
     use tssm_fourier_2D
     use tssm_fourier_3D

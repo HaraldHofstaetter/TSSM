@@ -15,12 +15,17 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_multicomponent_fourier)    
+    use tssmq
     use S(tssmq_fourier)
 #else
 module S(tssm_multicomponent_fourier)    
+    use tssm
     use S(tssm_fourier)
 #endif    
     implicit none
+
+    private
+    public :: S(multicomponent_fourier), S(wf_multicomponent_fourier)
 
     type, extends(spectral_method) :: S(multicomponent_fourier)
         class(S(fourier)), pointer :: b => null() ! type of components
@@ -33,10 +38,12 @@ module S(tssm_multicomponent_fourier)
        character(len=32), allocatable :: dset_names_imag(:)
 #endif
         integer :: method_for_B = 2 
+
+!       TODO: finalize
     end type S(multicomponent_fourier)
 
     interface S(multicomponent_fourier)
-        module procedure :: S(new_multicomponent_fourier)
+        module procedure :: new_method
     end interface S(multicomponent_fourier)
 
     type :: S(pointer_to_wf_fourier)
@@ -48,40 +55,41 @@ module S(tssm_multicomponent_fourier)
         class(S(multicomponent_fourier)), pointer :: m 
         class(S(pointer_to_wf_fourier)), allocatable :: C(:)  ! .. components
     contains 
-        procedure :: to_real_space => S(to_real_space_wf_multicomponent_fourier)
-        procedure :: to_frequency_space => S(to_frequency_space_wf_multicomponent_fourier)
-        procedure :: propagate_A => S(propagate_A_wf_multicomponent_fourier)
-        procedure :: load => S(load_wf_multicomponent_fourier)
-        procedure :: save => S(save_wf_multicomponent_fourier)
-        procedure :: set => S(set_wf_multicomponent_fourier)
-        procedure :: set_t => S(set_t_wf_multicomponent_fourier)
+        procedure :: to_real_space
+        procedure :: to_frequency_space
+        procedure :: propagate_A
+        procedure :: load
+        procedure :: save
+        procedure :: set
+        procedure :: set_t
 #ifndef _REAL_
-        procedure :: rset => S(rset_wf_multicomponent_fourier)
-        procedure :: rset_t => S(rset_t_wf_multicomponent_fourier)
+        procedure :: rset
+        procedure :: rset_t
 #endif
-        procedure :: clone => S(clone_wf_multicomponent_fourier)
-        procedure :: finalize => S(finalize_wf_multicomponent_fourier)
-        procedure :: copy => S(copy_wf_multicomponent_fourier)
-        procedure :: norm => S(norm_wf_multicomponent_fourier)
-        procedure :: normalize => S(normalize_wf_multicomponent_fourier)
-        procedure :: distance => S(distance_wf_multicomponent_fourier)
-        procedure :: axpy => S(axpy_wf_multicomponent_fourier)
-        procedure :: scale => S(scale_wf_multicomponent_fourier)
+        procedure :: clone
+        procedure :: finalize => finalize_wf
+        procedure :: copy
+        procedure :: norm
+        procedure :: normalize
+        procedure :: distance
+        procedure :: axpy
+        procedure :: scale
+        !TODO: add_apply_A
     end type S(wf_multicomponent_fourier)
 
     interface S(wf_multicomponent_fourier)
-        module procedure S(new_wf_multicomponent_fourier)
+        module procedure new_wf
     end interface S(wf_multicomponent_fourier)
 
 contains
 
 #if(_DIM_==1)                           
-    function S(new_multicomponent_fourier)(coefficients, nx, xmin, xmax, transformation_type) result(this)
+    function new_method(coefficients, nx, xmin, xmax, transformation_type) result(this)
 #elif(_DIM_==2)
-    function S(new_multicomponent_fourier)(coefficients, nx, xmin, xmax, ny, ymin, ymax, &
+    function new_method(coefficients, nx, xmin, xmax, ny, ymin, ymax, &
                                transformation_type) result(this)
 #elif(_DIM_==3)
-    function S(new_multicomponent_fourier)(coefficients, nx, xmin, xmax, ny, ymin, ymax, &
+    function new_method(coefficients, nx, xmin, xmax, ny, ymin, ymax, &
                                nz, zmin, zmax, transformation_type) result(this)
 #endif
         type(S(multicomponent_fourier)) :: this
@@ -136,10 +144,10 @@ contains
 #endif
             this%b => b
         end if
-    end function S(new_multicomponent_fourier)
+    end function new_method
 
 
-    function S(new_wf_multicomponent_fourier)(m) result(this)
+    function new_wf(m) result(this)
         type(S(wf_multicomponent_fourier)) :: this
 !        class(S(wf_multicomponent_fourier)) :: this
         class(S(multicomponent_fourier)), target, intent(inout) :: m
@@ -154,14 +162,14 @@ contains
         do j = 1, m%nc
             !this%C(j) = S(new_wf_fourier)(m%S(fourier), coefficient=m%coefficients(j))
             allocate(  p )
-            p = S(new_wf_fourier)(b, coefficient=m%coefficients(j))
+            p = S(wf_fourier)(b, coefficient=m%coefficients(j))
             this%C(j)%p => p
         end do    
         end select
-    end function S(new_wf_multicomponent_fourier)
+    end function new_wf
 
 
-   function S(clone_wf_multicomponent_fourier)(this) result(clone)
+   function clone(this) 
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), pointer :: clone
         type(S(wf_multicomponent_fourier)), pointer :: p
@@ -169,10 +177,10 @@ contains
         allocate( p )
         p = S(wf_multicomponent_fourier)(this%m)
         clone => p
-    end function S(clone_wf_multicomponent_fourier)
+    end function clone
 
 
-    subroutine S(finalize_wf_multicomponent_fourier)(this)
+    subroutine finalize_wf(this)
         use, intrinsic :: iso_c_binding, only: c_loc
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         integer :: j
@@ -182,9 +190,9 @@ contains
             deallocate( this%C(j)%p ) 
         end do   
         deallocate( this%C ) 
-    end subroutine S(finalize_wf_multicomponent_fourier)
+    end subroutine finalize_wf
 
-    subroutine S(copy_wf_multicomponent_fourier)(this, source)
+    subroutine copy(this, source)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: source 
         integer :: j
@@ -200,40 +208,40 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(copy_wf_multicomponent_fourier)
+    end subroutine copy
 
 
 
-    subroutine S(to_real_space_wf_multicomponent_fourier)(this)
+    subroutine to_real_space(this)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         integer :: j
         do j = 1, this%m%nc 
             call this%C(j)%p%to_real_space()
         end do    
-    end subroutine S(to_real_space_wf_multicomponent_fourier)
+    end subroutine to_real_space
 
-    subroutine S(to_frequency_space_wf_multicomponent_fourier)(this)
+    subroutine to_frequency_space(this)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         integer :: j
         do j = 1, this%m%nc 
             call this%C(j)%p%to_frequency_space()
         end do    
-    end subroutine S(to_frequency_space_wf_multicomponent_fourier)
+    end subroutine to_frequency_space
 
 
 
 
-    subroutine S(propagate_A_wf_multicomponent_fourier)(this, dt)
+    subroutine propagate_A(this, dt)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         integer :: j
         do j = 1, this%m%nc 
             call this%C(j)%p%propagate_A(dt)
         end do    
-    end subroutine S(propagate_A_wf_multicomponent_fourier)
+    end subroutine propagate_A
 
 
-    function S(norm_wf_multicomponent_fourier)(this) result(n)
+    function norm(this) result(n)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         real(kind=prec) :: n
         integer :: j
@@ -242,10 +250,10 @@ contains
              n = n + ( this%C(j)%p%norm() )**2 
         end do
         n = sqrt(n)
-    end function S(norm_wf_multicomponent_fourier)
+    end function norm
 
 
-    function S(distance_wf_multicomponent_fourier)(this, wf) result(n)
+    function distance(this, wf) result(n)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         real(kind=prec) :: n
@@ -267,10 +275,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end function S(distance_wf_multicomponent_fourier)
+    end function distance
 
 
-    subroutine S(scale_wf_multicomponent_fourier)(this, factor)
+    subroutine scale(this, factor)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
 
@@ -279,9 +287,9 @@ contains
         do j = 1, this%m%nc 
             call this%C(j)%p%scale(factor)
         end do    
-    end subroutine S(scale_wf_multicomponent_fourier)
+    end subroutine scale
 
-    subroutine S(normalize_wf_multicomponent_fourier)(this, norm)
+    subroutine normalize(this, norm)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
@@ -295,10 +303,10 @@ contains
         if(present(norm)) then
            norm = n
         end if   
-    end subroutine S(normalize_wf_multicomponent_fourier)
+    end subroutine normalize
 
 
-    subroutine S(axpy_wf_multicomponent_fourier)(this, other, factor)
+    subroutine axpy(this, other, factor)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: other
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
@@ -318,11 +326,11 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(axpy_wf_multicomponent_fourier)
+    end subroutine axpy
 
 
 
-    subroutine S(set_wf_multicomponent_fourier)(this, f)
+    subroutine set(this, f)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
         integer :: j
@@ -350,9 +358,9 @@ contains
             f_component = f(x, y, z, j)
         end function f_component
 #endif        
-    end subroutine S(set_wf_multicomponent_fourier)
+    end subroutine set
 
-    subroutine S(set_t_wf_multicomponent_fourier)(this, f, t)
+    subroutine set_t(this, f, t)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -384,13 +392,13 @@ contains
             f_component = f(x, y, z, t, j)
         end function f_component
 #endif        
-    end subroutine S(set_t_wf_multicomponent_fourier)
+    end subroutine set_t
 
 
 
 
 #ifndef _REAL_        
-   subroutine S(rset_wf_multicomponent_fourier)(this, f)
+   subroutine rset(this, f)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         real(kind=prec), external :: f
         integer :: j
@@ -418,10 +426,10 @@ contains
             f_component = f(x, y, z, j)
         end function f_component
 #endif        
-    end subroutine S(rset_wf_multicomponent_fourier)
+    end subroutine rset
 
 
-   subroutine S(rset_t_wf_multicomponent_fourier)(this, f, t)
+   subroutine rset_t(this, f, t)
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -453,11 +461,11 @@ contains
             f_component = f(x, y, z, t, j)
         end function f_component
 #endif        
-    end subroutine S(rset_t_wf_multicomponent_fourier)
+    end subroutine rset_t
 
 #endif        
 
-    subroutine S(load_wf_multicomponent_fourier)(this, filename)
+    subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -516,10 +524,10 @@ contains
 #endif
         end do
 #endif
-    end subroutine S(load_wf_multicomponent_fourier)
+    end subroutine load
 
 
-    subroutine S(save_wf_multicomponent_fourier)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_multicomponent_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -549,7 +557,7 @@ contains
         end do
         call hdf5_close_gridfun(file_id)
 #endif
-    end subroutine S(save_wf_multicomponent_fourier)
+    end subroutine save
 
 #ifdef _QUADPRECISION_
 end module S(tssmq_multicomponent_fourier)    

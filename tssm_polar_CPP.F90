@@ -8,7 +8,6 @@
   #endif  
     #define _METHOD_ cylindrical_real_3d
     #define _WF_ wf_cylindrical_real_3d
-    #define S(x) x ## _cylindrical_real_3d
  #else
   #ifdef _QUADPRECISION_ 
     #define _MODULE_ tssmq_polar_real_2d
@@ -17,7 +16,6 @@
   #endif  
     #define _METHOD_ polar_real_2d
     #define _WF_ wf_polar_real_2d
-    #define S(x) x ## _polar_real_2d
  #endif
  #define _WAVE_FUNCTION_ real_wave_function
  #define _COMPLEX_OR_REAL_ real
@@ -30,7 +28,6 @@
   #endif  
     #define _METHOD_ cylindrical_3d
     #define _WF_ wf_cylindrical_3d
-    #define S(x) x ## _cylindrical_3d
  #else
   #ifdef _QUADPRECISION_ 
     #define _MODULE_ tssmq_polar_2d
@@ -39,7 +36,6 @@
   #endif  
     #define _METHOD_ polar_2d
     #define _WF_ wf_polar_2d
-    #define S(x) x ## _polar_2d
  #endif 
  #define _WAVE_FUNCTION_ wave_function
  #define _COMPLEX_OR_REAL_ complex
@@ -70,6 +66,9 @@ module _MODULE_
     use tssm_fourier_common
 #endif    
     implicit none
+
+    private
+    public ::  _METHOD_, _WF_
 
     type, extends(spectral_method) :: _METHOD_ 
 #ifdef _CYLINDRICAL_        
@@ -117,12 +116,12 @@ module _MODULE_
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :
-        procedure :: finalize => S(finalize)
+        procedure :: finalize => finalize_method
 
     end type _METHOD_
 
     interface _METHOD_ ! constructor
-        module procedure S(new)
+        module procedure new_method
     end interface _METHOD_
 
 
@@ -163,34 +162,34 @@ module _MODULE_
         _COMPLEX_OR_REAL_(kind=prec) :: coefficient = 1.0_prec
 
     contains
-        procedure :: create_plans => S(create_plans_wf)
-        procedure :: to_real_space => S(to_real_space_wf)
-        procedure :: to_frequency_space => S(to_frequency_space_wf)
-        procedure :: propagate_A => S(propagate_A_wf)
-        procedure :: add_apply_A => S(add_apply_A_wf)
-        procedure :: save => S(save_wf)
-        procedure :: load => S(load_wf)
-        procedure :: set => S(set_wf)
-        procedure :: set_t => S(set_t_wf)
+        procedure :: create_plans
+        procedure :: to_real_space
+        procedure :: to_frequency_space
+        procedure :: propagate_A
+        procedure :: add_apply_A
+        procedure :: save
+        procedure :: load
+        procedure :: set
+        procedure :: set_t
 #ifndef _REAL_
-        procedure :: rset => S(rset_wf)
-        procedure :: rset_t => S(rset_t_wf)
+        procedure :: rset
+        procedure :: rset_t
 #endif
-        procedure :: clone => S(clone_wf)
-        procedure :: finalize => S(finalize_wf)
-        procedure :: copy => S(copy_wf)
-        procedure :: norm => S(norm_wf)
-        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf)
-        procedure :: normalize => S(normalize_wf)
-        procedure :: inner_product => S(inner_product_wf)
-        !procedure :: ip_in_frequency_space_ => S(ip_in_frequency_space_wf) !TODO
-        procedure :: distance => S(distance_wf)
-        procedure :: axpy => S(axpy_wf)
-        procedure :: scale => S(scale_wf)
+        procedure :: clone
+        procedure :: finalize => finalize_wf
+        procedure :: copy
+        procedure :: norm
+        procedure :: norm_in_frequency_space
+        procedure :: normalize
+        procedure :: inner_product
+        !procedure :: ip_in_frequency_space_ !TODO
+        procedure :: distance
+        procedure :: axpy
+        procedure :: scale
     end type _WF_ 
 
     interface _WF_ ! constructor
-        module procedure S(new_wf)
+        module procedure new_wf
     end interface _WF_
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -198,9 +197,9 @@ contains
 
 
 #ifdef _CYLINDRICAL_
-    function S(new)(M, nr, nfr, nz, symmetric_coefficients, separated_eigenvalues) result(this)
+    function new_method(M, nr, nfr, nz, symmetric_coefficients, separated_eigenvalues) result(this)
 #else
-    function S(new)(M, nr, nfr, symmetric_coefficients, separated_eigenvalues) result(this)
+    function new_method(M, nr, nfr, symmetric_coefficients, separated_eigenvalues) result(this)
 #endif
         type(_METHOD_) :: this
         integer, intent(in) :: M
@@ -343,10 +342,10 @@ contains
         this%jf(n_threads) = this%nfthetamax-this%nfthetamin+1 
 #endif
 
-    end function S(new)
+    end function new_method
 
 
-    subroutine S(finalize)(this)
+    subroutine finalize_method(this)
         class(_METHOD_), intent(inout) :: this
 
         deallocate( this%g%nodes_r )
@@ -368,13 +367,13 @@ contains
         deallocate( this%g%jj )
         deallocate( this%jf )
 #endif        
-    end subroutine S(finalize)
+    end subroutine finalize_method
 
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    function S(new_wf)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(_WF_) :: this
         class(_METHOD_), target, intent(inout) :: m
@@ -461,11 +460,11 @@ contains
         this%ufc(this%m%g%nrmin:this%m%g%nrmax, this%m%nfzmin:this%m%nfzmax, this%m%nfthetamin:this%m%nfthetamax) =>this%ucp  
 #endif
 #endif
-    end function S(new_wf)
+    end function new_wf
 
 
     
-    subroutine S(create_plans_wf)(this)
+    subroutine create_plans(this)
         class(_WF_) :: this
 #ifdef _MPI_
         integer(kind=C_SIZE_T) :: dft_dim(1)  
@@ -524,11 +523,11 @@ contains
 
 #endif            
         call save_fftw_wisdom
-    end subroutine S(create_plans_wf)
+    end subroutine create_plans
 
 
 
-    subroutine S(to_real_space_wf)(this)
+    subroutine to_real_space(this)
         class(_WF_), intent(inout) :: this
         integer :: m, m1
         real(kind=prec), parameter :: pi2 = 2.0_prec*3.1415926535897932384626433832795028841971693993751_prec
@@ -576,10 +575,10 @@ contains
 #endif
            this%is_real_space = .true.
         end if
-    end subroutine S(to_real_space_wf)
+    end subroutine to_real_space
 
 
-    subroutine S(to_frequency_space_wf)(this)
+    subroutine to_frequency_space(this)
         class(_WF_), intent(inout) :: this
         integer :: m, m1
         real(kind=prec) :: f
@@ -638,10 +637,10 @@ contains
 !$OMP END PARALLEL DO            
            this%is_real_space = .false.
         end if    
-    end subroutine S(to_frequency_space_wf)
+    end subroutine to_frequency_space
    
 
-    subroutine S(propagate_A_wf)(this, dt)
+    subroutine propagate_A(this, dt)
         class(_WF_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
 #ifndef _CYLINDRICAL_
@@ -762,10 +761,10 @@ contains
 #endif
 #endif
 
-    end subroutine S(propagate_A_wf)
+    end subroutine propagate_A
 
 
-    subroutine S(add_apply_A_wf)(this, wf, coefficient)
+    subroutine add_apply_A(this, wf, coefficient)
         class(_WF_), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec), intent(in), optional :: coefficient
@@ -919,11 +918,11 @@ contains
            stop "E: wave functions not belonging to the same method"
         end select
   
-    end subroutine S(add_apply_A_wf)
+    end subroutine add_apply_A
 
 
 
-    subroutine S(save_wf)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -959,10 +958,10 @@ contains
 #endif        
 !TODO save nodes !!!
 #endif        
-    end subroutine S(save_wf)
+    end subroutine save
 
 
-   subroutine S(load_wf)(this, filename)
+   subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -1015,10 +1014,10 @@ contains
         this%is_real_space = .true.
 #endif        
 
-    end subroutine S(load_wf)
+    end subroutine load
 
 
-    subroutine S(set_wf)(this, f)
+    subroutine set(this, f)
         class(_WF_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
 #ifdef _REAL_        
@@ -1027,10 +1026,10 @@ contains
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_wf)
+    end subroutine set
 
 
-    subroutine S(set_t_wf)(this, f, t)
+    subroutine set_t(this, f, t)
         class(_WF_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -1040,30 +1039,30 @@ contains
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_t_wf)
+    end subroutine set_t
 
 
 #ifndef _REAL_        
 
-    subroutine S(rset_wf)(this, f)
+    subroutine rset(this, f)
         class(_WF_), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
         this%is_real_space = .true.
-    end subroutine S(rset_wf)
+    end subroutine rset
 
-    subroutine S(rset_t_wf)(this, f, t)
+    subroutine rset_t(this, f, t)
         class(_WF_), intent(inout) :: this
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
         this%is_real_space = .true.
-    end subroutine S(rset_t_wf)
+    end subroutine rset_t
 
 #endif        
 
 
-    function S(clone_wf)(this) result(clone)
+    function clone(this) 
         class(_WF_), intent(inout) :: this
         class(_WAVE_FUNCTION_), pointer :: clone
         type(_WF_), pointer :: p
@@ -1072,10 +1071,10 @@ contains
         p = _WF_(this%m, coefficient=this%coefficient)
         clone => p
         
-    end function S(clone_wf)
+    end function clone
 
 
-    subroutine S(finalize_wf)(this)
+    subroutine finalize_wf(this)
         use, intrinsic :: iso_c_binding, only: c_loc
         class(_WF_), intent(inout) :: this
 
@@ -1083,10 +1082,10 @@ contains
         call fftw_destroy_plan(this%plan_backward)
        !call fftw_free(c_loc(this%up))
         call fftw_free(c_loc(this%up(1)))
-    end subroutine S(finalize_wf)
+    end subroutine finalize_wf
 
 
-    subroutine S(copy_wf)(this, source)
+    subroutine copy(this, source)
         class(_WF_), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: source 
 #ifdef _OPENMP
@@ -1178,10 +1177,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(copy_wf)
+    end subroutine copy
 
     
-    function S(norm_wf)(this) result(n)
+    function norm(this) result(n)
         class(_WF_), intent(inout) :: this
         real(kind=prec) :: n
         !!! TODO handle norm in frequency space without transforming
@@ -1192,10 +1191,10 @@ contains
         n = this%m%g%norm_complex_gridfun(this%u)
 #endif        
         
-    end function S(norm_wf)
+    end function norm
 
 
-    function S(inner_product_wf)(this, wf) result(n)
+    function inner_product(this, wf) result(n)
         class(_WF_), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec) :: n
@@ -1216,11 +1215,11 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end function S(inner_product_wf)
+    end function inner_product
 
 
 
-    function S(norm_in_frequency_space_wf)(this) result(n)
+    function norm_in_frequency_space(this) result(n)
         class(_WF_), intent(inout) :: this
         real(kind=prec) :: n
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
@@ -1326,10 +1325,10 @@ contains
         n = sqrt(n)
 #endif
         
-    end function S(norm_in_frequency_space_wf)
+    end function norm_in_frequency_space
 
 
-    subroutine S(normalize_wf)(this, norm)
+    subroutine normalize(this, norm)
         class(_WF_), intent(inout) :: this
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
@@ -1344,10 +1343,10 @@ contains
 #else        
         call this%scale(cmplx(1.0_prec/n, 0.0_prec, kind=prec))
 #endif            
-    end subroutine S(normalize_wf)
+    end subroutine normalize
 
 
-    function S(distance_wf)(this, wf) result(n)
+    function distance(this, wf) result(n)
         class(_WF_), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         real(kind=prec) :: n
@@ -1374,10 +1373,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end function S(distance_wf)
+    end function distance
 
 
-    subroutine S(axpy_wf)(this, other, factor)
+    subroutine axpy(this, other, factor)
          class(_WF_), intent(inout) :: this
          class(_WAVE_FUNCTION_), intent(inout) :: other
          _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
@@ -1457,10 +1456,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(axpy_wf)
+    end subroutine axpy
    
 
-    subroutine S(scale_wf)(this, factor)
+    subroutine scale(this, factor)
         class(_WF_), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor   
 #ifdef _OPENMP
@@ -1501,6 +1500,6 @@ contains
          end do
 !$OMP END PARALLEL DO 
 #endif
-    end subroutine S(scale_wf)
+    end subroutine scale
     
 end module _MODULE_ 

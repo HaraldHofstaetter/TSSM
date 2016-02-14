@@ -1,9 +1,11 @@
 #ifdef _QUADPRECISION_
 module tssmq_disorder_potential
     use tssmq_schroedinger
+    use tssmq_grid
 #else
 module tssm_disorder_potential
     use tssm_schroedinger
+    use tssm_grid
 #endif    
     implicit none 
 

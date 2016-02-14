@@ -33,6 +33,9 @@ module S(tssm_tensorial)
 #endif    
     implicit none
 
+    private
+    public ::  S(tensorial),  S(wf_tensorial)
+
     type, extends(spectral_method) :: S(tensorial)
 #if(_DIM_==1)
         type(grid_tensorial_1D) :: g 
@@ -76,14 +79,14 @@ module S(tssm_tensorial)
         character(len=32) :: dset_name_imag = "psi_imag"
 #endif
     contains    
-        procedure :: finalize => S(finalize_tensorial)
+        procedure :: finalize => finalize_method
         !final :: final_tensorial_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :(
     end type S(tensorial)
 
     interface  S(tensorial) ! constructor
-        module procedure S(new_tensorial)
+        module procedure new_method
     end interface S(tensorial)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -113,31 +116,31 @@ module S(tssm_tensorial)
         _COMPLEX_OR_REAL_(kind=prec) :: coefficient = 1.0_prec
 
     contains
-        procedure :: to_real_space => S(to_real_space_wf_tensorial)
-        procedure :: to_frequency_space => S(to_frequency_space_wf_tensorial)
-        procedure :: propagate_A => S(propagate_A_wf_tensorial)
-        procedure :: add_apply_A => S(add_apply_A_wf_tensorial)
-        procedure :: save => S(save_wf_tensorial)
-        procedure :: load => S(load_wf_tensorial)
-        procedure :: set => S(set_wf_tensorial)
-        procedure :: set_t => S(set_t_wf_tensorial)
+        procedure :: to_real_space
+        procedure :: to_frequency_space
+        procedure :: propagate_A
+        procedure :: add_apply_A
+        procedure :: save
+        procedure :: load
+        procedure :: set
+        procedure :: set_t
 #ifndef _REAL_
-        procedure :: rset => S(rset_wf_tensorial)
-        procedure :: rset_t => S(rset_t_wf_tensorial)
+        procedure :: rset
+        procedure :: rset_t
 #endif
-        procedure :: clone => S(clone_wf_tensorial)
-        procedure :: finalize => S(finalize_wf_tensorial)
-        procedure :: copy => S(copy_wf_tensorial)
-        procedure :: norm => S(norm_wf_tensorial)
-        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf_tensorial)
-        procedure :: normalize => S(normalize_wf_tensorial)
-        procedure :: distance => S(distance_wf_tensorial)
-        procedure :: axpy => S(axpy_wf_tensorial)
-        procedure :: scale => S(scale_wf_tensorial)
+        procedure :: clone
+        procedure :: finalize => finalize_wf
+        procedure :: copy
+        procedure :: norm
+        procedure :: norm_in_frequency_space
+        procedure :: normalize
+        procedure :: distance
+        procedure :: axpy
+        procedure :: scale
     end type S(wf_tensorial)
 
     interface S(wf_tensorial) ! constructor
-        module procedure S(new_wf_tensorial)
+        module procedure new_wf
     end interface S(wf_tensorial)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -147,11 +150,11 @@ contains
 
 
 #if(_DIM_==1)
-    function S(new_tensorial)(n1 ) result(this)
+    function new_method(n1 ) result(this)
 #elif(_DIM_==2)
-    function S(new_tensorial)(n1, n2) result(this)
+    function new_method(n1, n2) result(this)
 #elif(_DIM_==3)
-    function S(new_tensorial)(n1, n2, n3) result(this)
+    function new_method(n1, n2, n3) result(this)
 #endif
         type(S(tensorial)) :: this
         integer, intent(in) :: n1
@@ -258,11 +261,11 @@ contains
 #endif
 
 #endif
-    end function S(new_tensorial)
+    end function new_method
 
 
 
-    subroutine S(finalize_tensorial)(this)
+    subroutine finalize_method(this)
         class(S(tensorial)), intent(inout) :: this
 
         deallocate( this%g%nodes_x )
@@ -285,11 +288,11 @@ contains
         deallocate( this%g%jj )
         deallocate( this%jf )
 #endif        
-    end subroutine S(finalize_tensorial)
+    end subroutine finalize_method
 
 
 
-    function S(new_wf_tensorial)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(S(wf_tensorial)) :: this
         class(S(tensorial)), target, intent(inout) :: m
@@ -380,29 +383,29 @@ contains
 #elif(_DIM_==3)
         this%uf(this%m%nf1min:this%m%nf1max, this%m%nf2min:this%m%nf2max, this%m%nf3min:this%m%nf3max) =>this%up  
 #endif
-    end function S(new_wf_tensorial)
+    end function new_wf
 
 
-    function S(clone_wf_tensorial)(this) result(clone)
+    function clone(this) 
         class(S(wf_tensorial)), intent(inout) :: this
         class(_WAVE_FUNCTION_), pointer :: clone
         type(S(wf_tensorial)), pointer :: p
 
         allocate( p )
-        p = S(new_wf_tensorial)(this%m, coefficient=this%coefficient)
+        p = S(wf_tensorial)(this%m, coefficient=this%coefficient)
         clone => p
-    end function S(clone_wf_tensorial)
+    end function clone
 
 
-    subroutine S(finalize_wf_tensorial)(this)
+    subroutine finalize_wf(this)
         use, intrinsic :: iso_c_binding, only: c_loc
         class(S(wf_tensorial)), intent(inout) :: this
         !call fftw_free(c_loc(this%up))
         call fftw_free(c_loc(this%up(1)))
-    end subroutine S(finalize_wf_tensorial)
+    end subroutine finalize_wf
 
 
-    subroutine S(set_wf_tensorial)(this, f)
+    subroutine set(this, f)
         class(S(wf_tensorial)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
 #ifdef _REAL_        
@@ -411,10 +414,10 @@ contains
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_wf_tensorial)
+    end subroutine set
 
 
-    subroutine S(set_t_wf_tensorial)(this, f, t)
+    subroutine set_t(this, f, t)
         class(S(wf_tensorial)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -424,28 +427,28 @@ contains
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_t_wf_tensorial)
+    end subroutine set_t
 
 
 #ifndef _REAL_        
-   subroutine S(rset_wf_tensorial)(this, f)
+   subroutine rset(this, f)
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
         this%is_real_space = .true.
-    end subroutine S(rset_wf_tensorial)
+    end subroutine rset
 
-   subroutine S(rset_t_wf_tensorial)(this, f, t)
+   subroutine rset_t(this, f, t)
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
         this%is_real_space = .true.
-    end subroutine S(rset_t_wf_tensorial)
+    end subroutine rset_t
 
 #endif        
 
-    function S(norm_wf_tensorial)(this) result(norm)
+    function norm(this) 
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec) :: norm
         
@@ -455,9 +458,9 @@ contains
 #else
         norm = this%m%g%norm_complex_gridfun(this%u)
 #endif        
-    end function S(norm_wf_tensorial)
+    end function norm
 
-    subroutine S(normalize_wf_tensorial)(this, norm)
+    subroutine normalize(this, norm)
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: norm1
@@ -466,9 +469,9 @@ contains
             norm = norm1
         end if    
         this%u = (1.0_prec/norm1)*this%u
-    end subroutine S(normalize_wf_tensorial)
+    end subroutine normalize
 
-    subroutine S(scale_wf_tensorial)(this, factor)
+    subroutine scale(this, factor)
         class(S(wf_tensorial)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
 #ifdef _REAL_
@@ -476,9 +479,9 @@ contains
 #else        
         call this%m%g%scale_complex_gridfun(this%u, factor)
 #endif        
-    end subroutine S(scale_wf_tensorial)
+    end subroutine scale
 
-    subroutine S(axpy_wf_tensorial)(this, other, factor)
+    subroutine axpy(this, other, factor)
          class(S(wf_tensorial)), intent(inout) :: this
          class(_WAVE_FUNCTION_), intent(inout) :: other
          _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
@@ -497,11 +500,11 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(axpy_wf_tensorial)
+    end subroutine axpy
 
 
 
-    subroutine S(copy_wf_tensorial)(this, source)
+    subroutine copy(this, source)
         class(S(wf_tensorial)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: source 
         select type (source)
@@ -520,10 +523,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(copy_wf_tensorial)
+    end subroutine copy
 
 
-    function S(distance_wf_tensorial)(this, wf) result(d)
+    function distance(this, wf) result(d)
         class(S(wf_tensorial)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         real(kind=prec) :: d
@@ -550,10 +553,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end function S(distance_wf_tensorial)
+    end function distance
 
 
-    subroutine S(save_wf_tensorial)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_tensorial)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -594,11 +597,11 @@ contains
 #endif        
 !TODO save nodes !!!
 #endif        
-    end subroutine S(save_wf_tensorial)
+    end subroutine save
 
 
 
-    subroutine S(load_wf_tensorial)(this, filename)
+    subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_tensorial)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -657,10 +660,10 @@ contains
 #endif        
         this%is_real_space = .true.
 #endif        
-    end subroutine S(load_wf_tensorial)
+    end subroutine load
 
 
-   subroutine S(to_real_space_wf_tensorial)(this)
+   subroutine to_real_space(this)
         class(S(wf_tensorial)), intent(inout) :: this
 #if(_DIM_==3)        
         integer :: n1, n2, n3
@@ -686,10 +689,10 @@ contains
 !xxx$OMP END PARALLEL WORKSHARE 
            this%is_real_space = .true.
         end if     
-    end subroutine S(to_real_space_wf_tensorial)
+    end subroutine to_real_space
 
     
-    subroutine S(to_frequency_space_wf_tensorial)(this)
+    subroutine to_frequency_space(this)
         class(S(wf_tensorial)), intent(inout) :: this
 #if(_DIM_==3)        
         integer :: n1, n2, n3
@@ -720,10 +723,10 @@ contains
 !xxx$OMP END PARALLEL WORKSHARE 
            this%is_real_space = .false.
         end if     
-    end subroutine S(to_frequency_space_wf_tensorial)
+    end subroutine to_frequency_space
 
 
-    function S(norm_in_frequency_space_wf_tensorial)(this) result(norm)
+    function norm_in_frequency_space(this) result(norm)
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec) :: norm
 
@@ -749,10 +752,10 @@ contains
 #else 
         norm = sqrt(norm)
 #endif
-    end function S(norm_in_frequency_space_wf_tensorial)
+    end function norm_in_frequency_space
 
 
-    subroutine S(propagate_A_wf_tensorial)(this, dt)
+    subroutine propagate_A(this, dt)
         class(S(wf_tensorial)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         call this%to_frequency_space
@@ -772,11 +775,11 @@ contains
                                 2, this%m%nf2max-this%m%nf2min+1) * this%uf
 #endif
 !xxx$OMP END PARALLEL WORKSHARE 
-    end subroutine S(propagate_A_wf_tensorial)
+    end subroutine propagate_A
 
 
 
-    subroutine S(add_apply_A_wf_tensorial)(this, wf, coefficient)
+    subroutine add_apply_A(this, wf, coefficient)
         class(S(wf_tensorial)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec), intent(in), optional :: coefficient
@@ -815,7 +818,7 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(add_apply_A_wf_tensorial)
+    end subroutine add_apply_A
 
 
 

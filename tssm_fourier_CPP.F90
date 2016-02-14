@@ -39,17 +39,20 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_fourier)
-    use tssmq
+    use tssmq, only: spectral_method, _WAVE_FUNCTION_
     use tssmq_grid
     use tssmq_fourier_common
 #else
 module S(tssm_fourier)
-    use tssm
+    use tssm, only: spectral_method, _WAVE_FUNCTION_
     use tssm_grid
     use tssm_fourier_common
 #endif    
     use, intrinsic :: iso_c_binding, only: c_ptr
     implicit none
+
+    private
+    public :: S(fourier), S(wf_fourier)
 
 
     type, extends(spectral_method) :: S(fourier)
@@ -93,17 +96,15 @@ module S(tssm_fourier)
         character(len=32) :: dset_name_imag = "psi_imag"
 #endif
     contains    
-        procedure :: finalize => S(finalize_fourier)
+        procedure :: finalize => finalize_method
         !final :: final_fourier_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :(
     end type S(fourier)
 
     interface  S(fourier) ! constructor
-        module procedure S(new_fourier)
+        module procedure new_method
     end interface S(fourier)
-
-
 
 
     type, extends(_WAVE_FUNCTION_) :: S(wf_fourier)
@@ -144,44 +145,43 @@ module S(tssm_fourier)
         _COMPLEX_OR_REAL_(kind=prec) :: coefficient = 1.0_prec
 
     contains
-        procedure :: create_plans => S(create_plans_wf_fourier)
-        procedure :: to_real_space => S(to_real_space_wf_fourier)
-        procedure :: to_frequency_space => S(to_frequency_space_wf_fourier)
-        procedure :: propagate_A => S(propagate_A_wf_fourier)
-        procedure :: add_apply_A => S(add_apply_A_wf_fourier)
-        procedure :: save => S(save_wf_fourier)
-        procedure :: load => S(load_wf_fourier)
-        procedure :: set => S(set_wf_fourier)
-        procedure :: set_t => S(set_t_wf_fourier)
+        procedure :: create_plans 
+        procedure :: to_real_space
+        procedure :: to_frequency_space
+        procedure :: propagate_A
+        procedure :: add_apply_A
+        procedure :: save
+        procedure :: load
+        procedure :: set
+        procedure :: set_t
 #ifndef _REAL_
-        procedure :: rset => S(rset_wf_fourier)
-        procedure :: rset_t => S(rset_t_wf_fourier)
+        procedure :: rset
+        procedure :: rset_t
 #endif
-        procedure :: clone => S(clone_wf_fourier)
-        procedure :: finalize => S(finalize_wf_fourier)
-        procedure :: copy => S(copy_wf_fourier)
-        procedure :: norm => S(norm_wf_fourier)
-        procedure :: norm_in_frequency_space => S(norm_in_frequency_space_wf_fourier)
-        procedure :: normalize => S(normalize_wf_fourier)
-        procedure :: distance => S(distance_wf_fourier)
-        procedure :: axpy => S(axpy_wf_fourier)
-        procedure :: scale => S(scale_wf_fourier)
-        !final :: S(final_wf_fourier_1D)
+        procedure :: clone
+        procedure :: finalize => finalize_wf
+        procedure :: copy
+        procedure :: norm
+        procedure :: norm_in_frequency_space
+        procedure :: normalize
+        procedure :: distance
+        procedure :: axpy
+        procedure :: scale
     end type S(wf_fourier)
 
     interface S(wf_fourier) ! constructor
-        module procedure S(new_wf_fourier)
+        module procedure new_wf
     end interface S(wf_fourier)
 
 
 contains
 
 #if(_DIM_==1)
-    function S(new_fourier)(nx, xmin, xmax, boundary_conditions) result(this)
+    function new_method(nx, xmin, xmax, boundary_conditions) result(this)
 #elif(_DIM_==2)
-    function S(new_fourier)(nx, xmin, xmax, ny, ymin, ymax, boundary_conditions) result(this)
+    function new_method(nx, xmin, xmax, ny, ymin, ymax, boundary_conditions) result(this)
 #elif(_DIM_==3)
-    function S(new_fourier)(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, boundary_conditions) result(this)
+    function new_method(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, boundary_conditions) result(this)
 #endif
         type(S(fourier)) :: this
         real(kind=prec),  intent(in) :: xmin 
@@ -514,10 +514,10 @@ contains
 #endif
 
 #endif
-    end function S(new_fourier)
+    end function new_method
  
 
-    subroutine S(finalize_fourier)(this)
+    subroutine finalize_method(this)
         class(S(fourier)), intent(inout) :: this
 
         deallocate( this%g%nodes_x )
@@ -534,11 +534,11 @@ contains
         deallocate( this%g%jj )
         deallocate( this%jf )
 #endif        
-    end subroutine S(finalize_fourier)
+    end subroutine finalize_method
 
 
 
-    function S(new_wf_fourier)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(S(wf_fourier)) :: this
         class(S(fourier)), target, intent(inout) :: m
@@ -646,10 +646,10 @@ contains
         end select
 #endif 
         call this%create_plans
-    end function S(new_wf_fourier)
+    end function new_wf
 
 
-    function S(clone_wf_fourier)(this) result(clone)
+    function clone(this) 
         class(S(wf_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), pointer :: clone
         type(S(wf_fourier)), pointer :: p
@@ -657,10 +657,10 @@ contains
         allocate( p )
         p = S(wf_fourier)(this%m, coefficient=this%coefficient)
         clone => p
-    end function S(clone_wf_fourier)
+    end function clone
 
 
-    subroutine S(finalize_wf_fourier)(this)
+    subroutine finalize_wf(this)
         use, intrinsic :: iso_c_binding, only: c_loc, c_associated
         class(S(wf_fourier)), intent(inout) :: this
 
@@ -670,10 +670,10 @@ contains
         call fftw_destroy_plan(this%plan_forward)
         !call fftw_free(c_loc(this%up))
         call fftw_free(c_loc(this%up(1)))
-    end subroutine S(finalize_wf_fourier)
+    end subroutine finalize_wf
 
     
-    subroutine S(create_plans_wf_fourier)(this)
+    subroutine create_plans(this)
         class(S(wf_fourier)) :: this
 #ifdef _MPI_
         integer(kind=C_SIZE_T) :: dft_dim(_DIM_)  
@@ -838,10 +838,10 @@ contains
 
         call save_fftw_wisdom
 
-    end subroutine S(create_plans_wf_fourier)
+    end subroutine create_plans
 
 
-    subroutine S(to_frequency_space_wf_fourier)(this)
+    subroutine to_frequency_space(this)
         class(S(wf_fourier)), intent(inout) :: this
         
         real(kind=prec), parameter :: f = sqrt(0.5_prec)
@@ -904,11 +904,11 @@ contains
 
             this%is_real_space = .false.
         end if    
-    end subroutine S(to_frequency_space_wf_fourier)
+    end subroutine to_frequency_space
 
 
 
-    subroutine S(to_real_space_wf_fourier)(this)
+    subroutine to_real_space(this)
         class(S(wf_fourier)), intent(inout) :: this
 
         real(kind=prec), parameter :: f = sqrt(2.0_prec)
@@ -1037,11 +1037,11 @@ contains
 
             this%is_real_space = .true.
         end if     
-    end subroutine S(to_real_space_wf_fourier)
+    end subroutine to_real_space
 
 
 
-    subroutine S(propagate_A_wf_fourier)(this, dt)
+    subroutine propagate_A(this, dt)
         implicit none
         class(S(wf_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
@@ -1196,11 +1196,11 @@ contains
         end select
 #endif
 #endif
-    end subroutine S(propagate_A_wf_fourier)
+    end subroutine propagate_A
 
 
 
-    subroutine S(add_apply_A_wf_fourier)(this, wf, coefficient)
+    subroutine add_apply_A(this, wf, coefficient)
         class(S(wf_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec), intent(in), optional :: coefficient
@@ -1382,10 +1382,10 @@ contains
 #endif
 #endif
         end select
-    end subroutine S(add_apply_A_wf_fourier)
+    end subroutine add_apply_A
 
    
-    subroutine S(save_wf_fourier)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -1409,11 +1409,11 @@ contains
 #endif        
         call hdf5_write_grid_attributes(this%m%g, filename)
 #endif        
-    end subroutine S(save_wf_fourier)
+    end subroutine save
 
 
 
-    subroutine S(load_wf_fourier)(this, filename)
+    subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -1485,10 +1485,10 @@ contains
 #endif        
         this%is_real_space = .true.
 #endif
-    end subroutine S(load_wf_fourier)
+    end subroutine load
 
 
-    subroutine S(set_wf_fourier)(this, f)
+    subroutine set(this, f)
         class(S(wf_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
 #ifdef _REAL_        
@@ -1497,9 +1497,9 @@ contains
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_wf_fourier)
+    end subroutine set
 
-    subroutine S(set_t_wf_fourier)(this, f, t)
+    subroutine set_t(this, f, t)
         class(S(wf_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
@@ -1509,28 +1509,28 @@ contains
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
         this%is_real_space = .true.
-    end subroutine S(set_t_wf_fourier)
+    end subroutine set_t
 
 
 #ifndef _REAL_        
-   subroutine S(rset_wf_fourier)(this, f)
+   subroutine rset(this, f)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
         this%is_real_space = .true.
-    end subroutine S(rset_wf_fourier)
+    end subroutine rset
 
-    subroutine S(rset_t_wf_fourier)(this, f, t)
+    subroutine rset_t(this, f, t)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
         this%is_real_space = .true.
-    end subroutine S(rset_t_wf_fourier)
+    end subroutine rset_t
 
 #endif        
 
-    function S(norm_wf_fourier)(this) result(n)
+    function norm(this) result(n)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec) :: n
         
@@ -1541,10 +1541,10 @@ contains
 #else
         n = this%m%g%norm_complex_gridfun(this%u)
 #endif        
-    end function S(norm_wf_fourier)
+    end function norm
 
 
-    subroutine S(normalize_wf_fourier)(this, norm)
+    subroutine normalize(this, norm)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec), intent(out), optional :: norm
         real(kind=prec) :: n
@@ -1559,11 +1559,11 @@ contains
 #else        
         call this%scale(cmplx(1.0_prec/n, 0.0_prec, kind=prec))
 #endif        
-    end subroutine S(normalize_wf_fourier)
+    end subroutine normalize
 
 
 
-    subroutine S(scale_wf_fourier)(this, factor)
+    subroutine scale(this, factor)
         class(S(wf_fourier)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
 #ifdef _OPENMP
@@ -1609,10 +1609,10 @@ contains
          end do
 !$OMP END PARALLEL DO 
 #endif
-    end subroutine S(scale_wf_fourier)
+    end subroutine scale
 
 
-    subroutine S(axpy_wf_fourier)(this, other, factor)
+    subroutine axpy(this, other, factor)
          class(S(wf_fourier)), intent(inout) :: this
          class(_WAVE_FUNCTION_), intent(inout) :: other
          _COMPLEX_OR_REAL_(kind=prec), intent(in) :: factor
@@ -1698,11 +1698,11 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(axpy_wf_fourier)
+    end subroutine axpy
 
 
 
-    subroutine S(copy_wf_fourier)(this, source)
+    subroutine copy(this, source)
         class(S(wf_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: source 
 #ifdef _OPENMP
@@ -1811,10 +1811,10 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end subroutine S(copy_wf_fourier)
+    end subroutine copy
 
 
-    function S(distance_wf_fourier)(this, wf) result(n)
+    function distance(this, wf) result(n)
         class(S(wf_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         real(kind=prec) :: n
@@ -1886,11 +1886,11 @@ contains
         class default
            stop "E: wave functions not belonging to the same method"
         end select
-    end function S(distance_wf_fourier)
+    end function distance
 
 
 
-    function S(norm_in_frequency_space_wf_fourier)(this) result(N)
+    function norm_in_frequency_space(this) result(N)
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec) :: N
 
@@ -1998,19 +1998,7 @@ contains
 #endif
 !TODO check for sqrt !!!
         N = sqrt(N)
-    end function S(norm_in_frequency_space_wf_fourier)
-
-
-
-    !subroutine S(final_fourier)(this)
-    !    class(S(fourier)) :: this
-    !    deallocate( this%eigenvalues1 )
-    !end subroutine S(final_fourier)
-
-    !subroutine S(final_wf_fourier)(this)
-    !    class(S(wf_fourier) :: this
-    !    deallocate( this%u )
-    !end subroutine S(final_wf_fourier)
+    end function norm_in_frequency_space
 
 #ifdef _QUADPRECISION_
 end module S(tssmq_fourier)

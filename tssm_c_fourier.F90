@@ -1,8 +1,10 @@
 #ifdef _QUADPRECISION_
 module tssmq_c_fourier
+    use tssmq
     use tssmq_fourier
 #else
 module tssm_c_fourier
+    use tssm
     use tssm_fourier
 #endif    
     implicit none

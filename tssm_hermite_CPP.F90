@@ -34,6 +34,9 @@ module S(tssm_hermite)
 #endif    
     implicit none
 
+    private
+    public :: S(hermite), S(wf_hermite)
+
     type, extends(S(tensorial)) :: S(hermite)
         real(kind=prec) :: gamma_x 
 #if(_DIM_>=2)
@@ -50,20 +53,20 @@ module S(tssm_hermite)
     end type S(hermite)
 
     interface  S(hermite) ! constructor
-        module procedure S(new_hermite)
+        module procedure new_method
     end interface S(hermite)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     type, extends(S(wf_tensorial)) :: S(wf_hermite)
     contains
-        procedure :: save => S(save_wf_hermite)
-        procedure :: load => S(load_wf_hermite)
-        !procedure :: evaluate => S(evaluate_wf_hermite)
+        procedure :: save
+        procedure :: load
+        !procedure :: evaluate
     end type S(wf_hermite)
 
     interface S(wf_hermite) ! constructor
-        module procedure S(new_wf_hermite)
+        module procedure new_wf
     end interface S(wf_hermite)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -73,11 +76,11 @@ contains
 
 
 #if(_DIM_==1)
-    function S(new_hermite)(nx, gamma_x ) result(this)
+    function new_method(nx, gamma_x ) result(this)
 #elif(_DIM_==2)
-    function S(new_hermite)(nx, gamma_x, ny, gamma_y) result(this)
+    function new_method(nx, gamma_x, ny, gamma_y) result(this)
 #elif(_DIM_==3)
-    function S(new_hermite)(nx, gamma_x, ny, gamma_y, nz, gamma_z) result(this)
+    function new_method(nx, gamma_x, ny, gamma_y, nz, gamma_z) result(this)
 #endif
         type(S(hermite)) :: this
         integer, intent(in) :: nx
@@ -112,10 +115,10 @@ contains
         call hermite_scaled_coeffs(nz-1, this%g%nodes_z,  this%g%weights_z, this%H3, this%gamma_z)
         this%eigenvalues3 = (/ ( -this%gamma_z*(0.5_prec + real(i, prec)), i = this%nf3min, this%nf3max) /)
 #endif
-    end function S(new_hermite)
+    end function new_method
 
 
-    function S(new_wf_hermite)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(S(wf_hermite)) :: this
         class(S(hermite)), target, intent(inout) :: m
@@ -139,10 +142,10 @@ contains
         complex(kind=prec), optional, intent(in) :: coefficient
 #endif
         this%S(wf_tensorial) = S(wf_tensorial)(m, u, coefficient)
-    end function S(new_wf_hermite)
+    end function new_wf
 
 
-    subroutine S(save_wf_hermite)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_hermite)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -173,11 +176,11 @@ contains
         end select
 !TODO save nodes !!!
 #endif        
-    end subroutine S(save_wf_hermite)
+    end subroutine save
 
 
 
-    subroutine S(load_wf_hermite)(this, filename)
+    subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(S(wf_hermite)), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -224,7 +227,7 @@ contains
     
        call this%S(wf_tensorial)%load(filename)
 #endif
-    end subroutine S(load_wf_hermite)
+    end subroutine load
 
 
 

@@ -70,6 +70,9 @@ module _MODULE_
 #endif    
     implicit none
 
+    private
+    public :: _METHOD_, _WF_
+
     type, extends(_BASE_METHOD_) :: _METHOD_ 
         real(kind=prec) :: gamma_r 
 #ifdef _HERMITE_        
@@ -83,19 +86,19 @@ module _MODULE_
     end type _METHOD_
 
     interface _METHOD_ ! constructor
-        module procedure S(new)
+        module procedure new_method
     end interface _METHOD_
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     type, extends(_BASE_WF_) ::  _WF_ 
     contains
-        procedure :: save => S(save_wf)
-        procedure :: load => S(load_wf)
+        procedure :: save
+        procedure :: load
     end type _WF_ 
 
     interface _WF_ ! constructor
-        module procedure S(new_wf)
+        module procedure new_wf
     end interface _WF_
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -103,9 +106,9 @@ contains
 
 
 #ifdef _HERMITE_
-    function S(new)(M, K, gamma_r, Omega, nz, gamma_z ) result(this)
+    function new_method(M, K, gamma_r, Omega, nz, gamma_z ) result(this)
 #else
-    function S(new)(M, K, gamma_r, Omega ) result(this)
+    function new_method(M, K, gamma_r, Omega ) result(this)
 #endif
         type(_METHOD_) :: this
         integer, intent(in) :: M
@@ -156,12 +159,12 @@ contains
         call hermite_scaled_coeffs(nz, this%g%nodes_z,  this%g%weights_z, this%H_z, this%gamma_z)
         this%eigenvalues_z = (/ ( -this%gamma_z*(0.5_prec + real(j, prec)), j = this%nfzmin, this%nfzmax) /)
 #endif
-    end function S(new)
+    end function new_method
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    function S(new_wf)(m, u, coefficient) result(this)
+    function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(_WF_) :: this
         class(_METHOD_), target, intent(inout) :: m
@@ -181,11 +184,11 @@ contains
         complex(kind=prec), optional, intent(in) :: coefficient
 #endif
         this%_BASE_WF_ = _BASE_WF_(m, u, coefficient)
-    end function S(new_wf)
+    end function new_wf
 
 
 
-    subroutine S(save_wf)(this, filename)
+    subroutine save(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -217,10 +220,10 @@ contains
         end select
 !TODO save nodes !!!
 #endif        
-    end subroutine S(save_wf)
+    end subroutine save
 
 
-   subroutine S(load_wf)(this, filename)
+   subroutine load(this, filename)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -264,7 +267,7 @@ contains
 
        call this%_BASE_WF_%save(filename)
 #endif
-    end subroutine S(load_wf)
+    end subroutine load
 
 
 end module _MODULE_ 

@@ -1,23 +1,9 @@
 #ifdef _REAL_
-#ifdef _QUADPRECISION_
-    #define _MODULE_ tssmq_fourier_bessel_real_2d
-    #define _C_MODULE_ tssmq_c_fourier_bessel_real_2d
-#else
-    #define _MODULE_ tssm_fourier_bessel_real_2d
-    #define _C_MODULE_ tssm_c_fourier_bessel_real_2d
-#endif    
     #define _METHOD_ fourier_bessel_real_2d
     #define _WF_ wf_fourier_bessel_real_2d
     #define _COMPLEX_OR_REAL_ real
     #define S(x) x ## _fourier_bessel_real_2d
 #else
-#ifdef _QUADPRECISION_
-    #define _MODULE_ tssmq_fourier_bessel_2d
-    #define _C_MODULE_ tssmq_c_fourier_bessel_2d
-#else
-    #define _MODULE_ tssm_fourier_bessel_2d
-    #define _C_MODULE_ tssm_c_fourier_bessel_2d
-#endif
     #define _METHOD_ fourier_bessel_2d
     #define _WF_ wf_fourier_bessel_2d
     #define _COMPLEX_OR_REAL_ complex
@@ -36,8 +22,16 @@
 #define SC(x) SC1(C(x))
 
 
-module _C_MODULE_ 
-    use _MODULE_
+
+#ifdef _QUADPRECISION_
+module S(tssmq_c_fourier)
+    use tssmq
+    use tssmq_fourier_bessel
+#else
+module S(tssm_c_fourier)
+    use tssm
+    use tssm_fourier_bessel
+#endif
     implicit none
 
 contains
@@ -562,4 +556,8 @@ contains
     end function S(c_distance_wf)
 
 
-end module _C_MODULE_ 
+#ifdef _QUADPRECISION_
+end module S(tssmq_c_fourier)
+#else
+end module S(tssm_c_fourier)
+#endif
