@@ -481,6 +481,104 @@ subroutine fourier_bessel_coeffs(nr, kk, mm, x, w, L, eigenvalues, normalization
 end subroutine fourier_bessel_coeffs
 #endif
 
+
+#ifdef _QUADPRECISION_
+subroutine bessel_rotsym_coeffs(nr, x, w, L, eigenvalues, normalization_factors, boundary_conditions)
+#else
+subroutine bessel_rotsym_coeffs_eprec(nr, x, w, L, eigenvalues, normalization_factors, boundary_conditions)
+#endif
+    integer, intent(in) :: nr
+    real(kind=eprec), intent(out) :: x(1:nr)
+    real(kind=eprec), intent(out) :: w(1:nr)
+    real(kind=eprec), intent(out) :: L(1:nr, 1:nr) 
+    real(kind=eprec), intent(out) :: eigenvalues(1:nr)
+    real(kind=eprec), intent(out) :: normalization_factors(1:nr)
+    integer, intent(in) :: boundary_conditions
+
+    real(kind=eprec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_eprec
+    integer :: k, m
+    real(kind=eprec) :: z_max, f
+    real(kind=eprec), allocatable :: z(:)
+
+    allocate( z(1:k) )
+
+    z_max = besselj_zero(0, nr+1) 
+    do k=1,nr
+        z(k) = besselj_zero(0, k)
+        x(k) = z(k)/z_max
+        w(k) = 2.0_eprec/bessel_j1(z(k))**2
+        eigenvalues(k) = z(k)**2
+    end do
+    do k=1,nr
+        f = sqrt(1.0_eprec/pi)/abs(bessel_j1(z(k))) 
+        normalization_factors(k) = f
+        do m = 1,nr
+            L(m,k) = f*bessel_j0(z(k)*x(m))
+        end do
+    end do
+
+    deallocate( z )
+
+#ifdef _QUADPRECISION_
+end subroutine bessel_rotsym_coeffs
+#else
+end subroutine bessel_rotsym_coeffs_eprec
+#endif
+
+
+#ifndef _QUADPRECISION_
+subroutine bessel_rotsym_coeffs(nr, x, w, L, eigenvalues, normalization_factors, boundary_conditions)
+    integer, intent(in) :: nr
+    real(kind=prec), intent(out) :: x(1:nr)
+    real(kind=prec), intent(out) :: w(1:nr)
+    real(kind=prec), intent(out) :: L(1:nr, 1:nr) 
+    real(kind=prec), intent(out) :: eigenvalues(1:nr)
+    real(kind=prec), intent(out) :: normalization_factors(1:nr)
+    integer, intent(in) :: boundary_conditions
+
+    real(eprec), allocatable :: x_eprec(:)
+    real(eprec), allocatable :: w_eprec(:)
+    real(eprec), allocatable :: L_eprec(:,:)
+    real(eprec), allocatable :: ev_eprec(:)
+    real(eprec), allocatable :: nf_eprec(:)
+
+    allocate ( x_eprec(1:nr) ) 
+    allocate ( w_eprec(1:nr) ) 
+    allocate ( L_eprec(1:nr, 1:nr) ) 
+    allocate ( ev_eprec(1:nr) ) 
+    allocate ( nf_eprec(1:nr) ) 
+
+    call bessel_rotsym_coeffs_eprec(nr, x_eprec, w_eprec, L_eprec, ev_eprec, &
+                                    nf_eprec, boundary_conditions)
+
+    x = real(x_eprec, kind=prec) 
+    w = real(w_eprec, kind=prec)
+    L = real(L_eprec, kind=prec)
+    eigenvalues = real(ev_eprec, kind=prec)
+    normalization_factors = real(nf_eprec, kind=prec)
+
+    deallocate (x_eprec)
+    deallocate (w_eprec)
+    deallocate (L_eprec)
+    deallocate (ev_eprec)
+end subroutine bessel_rotsym_coeffs
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #ifdef _QUADPRECISION_
 end module tssmq_fourier_bessel_common
 #else

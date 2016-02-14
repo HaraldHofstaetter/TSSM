@@ -9,6 +9,11 @@
  #define _WF_ wf_fourier_bessel_real_2d
  #define _BASE_METHOD_ polar_real_2d
  #define _BASE_WF_ wf_polar_real_2d
+ #define _METHOD_ROTSYM_ bessel_rotsym_real_1d
+ #define _WF_ROTSYM_ wf_bessel_rotsym_real_2d
+ #define _BASE_METHOD_ROTSYM_ tensorial_real_1d
+ #define _BASE_WF_ROTSYM_ wf_tensorial_real_1d
+
 #else
 #ifdef _QUADPRECISION_
  #define _MODULE_ tssmq_fourier_bessel_2d
@@ -20,6 +25,10 @@
  #define _WF_ wf_fourier_bessel_2d
  #define _BASE_METHOD_ polar_2d
  #define _BASE_WF_ wf_polar_2d
+ #define _METHOD_ROTSYM_ bessel_rotsym_1d
+ #define _WF_ROTSYM_ wf_bessel_rotsym_2d
+ #define _BASE_METHOD_ROTSYM_ tensorial_1d
+ #define _BASE_WF_ROTSYM_ wf_tensorial_1d
 #endif
 
 
@@ -28,39 +37,35 @@ module _MODULE_
     use tssmq
     use tssmq_grid
     use tssmq_polar
+    use tssmq_tensorial
     use tssmq_fourier_common
     use tssmq_fourier_bessel_common
 #else
     use tssm
     use tssm_grid
     use tssm_polar
+    use tssm_tensorial
     use tssm_fourier_common
     use tssm_fourier_bessel_common
 #endif    
     implicit none
 
     private
-    public ::  _METHOD_, _WF_
+    public ::  _METHOD_, _WF_, _METHOD_ROTSYM_, _WF_ROTSYM_
 
     type, extends(_BASE_METHOD_) :: _METHOD_ 
         real(kind=prec) :: rmax = 1.0_prec
         integer :: boundary_conditions = dirichlet 
         integer :: quadrature_formula = lobatto 
         real(kind=prec), allocatable :: normalization_factors(:,:)
-
     contains    
-        !final :: final_laguerre_1D
-        !! Fortran 2003 feature final seems to be not properly implemented
-        !! in the gcc/gfortran compiler :
-        procedure :: finalize 
+        procedure :: finalize => finalize_method 
     end type _METHOD_
 
     interface _METHOD_ ! constructor
         module procedure new_method
     end interface _METHOD_
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     type, extends(_BASE_WF_) ::  _WF_ 
     contains
         procedure :: save
@@ -71,7 +76,34 @@ module _MODULE_
     interface _WF_ ! constructor
         module procedure new_wf 
     end interface _WF_
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!
+
+    type, extends(_BASE_METHOD_ROTSYM_) :: _METHOD_ROTSYM_ 
+        real(kind=prec) :: rmax = 1.0_prec
+        integer :: boundary_conditions = dirichlet 
+!        integer :: quadrature_formula = lobatto 
+        real(kind=prec), allocatable :: normalization_factors(:)
+    contains    
+        procedure :: finalize => finalize_method_rotsym 
+    end type _METHOD_ROTSYM_
+
+    interface _METHOD_ROTSYM_ ! constructor
+        module procedure new_method
+    end interface _METHOD_ROTSYM_
+
+    type, extends(_BASE_WF_ROTSYM_) ::  _WF_ROTSYM_ 
+    contains
+!        procedure :: save => save_rotsym
+!        procedure :: load => load_rotsym
+!        procedure :: evaluate => evaluate_rotsym
+    end type _WF_ROTSYM_ 
+
+    interface _WF_ROTSYM_ ! constructor
+        module procedure new_wf_rotsym 
+    end interface _WF_ROTSYM_
+
+
 
 contains
 
@@ -84,7 +116,6 @@ contains
         real(kind=prec), intent(in), optional :: rmax 
         integer, intent(in), optional :: boundary_conditions
         integer, intent(in), optional :: quadrature_formula
-        real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
         if (present(rmax)) then
             this%rmax = rmax
@@ -112,15 +143,14 @@ contains
 
     end function new_method 
 
-    subroutine finalize(this)
+    subroutine finalize_method(this)
         class(_METHOD_), intent(inout) :: this
 
         call this%_BASE_METHOD_%finalize()
         deallocate( this%normalization_factors )
 
-    end subroutine finalize
+    end subroutine finalize_method
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
@@ -260,6 +290,52 @@ contains
         end select
         
     end function evaluate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    function new_method_rotsym(nr, rmax, boundary_conditions) result(this)
+        type(_METHOD_ROTSYM_) :: this
+        integer, intent(in) :: nr 
+        real(kind=prec), intent(in), optional :: rmax 
+        integer, intent(in), optional :: boundary_conditions
+
+        if (present(rmax)) then
+            this%rmax = rmax
+        end if
+        if (present(boundary_conditions)) then
+            this%boundary_conditions = boundary_conditions
+        end if
+
+        this%_BASE_METHOD_ROTSYM_ = _BASE_METHOD_ROTSYM_(nr) 
+
+        allocate( this%normalization_factors(this%nf1min:this%nf1max) )
+
+        call bessel_rotsym_coeffs(nr, this%g%nodes_x,  this%g%weights_x, this%H1, &
+             this%eigenvalues1, this%normalization_factors, this%boundary_conditions) 
+    end function new_method_rotsym
+
+
+     subroutine finalize_method_rotsym(this)
+        class(_METHOD_ROTSYM_), intent(inout) :: this
+
+        call this%_BASE_METHOD_ROTSYM_%finalize()
+        deallocate( this%normalization_factors )
+
+    end subroutine finalize_method_rotsym
+   
+
+    function new_wf_rotsym(m, u, coefficient) result(this)
+        use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
+        type(_WF_ROTSYM_) :: this
+        class(_METHOD_ROTSYM_), target, intent(inout) :: m
+#ifdef _REAL_       
+        real(kind=prec), optional, target, intent(inout) :: u(:)
+        real(kind=prec), optional, intent(in) :: coefficient
+#else            
+        complex(kind=prec), optional, target, intent(inout) :: u(:)
+        complex(kind=prec), optional, intent(in) :: coefficient
+#endif
+        this%_BASE_WF_ROTSYM_ = _BASE_WF_ROTSYM_(m, u, coefficient)
+    end function new_wf_rotsym
 
 
 end module _MODULE_
