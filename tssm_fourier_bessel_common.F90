@@ -502,11 +502,13 @@ subroutine bessel_rotsym_coeffs_eprec(nr, x, w, L, eigenvalues, normalization_fa
 
     allocate( z(1:k) )
 
+!TODO: Neumann boundary conditions!
+
     z_max = besselj_zero(0, nr+1) 
     do k=1,nr
         z(k) = besselj_zero(0, k)
         x(k) = z(k)/z_max
-        w(k) = 2.0_eprec/bessel_j1(z(k))**2
+        w(k) = 4.0_eprec*pi/(z_max*bessel_j1(z(k)))**2
         eigenvalues(k) = z(k)**2
     end do
     do k=1,nr

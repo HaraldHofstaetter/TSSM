@@ -41,29 +41,61 @@ typedef __complex128  mycomplex128;
 #endif
 
 #ifdef _REAL_
-#ifdef _QUADPRECISION_
- #define S(x) tssmq_ ## x ## _fourier_bessel_real_2d
- #define W(x) tssmq_ ## x ## _fourier_bessel_real_2d_wf128
+  #define _COMPLEX_OR_REAL_ __float128
+  #define _WRAPPED_COMPLEX_OR_REAL_ myfloat128
 #else
- #define S(x) tssm_ ## x ## _fourier_bessel_real_2d
- #define W(x) tssm_ ## x ## _fourier_bessel_real_2d_wf128
-#endif 
- #define _COMPLEX_OR_REAL_ __float128
- #define _WRAPPED_COMPLEX_OR_REAL_ myfloat128
+  #define _COMPLEX_OR_REAL_ __complex128
+  #define _WRAPPED_COMPLEX_OR_REAL_ mycomplex128
+#endif
+
+#ifdef _ROTSYM_
+  #define _DIM_ 1
+  #ifdef _REAL_
+    #ifdef _QUADPRECISION_
+     #define S(x) tssmq_ ## x ## _bessel_rotsym_real_1d
+     #define W(x) tssmq_ ## x ## _bessel_rotsym_real_1d_wf128
+    #else
+     #define S(x) tssm_ ## x ## _bessel_rotsym_real_1d
+     #define W(x) tssm_ ## x ## _bessel_rotsym_real_1d_wf128
+    #endif 
+  #else
+    #ifdef _QUADPRECISION_
+     #define S(x) tssmq_ ## x ## _bessel_rotsym_1d
+     #define W(x) tssmq_ ## x ## _bessel_rotsym_1d_wf128
+    #else
+     #define S(x) tssm_ ## x ## _bessel_rotsym_1d
+     #define W(x) tssm_ ## x ## _bessel_rotsym_1d_wf128
+    #endif
+  #endif
+#else
+  #define _DIM_ 2
+  #ifdef _REAL_
+    #ifdef _QUADPRECISION_
+     #define S(x) tssmq_ ## x ## _fourier_bessel_real_2d
+     #define W(x) tssmq_ ## x ## _fourier_bessel_real_2d_wf128
+    #else
+     #define S(x) tssm_ ## x ## _fourier_bessel_real_2d
+     #define W(x) tssm_ ## x ## _fourier_bessel_real_2d_wf128
+    #endif 
+  #else
+    #ifdef _QUADPRECISION_
+     #define S(x) tssmq_ ## x ## _fourier_bessel_2d
+     #define W(x) tssmq_ ## x ## _fourier_bessel_2d_wf128
+    #else
+     #define S(x) tssm_ ## x ## _fourier_bessel_2d
+     #define W(x) tssm_ ## x ## _fourier_bessel_2d_wf128
+    #endif
+  #endif
+#endif
+
+#ifdef _ROTSYM_
+void* S(new)(int nr, __float128 r_max, int boundary_conditions);
+void* W(new)(int nr, myfloat128 r_max, int boundary_conditions)
+{
+    return S(new)(nr,  F(r_max), boundary_conditions);
+}
 
 #else
-#ifdef _QUADPRECISION_
- #define S(x) tssmq_ ## x ## _fourier_bessel_2d
- #define W(x) tssmq_ ## x ## _fourier_bessel_2d_wf128
-#else
- #define S(x) tssm_ ## x ## _fourier_bessel_2d
- #define W(x) tssm_ ## x ## _fourier_bessel_2d_wf128
-#endif
- #define _COMPLEX_OR_REAL_ __complex128
- #define _WRAPPED_COMPLEX_OR_REAL_ mycomplex128
-#endif
-#define _DIM_ 2
-
 void* S(new)(int M, int nr, int nfr, __float128 r_max, 
                int boundary_conditions, int quadrature_formula);
 void* W(new)(int M, int nr, int nfr, myfloat128 r_max, 
@@ -72,6 +104,7 @@ void* W(new)(int M, int nr, int nfr, myfloat128 r_max,
     return S(new)(M, nr, nfr,  F(r_max),
                 boundary_conditions, quadrature_formula);
 }
+#endif
 
 
 void S(finalize)(void *m);
@@ -202,6 +235,7 @@ myfloat128 W(distance_wf)(void* psi1, void* psi2)
     return res;
 }    
 
+#ifndef _ROTSYM_
 __float128 S(inner_product_wf)(void *psi, void *other);
 myfloat128 W(inner_product_wf)(void *psi, void *other)
 {
@@ -209,6 +243,7 @@ myfloat128 W(inner_product_wf)(void *psi, void *other)
     F(res) = S(inner_product_wf)(psi, other);
     return res;
 }  
+#endif
 
 void S(scale_wf)(void *psi, _COMPLEX_OR_REAL_ factor);
 void W(scale_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ factor)
@@ -223,6 +258,8 @@ void W(axpy_wf)(void *this, void *other, _WRAPPED_COMPLEX_OR_REAL_ factor)
     S(axpy_wf)(this, other, F(factor));
 }
 
+
+#ifndef _ROTSYM
 _COMPLEX_OR_REAL_ S(evaluate_wf)(void *psi, __float128 x, __float128 y);
 _WRAPPED_COMPLEX_OR_REAL_ W(evaluate_wf)(void *psi, myfloat128 x, myfloat128 y)
 {
@@ -230,6 +267,7 @@ _WRAPPED_COMPLEX_OR_REAL_ W(evaluate_wf)(void *psi, myfloat128 x, myfloat128 y)
     F(res) = S(evaluate_wf)(psi, F(x), F(y));
     return res;
 }    
+#endif
 
 
 void* S(get_data_wf)(void *psi, int dim[_DIM_]);
@@ -240,8 +278,8 @@ void* W(get_data_wf)(void *psi, int dim[_DIM_])
 
 
 /* different to the fourier version */
-void* S(get_eigenvalues)(void *m, int dim[2]);
-void* W(get_eigenvalues)(void *m, int dim[2])
+void* S(get_eigenvalues)(void *m, int dim[_DIM_]);
+void* W(get_eigenvalues)(void *m, int dim[_DIM_])
 {
     return S(get_eigenvalues)(m, dim);
 }
@@ -260,29 +298,17 @@ void* W(get_weights)(void* m, int dim[1])
     return S(get_weights)(m, dim);
 }    
 
-void* S(get_L)(void* m, int dim[3]);
-void* W(get_L)(void* m, int dim[3])
+void* S(get_L)(void* m, int dim[_DIM_+1]);
+void* W(get_L)(void* m, int dim[_DIM_+1])
 {
     return S(get_L)(m, dim);
 }
-
-int S(get_ntheta)(void *m); 
-int W(get_ntheta)(void *m) 
-{
-    return S(get_ntheta)(m);
-}    
 
 int S(get_nr)(void *m); 
 int W(get_nr)(void *m) 
 {
     return S(get_nr)(m);
 }    
-
-int S(get_nfr)(void *m); 
-int W(get_nfr)(void *m) 
-{
-    return S(get_nfr)(m);
-}  
 
 __float128 S(get_rmax)(void *m);
 myfloat128 W(get_rmax)(void *m)
@@ -292,7 +318,85 @@ myfloat128 W(get_rmax)(void *m)
     return res;
 }
 
+#ifndef _ROTSYM_
+int S(get_ntheta)(void *m); 
+int W(get_ntheta)(void *m) 
+{
+    return S(get_ntheta)(m);
+}   
 
+int S(get_nfr)(void *m); 
+int W(get_nfr)(void *m) 
+{
+    return S(get_nfr)(m);
+}  
+#endif
+
+#ifdef _ROTSYM_
+
+#ifndef _REAL_ 
+void S(rset_wf)(void *psi, __float128 (*f)(__float128));
+void W(rset_wf)(void *psi, myfloat128 (*f)(myfloat128))
+{
+    __float128 ff(__float128 x)
+    {
+        myfloat128 res, xx;
+        F(xx) = x;
+        res = f(xx);
+        return F(res);
+    }
+    S(rset_wf)(psi, ff);
+}    
+
+void S(rset_t_wf)(void *psi, __float128 (*f)(__float128, __float128));
+void W(rset_t_wf)(void *psi, myfloat128 (*f)(myfloat128, myfloat128))
+{
+    __float128 ff(__float128 x, __float128 t)
+    {
+        myfloat128 res, xx, tt;
+        F(xx) = x;
+        F(tt) = t;
+        res = f(xx, tt);
+        return F(res);
+    }
+    S(rset_t_wf)(psi, ff);
+}
+#endif   
+
+void  S(set_wf)(void *psi,
+    _COMPLEX_OR_REAL_ (*f)(__float128));
+void  W(set_wf)(void *psi,
+    _WRAPPED_COMPLEX_OR_REAL_ (*f)(myfloat128))
+{
+    _COMPLEX_OR_REAL_ ff(__float128 x)
+    {
+        _WRAPPED_COMPLEX_OR_REAL_ res;
+        myfloat128 xx;
+        F(xx) = x;
+        res = f(xx);
+        return F(res);
+    }
+    S(set_wf)(psi, ff);
+}    
+
+void  S(set_t_wf)(void *psi,
+    _COMPLEX_OR_REAL_ (*f)(__float128, __float128));
+void  W(set_t_wf)(void *psi,
+    _WRAPPED_COMPLEX_OR_REAL_ (*f)(myfloat128, myfloat128))
+{
+    _COMPLEX_OR_REAL_ ff(__float128 x, __float128 t)
+    {
+        _WRAPPED_COMPLEX_OR_REAL_ res;
+        myfloat128 xx, tt;
+        F(xx) = x;
+        F(tt) = t;
+        res = f(xx, tt);
+        return F(res);
+    }
+    S(set_t_wf)(psi, ff);
+}
+
+#else
 
 #ifndef _REAL_ 
 void S(rset_wf)(void *psi, __float128 (*f)(__float128, __float128));
@@ -326,7 +430,6 @@ void W(rset_t_wf)(void *psi, myfloat128 (*f)(myfloat128,
     S(rset_t_wf)(psi, ff);
 }
 #endif   
-
 
 void  S(set_wf)(void *psi,
     _COMPLEX_OR_REAL_ (*f)(__float128, __float128));
@@ -363,7 +466,8 @@ void  W(set_t_wf)(void *psi,
     S(set_t_wf)(psi, ff);
 }
 
-
-
-
 #endif
+
+
+
+#endif /* _QUADPRECISION_ */

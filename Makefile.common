@@ -38,6 +38,7 @@ OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
        tssm_c_generalized_laguerre_2d.o tssm_c_generalized_laguerre_hermite_3d.o \
        tssm_c_generalized_laguerre_real_2d.o tssm_c_generalized_laguerre_hermite_real_3d.o \
        tssm_c_fourier_bessel_real_2d.o tssm_c_fourier_bessel_2d.o \
+       tssm_c_bessel_rotsym_real_1d.o tssm_c_bessel_rotsym_1d.o \
        tssm_disorder_potential.o
 
 OBJS_F128WRAPPER = \
@@ -48,7 +49,8 @@ OBJS_F128WRAPPER = \
        tssm_c_schroedinger_hermite_f128wrapper_1d.o tssm_c_schroedinger_hermite_f128wrapper_2d.o \
        tssm_c_schroedinger_hermite_f128wrapper_3d.o  tssm_c_schroedinger_hermite_f128wrapper_real_1d.o \
        tssm_c_schroedinger_hermite_f128wrapper_real_2d.o tssm_c_schroedinger_hermite_f128wrapper_real_3d.o \
-       tssm_c_fourier_bessel_f128wrapper_2d.o tssm_c_fourier_bessel_f128wrapper_real_2d.o 
+       tssm_c_fourier_bessel_f128wrapper_2d.o tssm_c_fourier_bessel_f128wrapper_real_2d.o \
+       tssm_c_bessel_rotsym_f128wrapper_1d.o tssm_c_bessel_rotsym_f128wrapper_real_1d.o 
 
 
 $(TSSM): $(OBJS)
@@ -449,6 +451,19 @@ tssm_c_fourier_bessel_real_2d.f90: ../tssm_c_fourier_bessel_CPP.F90
 tssm_c_fourier_bessel_real_2d.o: tssm_c_fourier_bessel_real_2d.f90
 	$(FC) $(FOPTS) -c tssm_c_fourier_bessel_real_2d.f90 -o tssm_c_fourier_bessel_real_2d.o
 
+tssm_c_bessel_rotsym_1d.f90: ../tssm_c_fourier_bessel_CPP.F90
+	$(CPP) -D_ROTSYM_ ../tssm_c_fourier_bessel_CPP.F90 > tssm_c_bessel_rotsym_1d.f90
+
+tssm_c_bessel_rotsym_1d.o: tssm_c_bessel_rotsym_1d.f90
+	$(FC) $(FOPTS) -c tssm_c_bessel_rotsym_1d.f90 -o tssm_c_bessel_rotsym_1d.o
+
+tssm_c_bessel_rotsym_real_1d.f90: ../tssm_c_fourier_bessel_CPP.F90
+	$(CPP) -D_ROTSYM_ -D_REAL_ ../tssm_c_fourier_bessel_CPP.F90 > tssm_c_bessel_rotsym_real_1d.f90
+
+tssm_c_bessel_rotsym_real_1d.o: tssm_c_bessel_rotsym_real_1d.f90
+	$(FC) $(FOPTS) -c tssm_c_bessel_rotsym_real_1d.f90 -o tssm_c_bessel_rotsym_real_1d.o
+
+
 ##
 
 tssm_disorder_potential.o: ../tssm_disorder_potential.F90
@@ -520,10 +535,17 @@ tssm_c_fourier_f128wrapper_real_3d.o: ../tssm_c_fourier_f128wrapper_CPP.c
 ##
 
 tssm_c_fourier_bessel_f128wrapper_2d.o: ../tssm_c_fourier_bessel_f128wrapper_CPP.c
-	$(CC) $(COPTS) -D_DIM_=2 -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_fourier_bessel_f128wrapper_2d.o
+	$(CC) $(COPTS) -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_fourier_bessel_f128wrapper_2d.o
 
 tssm_c_fourier_bessel_f128wrapper_real_2d.o: ../tssm_c_fourier_bessel_f128wrapper_CPP.c
-	$(CC) $(COPTS) -D_REAL_ -D_DIM_=2 -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_fourier_bessel_f128wrapper_real_2d.o
+	$(CC) $(COPTS) -D_REAL_ -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_fourier_bessel_f128wrapper_real_2d.o
+
+tssm_c_bessel_rotsym_f128wrapper_1d.o: ../tssm_c_fourier_bessel_f128wrapper_CPP.c
+	$(CC) $(COPTS) -D_ROTSYM_ -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_bessel_rotsym_f128wrapper_1d.o
+
+tssm_c_bessel_rotsym_f128wrapper_real_1d.o: ../tssm_c_fourier_bessel_f128wrapper_CPP.c
+	$(CC) $(COPTS) -D_ROTSYM_ -D_REAL_  -c ../tssm_c_fourier_bessel_f128wrapper_CPP.c -o tssm_c_bessel_rotsym_f128wrapper_real_1d.o
+
 
 ##
 

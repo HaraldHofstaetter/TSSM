@@ -10,7 +10,7 @@
  #define _BASE_METHOD_ polar_real_2d
  #define _BASE_WF_ wf_polar_real_2d
  #define _METHOD_ROTSYM_ bessel_rotsym_real_1d
- #define _WF_ROTSYM_ wf_bessel_rotsym_real_2d
+ #define _WF_ROTSYM_ wf_bessel_rotsym_real_1d
  #define _BASE_METHOD_ROTSYM_ tensorial_real_1d
  #define _BASE_WF_ROTSYM_ wf_tensorial_real_1d
 
@@ -26,7 +26,7 @@
  #define _BASE_METHOD_ polar_2d
  #define _BASE_WF_ wf_polar_2d
  #define _METHOD_ROTSYM_ bessel_rotsym_1d
- #define _WF_ROTSYM_ wf_bessel_rotsym_2d
+ #define _WF_ROTSYM_ wf_bessel_rotsym_1d
  #define _BASE_METHOD_ROTSYM_ tensorial_1d
  #define _BASE_WF_ROTSYM_ wf_tensorial_1d
 #endif
@@ -89,7 +89,7 @@ module _MODULE_
     end type _METHOD_ROTSYM_
 
     interface _METHOD_ROTSYM_ ! constructor
-        module procedure new_method
+        module procedure new_method_rotsym
     end interface _METHOD_ROTSYM_
 
     type, extends(_BASE_WF_ROTSYM_) ::  _WF_ROTSYM_ 
