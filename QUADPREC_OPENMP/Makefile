@@ -38,7 +38,8 @@ endif
 ifeq ($(SYSTEM),MINGW)  
     FOPTS = -fopenmp -O3 -D_QUADPRECISION_
     TSSM_SHARED_LIB = libtssmq.dll
-    CPP = /c/MinGW/bin/cpp.exe -std=c89 -D_OPENMP
+    CPP = /c/MinGW/bin/cpp.exe -std=c89 -D_OPENMPinclude("/home/hofi/.julia/v0.4/TSSM/examples/time_stepper.jl"set!(psi, f)
+global_orders(psi, psi_ref, t0, tend, tend-t0, Strang, "AB", 9);)
 all: shared_lib
 endif
 

@@ -376,8 +376,8 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
     integer, intent(in) :: quadrature_formula
 
     integer :: m, k, n
-    real(kind=eprec) :: lambda
-    real(kind=eprec) :: lambda2
+    real(kind=eprec) :: z
+    real(kind=eprec) :: z2
     real(kind=eprec) :: f 
     real(kind=eprec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_eprec
     
@@ -407,29 +407,29 @@ subroutine fourier_bessel_coeffs_eprec(nr, kk, mm, x, w, L, eigenvalues, normali
     end select
 
     deallocate( xx, ww )
-!$OMP PARALLEL DO PRIVATE(m, k, lambda, lambda2, f)
+!$OMP PARALLEL DO PRIVATE(m, k, z, z2, f)
     do m=0,mm/2
         do k=1,kk
            select case(boundary_conditions)
            case (dirichlet)
-               lambda = besselj_zero(m, k)
-               lambda2 = lambda**2
-               f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, lambda)) 
+               z = besselj_zero(m, k)
+               z2 = z**2
+               f = sqrt(1.0_eprec/pi)/abs(bessel_jn(m+1, z)) 
            case (neumann)
-               lambda = besseljprime_zero(m, k)
-               lambda2 = lambda**2
-               f = sqrt(1.0_eprec/(pi*(1.0_eprec - real(m**2,kind=eprec)/lambda2)))/abs(bessel_jn(m, lambda)) 
+               z = besseljprime_zero(m, k)
+               z2 = z**2
+               f = sqrt(1.0_eprec/(pi*(1.0_eprec - real(m**2,kind=eprec)/z2)))/abs(bessel_jn(m, z)) 
            end select   
            if ((m>=nfthetamin).and.(m<=nfthetamax)) then
-               eigenvalues(k, m) = lambda2
+               eigenvalues(k, m) = -z2
                normalization_factors(k, m) = f
            end if
            if ((m>=1).and.(m<mm/2).and.(mm-m>=nfthetamin).and.(mm-m<=nfthetamax)) then
-               eigenvalues(k, mm-m) = lambda2
+               eigenvalues(k, mm-m) = -z2
                normalization_factors(k, mm-m) = f
            end if           
            do n = 1,nr
-               L(n,k,m) = f*bessel_jn(m, lambda*x(n))
+               L(n,k,m) = f*bessel_jn(m, z*x(n))
            end do
         end do
     end do    
@@ -500,7 +500,7 @@ subroutine bessel_rotsym_coeffs_eprec(nr, x, w, L, eigenvalues, normalization_fa
     real(kind=eprec) :: z_max, f
     real(kind=eprec), allocatable :: z(:)
 
-    allocate( z(1:k) )
+    allocate( z(1:nr) )
 
 !TODO: Neumann boundary conditions!
 
@@ -509,7 +509,7 @@ subroutine bessel_rotsym_coeffs_eprec(nr, x, w, L, eigenvalues, normalization_fa
         z(k) = besselj_zero(0, k)
         x(k) = z(k)/z_max
         w(k) = 4.0_eprec*pi/(z_max*bessel_j1(z(k)))**2
-        eigenvalues(k) = z(k)**2
+        eigenvalues(k) = -z(k)**2
     end do
     do k=1,nr
         f = sqrt(1.0_eprec/pi)/abs(bessel_j1(z(k))) 

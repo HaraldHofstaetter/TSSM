@@ -325,7 +325,7 @@ void W(load_wf_schroedinger)(void *psi, char* filename, int filename_length)
 void S(copy_wf_schroedinger)(void *psi, void *source);
 void W(copy_wf_schroedinger)(void *psi, void *source)
 {
-    W(copy_wf_schroedinger)(psi, source);
+    S(copy_wf_schroedinger)(psi, source);
 }    
 
 

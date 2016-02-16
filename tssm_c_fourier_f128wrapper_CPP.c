@@ -190,7 +190,7 @@ void W(load_wf)(void *psi, char* filename, int filename_length)
 void S(copy_wf)(void *psi, void *source);
 void W(copy_wf)(void *psi, void *source)
 {
-    W(copy_wf)(psi, source);
+    S(copy_wf)(psi, source);
 }    
 
 

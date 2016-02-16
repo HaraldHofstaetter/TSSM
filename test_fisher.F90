@@ -279,7 +279,7 @@ print *, "REAL"
                     t0 = 0.0_prec, &
                     steps=steps, &
                     splitting_scheme = (/ 0.5_prec, 1.0_prec, 0.5_prec /), &
-                    start_with_B=.false.)
+                    operator_sequence="AB")
 
 
     call psi_real%set(initial_value_real)
@@ -287,7 +287,7 @@ print *, "REAL"
             splitting_scheme = (/ 0.5_prec, 1.0_prec, 0.5_prec /), &
       !     complex_splitting_scheme = (/ (8.0_prec,-1.0_prec)/26.0_prec, (18.0_prec,-1.0_prec)/25, &
        !                                   (18.0_prec, 1.0_prec)/26, (7.0_prec, 1.0_prec)/25 /), &
-           start_with_B=.false.)
+                    operator_sequence="AB")
 
 #endif
 !----------------------
@@ -313,7 +313,7 @@ print *, "COMPLEX"
 !           complex_splitting_scheme = (/ (8.0_prec,-1.0_prec)/26.0_prec, (18.0_prec,-1.0_prec)/25, &
 !                                          (18.0_prec, 1.0_prec)/26, (7.0_prec, 1.0_prec)/25 /), &
                     complex_splitting_scheme = scheme_A44c, &
-           start_with_B=.false.)
+                    operator_sequence="AB")
 
 #endif
 
@@ -332,7 +332,7 @@ print *, "COMPLEX"
 !           complex_splitting_scheme = (/ (8.0_prec,-1.0_prec)/26.0_prec, (18.0_prec,-1.0_prec)/25, &
 !                                          (18.0_prec, 1.0_prec)/26, (7.0_prec, 1.0_prec)/25 /), &
                     complex_splitting_scheme = scheme_A44c, &
-                    start_with_B=.false.)
+                    operator_sequence="AB")
 
 
     tend = 0.1_prec
@@ -346,7 +346,7 @@ print *, "COMPLEX"
 !           complex_splitting_scheme = (/ (8.0_prec,-1.0_prec)/26.0_prec, (18.0_prec,-1.0_prec)/25, &
 !                                          (18.0_prec, 1.0_prec)/26, (7.0_prec, 1.0_prec)/25 /), &
                     complex_splitting_scheme = scheme_A44c, &
-           start_with_B=.false.)
+                    operator_sequence="AB")
 #endif
 
 
