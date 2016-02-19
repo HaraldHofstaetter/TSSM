@@ -248,24 +248,86 @@ subroutine quadrature_coefficients_gauss_lobatto(x, w, n)
 end subroutine quadrature_coefficients_gauss_lobatto
 
 
+function besselj_zero_approx1(nu, m)
+    integer, intent(in) :: nu
+    integer, intent(in) :: m
+    real(kind=prec) :: besselj_zero_approx1
+
+    real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
+    real(kind=prec) :: mu, a, a8, a82
+    
+    mu = 4.0_prec*real(nu, kind=prec)**2
+    a = (real(m, kind=prec)+0.5_prec*real(nu, kind=prec)-0.25_prec)*pi
+
+!    besselj_zero_approx =  a -(mu-1.0_prec)/(8.0_prec*a) &
+!      -(4.0_prec*(mu-1.0_prec)*(7.0_prec*mu-31.0_prec))/(3.0_prec*(8.0_prec*a)**3) &
+!      -(32.0_prec*(mu-1.0_prec)*(83.0_prec*mu**2-982.0_prec*mu+3779.0_prec))/(15.0_prec*(8.0_prec*a)**5) &
+!      -(64.0_prec*(mu-1.0_prec)*(6949.0_prec*mu**3-153855.0_prec*mu**2+1585743.0_prec*mu-6277237.0_prec)) &
+!            /(105.0_prec*(8.0_prec*a)**7) 
+
+     a8 = 1.0_prec/(8.0_prec*a)
+     a82 = a8**2
+     besselj_zero_approx1  = a - (mu-1.0_prec)*a8*(1.0_prec + a82*(4.0_prec*(7.0_prec*mu-31.0_prec)/3.0_prec &
+         +a82*( 32.0_prec*(83.0_prec*mu**2-982.0_prec*mu+3779.0_prec)/15.0_prec &
+         +a82*(64.0_prec*(6949.0_prec*mu**3-153855.0_prec*mu**2+1585743.0_prec*mu-6277237.0_prec)/105.0_prec))))
+end function besselj_zero_approx1
+
+function besselj_zero_approx2(nu, m)
+    integer, intent(in) :: nu
+    integer, intent(in) :: m
+    real(kind=prec) :: besselj_zero_approx2
+    real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
+    real(kind=prec) :: t, t2, z_airy, zeta, y, x, p, p2, x2, r, z, h, f1
+    real(kind=prec), dimension(10), parameter :: small_airy_zeros = &
+       (/ -2.338107410459767_prec, -4.087949444130970_prec, -5.520559828095552_prec, &
+          -6.786708090071759_prec, -7.944133587120853_prec, -9.022650853340980_prec, &
+          -10.04017434155809_prec, -11.00852430373326_prec, -11.93601556323626_prec, &
+          -12.82877675286576_prec /)
+
+    if (m<=10) then
+        z_airy = small_airy_zeros(m)
+    else
+        t = 0.375_prec*pi*(4.0_prec*m-1.0_prec)
+        t2 = t**(-2)
+        z_airy = -t**(2.0_prec/3.0_prec)*(1.0_prec+t2*(5.0_prec/48.0_prec &
+            +t2*(-5.0_prec/36.0_prec+t2*(77125.0_prec/82944.0_prec &
+            +t2*(-108056875.0_prec/6967296.0_prec+ t2*162375596875.0_prec/334430208.0_prec))))) 
+    endif
+    zeta = nu**(-2.0_prec/3.0_prec)*z_airy
+    y = 2.0_prec/3.0_prec*(-zeta)**(3.0_prec/2.0_prec)
+    if (y>100000.0_prec) then
+        x = 0.5_prec*pi
+    elseif (y<1.0_prec)then
+        p = (3.0_prec*y)**(1.0_prec/3.0_prec)
+        p2 = p**2
+        x = p*(1.0_prec+p2*(-2.0_prec/15.0_prec+p2*(3.0_prec/175.0_prec+p2*(-2.0_prec/1575.0_prec))))
+    else
+        p = 1.0_prec/(y+0.5_prec*pi)
+        p2 = p**2
+        x = 0.5*pi - p*(1.0_prec+p2*(2.0_prec/3.0_prec+p2*(13.0_prec/15.0_prec &
+             +p2*(146.0_prec/105.0_prec+p2*(781.0_prec/315.0_prec+p2*16328.0_prec/3465.0_prec)))))
+    endif
+    x2 = (y+x)**2
+    r = (x-atan(x+y))/x2
+    x = x - (1.0_prec+x2)*r*(1.0_prec+r/(x+y))
+
+    z = 1.0_prec/cos(x)
+    h = sqrt(zeta*(1.0_prec-z**2))
+    f1 = -z/zeta*h*(5.0_prec/(48.0_prec*zeta) + h*(5.0_prec/(z**2-1.0_prec)+3.0_prec)/24.0_prec)
+    besselj_zero_approx2 = nu*z + f1/nu
+end function besselj_zero_approx2
+
 function besselj_zero_approx(nu, m)
     integer, intent(in) :: nu
     integer, intent(in) :: m
     real(kind=prec) :: besselj_zero_approx
 
-    real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
-    real(kind=prec) :: mu, a
-    
-    mu = 4.0_prec*real(nu, kind=prec)**2
-    a = (real(m, kind=prec)+0.5_prec*real(nu, kind=prec)-0.25_prec)*pi
-
-    besselj_zero_approx =  a -(mu-1.0_prec)/(8.0_prec*a) &
-      -(4.0_prec*(mu-1.0_prec)*(7.0_prec*mu-31.0_prec))/(3.0_prec*(8.0_prec*a)**3) &
-      -(32.0_prec*(mu-1.0_prec)*(83.0_prec*mu**2-982.0_prec*mu+3779.0_prec))/(15.0_prec*(8.0_prec*a)**5) &
-      -(64.0_prec*(mu-1.0_prec)*(6949.0_prec*mu**3-153855.0_prec*mu**2+1585743.0_prec*mu-6277237.0_prec)) &
-            /(105.0_prec*(8.0_prec*a)**7) 
+    if (m>=0.2_prec*nu) then
+        besselj_zero_approx = besselj_zero_approx1(nu, m)
+    else
+        besselj_zero_approx = besselj_zero_approx2(nu, m)
+    endif
 end function besselj_zero_approx
-
 
 function besselj_zero_iter(nu, z0) result(z)
     integer, intent(in) :: nu
