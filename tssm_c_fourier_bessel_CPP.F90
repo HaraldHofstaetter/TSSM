@@ -60,7 +60,8 @@ contains
 #ifdef _ROTSYM_        
     function c_new(nr, r_max, boundary_conditions) &
 #else
-    function c_new(ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula) &
+    function c_new(ntheta, nr, nfr, r_max, &
+    boundary_conditions, quadrature_formula, filename, filename_length) &
 #endif    
         result(this) bind(c, name=SC(new))
         use iso_c_binding
@@ -72,6 +73,10 @@ contains
         integer, value :: ntheta
         integer, value ::nfr 
         integer, value :: quadrature_formula
+        integer(c_int), intent(in), value :: filename_length
+        character(kind=c_char), dimension(filename_length), intent(in):: filename
+        character(len=filename_length, kind=c_char) :: fn 
+        integer :: j
 #endif        
 
         type(_METHOD_), pointer :: meth
@@ -79,7 +84,14 @@ contains
 #ifdef _ROTSYM_        
         meth = _METHOD_( nr, r_max, boundary_conditions)
 #else
-        meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula)
+        if (filename_length==0) then
+            meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula)
+        else
+            do j=1,filename_length
+                fn(j:j) = filename(j)
+            end do
+            meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula, fn)
+        endif
 #endif        
         this =  c_loc(meth)
     end function c_new
@@ -93,6 +105,26 @@ contains
         call mp%finalize
         deallocate( mp )
     end subroutine c_finalize
+
+
+#ifndef _ROTSYM_        
+    subroutine c_save_coeffs(m, filename, filename_length) &
+        bind(c, name=SC(save_coeffs)) 
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer(c_int), intent(in), value :: filename_length
+        character(kind=c_char), dimension(filename_length), intent(in):: filename
+        character(len=filename_length, kind=c_char) :: fn 
+        type(_METHOD_), pointer :: mp
+        integer :: j
+        call c_f_pointer(m, mp)
+        do j=1,filename_length
+            fn(j:j) = filename(j)
+        end do
+        call mp%save_coeffs(fn)
+    end subroutine c_save_coeffs
+#endif    
+    
 
    function c_get_nr(m) &
         result(nr) bind(c, name=SC(get_nr))

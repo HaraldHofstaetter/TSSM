@@ -116,6 +116,7 @@ module _MODULE_
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :
+        procedure :: save_coeffs
         procedure :: finalize => finalize_method
 
     end type _METHOD_
@@ -369,6 +370,41 @@ contains
 #endif        
     end subroutine finalize_method
 
+    subroutine save_coeffs(this, filename)
+#ifdef _QUADPRECISION_ 
+        use tssmq_hdf5_helper
+#else
+        use tssm_hdf5_helper
+#endif
+        class(_METHOD_), intent(inout) :: this
+        character(len=*), intent(in) :: filename
+           
+        call create_file(filename)
+        call write_integer_attr(filename, "nr",  this%g%nr)
+        call write_integer_attr(filename, "nfr",  this%nfr)
+        call write_integer_attr(filename, "ntheta",  this%g%ntheta)
+        call write_array(filename, "nodes_r", this%g%nodes_r, 1, (/ this%g%nr /) )
+        call write_array(filename, "weights_r", this%g%weights_r, 1, (/ this%g%nr /) )
+        if (allocated(this%eigenvalues_r_theta)) then
+            call write_array(filename, "eigenvalues_r_theta", this%eigenvalues_r_theta, &
+                     2, (/ this%nfr, this%g%ntheta /) )
+        else
+            call write_array(filename, "eigenvalues_r", this%eigenvalues_r, &
+                     1, (/ this%nfr /) )
+            call write_array(filename, "eigenvalues_theta", this%eigenvalues_theta, &
+                     1, (/ this%g%ntheta /) )
+        endif
+        call write_array(filename, "L", this%L, 3, (/ this%g%nr, this%nfr, this%g%ntheta/2+1 /) )
+
+#ifdef _CYLINDRICAL_
+        call write_integer_attr(filename, "nz",  this%g%nz)
+        call write_array(filename, "nodes_z", this%g%nodes_z, 1, (/ this%g%nz /) )
+        call write_array(filename, "weights_z", this%g%weights_z, 1, (/ this%g%nz /) )
+        call write_array(filename, "eigenvalues_z", this%eigenvalues_z, &
+                     1, (/ this%g%nz /) )
+        call write_array(filename, "H_z", this%H_z, 2, (/ this%g%nz, this%g%nz /) )
+#endif
+    end subroutine save_coeffs
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

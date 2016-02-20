@@ -59,6 +59,7 @@ module _MODULE_
         integer :: quadrature_formula = lobatto 
         real(kind=prec), allocatable :: normalization_factors(:,:)
     contains    
+        procedure :: save_coeffs
         procedure :: finalize => finalize_method 
     end type _METHOD_
 
@@ -107,8 +108,7 @@ module _MODULE_
 
 contains
 
-
-    function new_method(M, nr, nfr, rmax, boundary_conditions, quadrature_formula) result(this)
+    function new_method(M, nr, nfr, rmax, boundary_conditions, quadrature_formula, coeffs_filename) result(this)
         type(_METHOD_) :: this
         integer, intent(in) :: M
         integer, intent(in) :: nr 
@@ -116,6 +116,7 @@ contains
         real(kind=prec), intent(in), optional :: rmax 
         integer, intent(in), optional :: boundary_conditions
         integer, intent(in), optional :: quadrature_formula
+        character(len=*), intent(in), optional :: coeffs_filename
 
         if (present(rmax)) then
             this%rmax = rmax
@@ -150,6 +151,26 @@ contains
         deallocate( this%normalization_factors )
 
     end subroutine finalize_method
+
+
+    subroutine save_coeffs(this, filename)
+#ifdef _QUADPRECISION_ 
+        use tssmq_hdf5_helper
+#else
+        use tssm_hdf5_helper
+#endif
+        class(_METHOD_), intent(inout) :: this
+        character(len=*), intent(in) :: filename
+
+        call this%_BASE_METHOD_%save_coeffs(filename)
+        call write_array(filename, "normalization_factors", this%normalization_factors, &
+                         2, (/ this%nfr, this%g%ntheta /) )
+        call write_real_attr(filename, "rmax", this%rmax)                         
+        call write_integer_attr(filename, "boundary_conditions", this%boundary_conditions)
+        call write_integer_attr(filename, "quadrature_formula", this%quadrature_formula)
+
+    end subroutine save_coeffs
+    
 
 
     function new_wf(m, u, coefficient) result(this)
