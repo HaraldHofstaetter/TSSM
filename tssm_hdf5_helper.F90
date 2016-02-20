@@ -22,7 +22,7 @@ function get_quad_type() result(QUAD_TYPE)
     call h5Tset_precision_f(QUAD_TYPE, 128_8, error)
     call H5Tset_fields_f(QUAD_TYPE, 127_8, 112_8, 15_8, 0_8, 112_8, error)
     call H5Tset_ebias_f(QUAD_TYPE, 16383_8, error)
-end function get_quad_type()
+end function get_quad_type
 #endif    
 
 subroutine create_file(filename)
@@ -49,11 +49,13 @@ subroutine write_array_0(file_id, arrayname, HDF5_FLOAT_TYPE, u, rank, dimension
     integer(HID_T) :: dset_id  
     real(8), pointer :: ur(:)
     integer :: error
+    dims = dimensions ! convert integer -> integer(HSIZE_T)
+    CALL h5screate_f(H5S_SCALAR_F, space_id, error)
+    CALL h5screate_simple_f(rank, dims, space_id, error)    
     CALL h5dcreate_f(file_id, arrayname, HDF5_FLOAT_TYPE, space_id, dset_id, error)
     call c_f_pointer(c_loc(u), ur, [1])
-    dims = dimensions ! convert integer -> integer(HSIZE_T)
     CALL h5dwrite_f(dset_id, HDF5_FLOAT_TYPE, ur, dims, error)
-    call hsdclose_f(space_id, error)
+    call h5sclose_f(space_id, error)
     call h5dclose_f(dset_id, error)
 end subroutine write_array_0
 
@@ -88,10 +90,11 @@ subroutine write_integer_attr_0(file_id, attrname, u)
     integer(HID_T) :: space_id       
     integer(HID_T) :: attr_id 
     integer :: error
+    CALL h5screate_f(H5S_SCALAR_F, space_id, error)
     call h5acreate_f (file_id, attrname, H5T_STD_I32LE, space_id, attr_id, error)
     call h5awrite_f (attr_id, H5T_NATIVE_INTEGER, c_loc(u), error)
-    call h5sclose_f(space_id, error)
     call h5aclose_f(attr_id, error)
+    call h5sclose_f(space_id, error)
 end subroutine write_integer_attr_0
 
 
@@ -118,6 +121,7 @@ subroutine write_real_attr_0(file_id, attrname, u, HDF5_FLOAT_TYPE)
     integer(HID_T) :: space_id       
     integer(HID_T) :: attr_id 
     integer :: error
+    CALL h5screate_f(H5S_SCALAR_F, space_id, error)
     call h5acreate_f (file_id, attrname, HDF5_FLOAT_TYPE, space_id, attr_id, error)
     call h5awrite_f (attr_id, HDF5_FLOAT_TYPE, c_loc(u), error)
     call h5sclose_f(space_id, error)
@@ -191,7 +195,6 @@ function read_integer_attr_0(file_id, attrname) result(u)
     integer(HID_T), intent(in) :: file_id  
     character(len=*), intent(in) :: attrname
     integer :: u
-    integer(HID_T) :: space_id       
     integer(HID_T) :: attr_id 
     integer(HSIZE_T) :: dummy(1)
     integer :: error

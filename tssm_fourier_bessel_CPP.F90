@@ -59,12 +59,13 @@ module _MODULE_
         integer :: quadrature_formula = lobatto 
         real(kind=prec), allocatable :: normalization_factors(:,:)
     contains    
-        procedure :: save_coeffs
+        procedure :: save => save_method
         procedure :: finalize => finalize_method 
     end type _METHOD_
 
     interface _METHOD_ ! constructor
         module procedure new_method
+        module procedure new_method_from_file
     end interface _METHOD_
 
     type, extends(_BASE_WF_) ::  _WF_ 
@@ -108,7 +109,7 @@ module _MODULE_
 
 contains
 
-    function new_method(M, nr, nfr, rmax, boundary_conditions, quadrature_formula, coeffs_filename) result(this)
+    function new_method(M, nr, nfr, rmax, boundary_conditions, quadrature_formula) result(this)
         type(_METHOD_) :: this
         integer, intent(in) :: M
         integer, intent(in) :: nr 
@@ -116,7 +117,6 @@ contains
         real(kind=prec), intent(in), optional :: rmax 
         integer, intent(in), optional :: boundary_conditions
         integer, intent(in), optional :: quadrature_formula
-        character(len=*), intent(in), optional :: coeffs_filename
 
         if (present(rmax)) then
             this%rmax = rmax
@@ -141,19 +141,52 @@ contains
         call fourier_bessel_coeffs(nr, nfr, M, this%g%nodes_r,  this%g%weights_r, this%L, &
                                   this%eigenvalues_r_theta, this%normalization_factors, this%nfthetamin, this%nfthetamax, &
                                   this%boundary_conditions, this%quadrature_formula) 
-
     end function new_method 
+
+
+    function new_method_from_file(filename) result(this)
+#ifdef _QUADPRECISION_ 
+        use tssmq_hdf5_helper
+#else
+        use tssm_hdf5_helper
+#endif
+        type(_METHOD_) :: this
+        character(len=*), intent(in) :: filename
+        integer :: ntheta, nr, nfr
+        real(kind=prec) :: rmax 
+
+        ntheta =  read_integer_attr(filename, "ntheta")
+        nr =  read_integer_attr(filename, "nr")
+        nfr =  read_integer_attr(filename, "nfr")
+        this%boundary_conditions = read_integer_attr(filename, "boundary_conditions")
+        this%quadrature_formula = read_integer_attr(filename, "quadrature_formula")
+
+        this%_BASE_METHOD_ = _BASE_METHOD_(ntheta, nr, nfr, .true., .false. ) 
+
+        allocate( this%normalization_factors(this%nfrmin:this%nfrmax, &
+                                             this%nfthetamin:this%nfthetamax) ) 
+
+        !this%rmax  = read_real_attr(filename, "rmax") ! TODO!!!
+        this%rmax  = 1.0_prec 
+        call read_array(filename, "nodes_r", this%g%nodes_r, 1, (/ this%g%nr /) )
+        call read_array(filename, "weights_r", this%g%weights_r, 1, (/ this%g%nr /) )
+        call read_array(filename, "eigenvalues_r_theta", this%eigenvalues_r_theta, &
+                         2, (/ this%nfr, this%g%ntheta /) )
+        call read_array(filename, "L", this%L, 3, (/ this%g%nr, this%nfr, this%g%ntheta/2+1 /) )
+        call read_array(filename, "normalization_factors", this%normalization_factors, &
+                         2, (/ this%nfr, this%g%ntheta /) )
+    end function new_method_from_file
+
 
     subroutine finalize_method(this)
         class(_METHOD_), intent(inout) :: this
 
         call this%_BASE_METHOD_%finalize()
         deallocate( this%normalization_factors )
-
     end subroutine finalize_method
 
 
-    subroutine save_coeffs(this, filename)
+    subroutine save_method(this, filename)
 #ifdef _QUADPRECISION_ 
         use tssmq_hdf5_helper
 #else
@@ -161,15 +194,13 @@ contains
 #endif
         class(_METHOD_), intent(inout) :: this
         character(len=*), intent(in) :: filename
-
-        call this%_BASE_METHOD_%save_coeffs(filename)
+        call this%_BASE_METHOD_%save(filename)
         call write_array(filename, "normalization_factors", this%normalization_factors, &
                          2, (/ this%nfr, this%g%ntheta /) )
         call write_real_attr(filename, "rmax", this%rmax)                         
         call write_integer_attr(filename, "boundary_conditions", this%boundary_conditions)
         call write_integer_attr(filename, "quadrature_formula", this%quadrature_formula)
-
-    end subroutine save_coeffs
+    end subroutine save_method
     
 
 

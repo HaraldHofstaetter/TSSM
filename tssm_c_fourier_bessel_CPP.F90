@@ -60,8 +60,7 @@ contains
 #ifdef _ROTSYM_        
     function c_new(nr, r_max, boundary_conditions) &
 #else
-    function c_new(ntheta, nr, nfr, r_max, &
-    boundary_conditions, quadrature_formula, filename, filename_length) &
+    function c_new(ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula) &
 #endif    
         result(this) bind(c, name=SC(new))
         use iso_c_binding
@@ -73,10 +72,6 @@ contains
         integer, value :: ntheta
         integer, value ::nfr 
         integer, value :: quadrature_formula
-        integer(c_int), intent(in), value :: filename_length
-        character(kind=c_char), dimension(filename_length), intent(in):: filename
-        character(len=filename_length, kind=c_char) :: fn 
-        integer :: j
 #endif        
 
         type(_METHOD_), pointer :: meth
@@ -84,17 +79,31 @@ contains
 #ifdef _ROTSYM_        
         meth = _METHOD_( nr, r_max, boundary_conditions)
 #else
-        if (filename_length==0) then
-            meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula)
-        else
-            do j=1,filename_length
-                fn(j:j) = filename(j)
-            end do
-            meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula, fn)
-        endif
+        meth = _METHOD_( ntheta, nr, nfr, r_max, boundary_conditions, quadrature_formula)
 #endif        
         this =  c_loc(meth)
     end function c_new
+
+
+#ifndef _ROTSYM_        
+    function c_new_from_file(filename, filename_length) &
+        result(this) bind(c, name=SC(new_from_file))
+        use iso_c_binding
+        type(c_ptr) :: this 
+        integer(c_int), intent(in), value :: filename_length
+        character(kind=c_char), dimension(filename_length), intent(in):: filename
+        character(len=filename_length, kind=c_char) :: fn 
+        integer :: j
+        type(_METHOD_), pointer :: meth
+
+        allocate( meth )
+        do j=1,filename_length
+            fn(j:j) = filename(j)
+        end do
+        meth = _METHOD_(fn)
+        this =  c_loc(meth)
+    end function c_new_from_file
+#endif    
 
     subroutine c_finalize(m)  bind(c, name=SC(finalize))
         use iso_c_binding
@@ -108,8 +117,8 @@ contains
 
 
 #ifndef _ROTSYM_        
-    subroutine c_save_coeffs(m, filename, filename_length) &
-        bind(c, name=SC(save_coeffs)) 
+    subroutine c_save_method(m, filename, filename_length) &
+        bind(c, name=SC(save)) 
         use iso_c_binding
         type(c_ptr), value :: m
         integer(c_int), intent(in), value :: filename_length
@@ -121,8 +130,8 @@ contains
         do j=1,filename_length
             fn(j:j) = filename(j)
         end do
-        call mp%save_coeffs(fn)
-    end subroutine c_save_coeffs
+        call mp%save(fn)
+    end subroutine c_save_method
 #endif    
     
 

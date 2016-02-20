@@ -97,18 +97,22 @@ void* W(new)(int nr, myfloat128 r_max, int boundary_conditions)
 
 #else
 void* S(new)(int M, int nr, int nfr, __float128 r_max, 
-               int boundary_conditions, int quadrature_formula,
-               char* filename, int filename_length);
+               int boundary_conditions, int quadrature_formula);
 void* W(new)(int M, int nr, int nfr, myfloat128 r_max, 
-               int boundary_conditions, int quadrature_formula,
-               char* filename, int filename_length);
+               int boundary_conditions, int quadrature_formula)
 {
     return S(new)(M, nr, nfr,  F(r_max),
-                boundary_conditions, quadrature_formula,
-                filename, filename_length);
+                boundary_conditions, quadrature_formula);
 }
 #endif
 
+#ifndef _ROTSYM_
+void* S(new_from_file)(char* filename, int filename_length);
+void* W(new_from_file)(char* filename, int filename_length)
+{
+    return S(new_from_file)( filename, filename_length);
+}
+#endif
 
 void S(finalize)(void *m);
 void W(finalize)(void *m)
@@ -117,10 +121,10 @@ void W(finalize)(void *m)
 }
 
 #ifndef _ROTSYM_
-void S(save_coeffs)(void *m, char* filename, int filename_length);
-void W(save_coeffs)(void *m, char* filename, int filename_length)
+void S(save)(void *m, char* filename, int filename_length);
+void W(save)(void *m, char* filename, int filename_length)
 {
-    S(save_coeffs)(m, filename, filename_length);
+    S(save)(m, filename, filename_length);
 }    
 #endif
 

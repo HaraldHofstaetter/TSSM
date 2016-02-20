@@ -116,7 +116,7 @@ module _MODULE_
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
         !! in the gcc/gfortran compiler :
-        procedure :: save_coeffs
+        procedure :: save => save_method
         procedure :: finalize => finalize_method
 
     end type _METHOD_
@@ -370,7 +370,7 @@ contains
 #endif        
     end subroutine finalize_method
 
-    subroutine save_coeffs(this, filename)
+    subroutine save_method(this, filename)
 #ifdef _QUADPRECISION_ 
         use tssmq_hdf5_helper
 #else
@@ -404,7 +404,7 @@ contains
                      1, (/ this%g%nz /) )
         call write_array(filename, "H_z", this%H_z, 2, (/ this%g%nz, this%g%nz /) )
 #endif
-    end subroutine save_coeffs
+    end subroutine save_method
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
