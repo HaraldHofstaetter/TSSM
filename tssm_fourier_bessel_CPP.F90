@@ -154,6 +154,9 @@ contains
         character(len=*), intent(in) :: filename
         integer :: ntheta, nr, nfr
         real(kind=prec) :: rmax 
+#ifndef _REAL_
+        integer :: k
+#endif        
 
         ntheta =  read_integer_attr(filename, "ntheta")
         nr =  read_integer_attr(filename, "nr")
@@ -171,10 +174,16 @@ contains
         call read_array(filename, "nodes_r", this%g%nodes_r, 1, (/ this%g%nr /) )
         call read_array(filename, "weights_r", this%g%weights_r, 1, (/ this%g%nr /) )
         call read_array(filename, "eigenvalues_r_theta", this%eigenvalues_r_theta, &
-                         2, (/ this%nfr, this%g%ntheta /) )
+                         2, (/ this%nfr, this%g%ntheta/2+1 /) )
         call read_array(filename, "L", this%L, 3, (/ this%g%nr, this%nfr, this%g%ntheta/2+1 /) )
         call read_array(filename, "normalization_factors", this%normalization_factors, &
-                         2, (/ this%nfr, this%g%ntheta /) )
+                         2, (/ this%nfr, this%g%ntheta/2+1 /) )
+#ifndef _REAL_
+        do k=1,this%g%ntheta/2-1
+           this%eigenvalues_r_theta(:,this%g%ntheta-k) =  this%eigenvalues_r_theta(:,k)
+           this%normalization_factors(:,this%g%ntheta-k) =  this%normalization_factors(:,k)
+        end do
+#endif
     end function new_method_from_file
 
 
@@ -196,7 +205,7 @@ contains
         character(len=*), intent(in) :: filename
         call this%_BASE_METHOD_%save(filename)
         call write_array(filename, "normalization_factors", this%normalization_factors, &
-                         2, (/ this%nfr, this%g%ntheta /) )
+                         2, (/ this%nfr, this%g%ntheta/2+1 /) )
         call write_real_attr(filename, "rmax", this%rmax)                         
         call write_integer_attr(filename, "boundary_conditions", this%boundary_conditions)
         call write_integer_attr(filename, "quadrature_formula", this%quadrature_formula)

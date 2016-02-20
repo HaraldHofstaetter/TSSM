@@ -387,7 +387,7 @@ contains
         call write_array(filename, "weights_r", this%g%weights_r, 1, (/ this%g%nr /) )
         if (allocated(this%eigenvalues_r_theta)) then
             call write_array(filename, "eigenvalues_r_theta", this%eigenvalues_r_theta, &
-                     2, (/ this%nfr, this%g%ntheta /) )
+                     2, (/ this%nfr, this%g%ntheta/2+1 /) )
         else
             call write_array(filename, "eigenvalues_r", this%eigenvalues_r, &
                      1, (/ this%nfr /) )
