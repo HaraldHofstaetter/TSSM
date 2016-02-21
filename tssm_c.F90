@@ -1,9 +1,9 @@
 #ifdef _QUADPRECISION_
 module tssmq_c_interface
-    use tssmq
+    use tssmq_base
 #else
 module tssm_c_interface
-    use tssm
+    use tssm_base
 #endif    
 
     implicit none

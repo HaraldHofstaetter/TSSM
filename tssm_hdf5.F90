@@ -7,10 +7,10 @@ module tssm_hdf5
 #ifndef _NO_HDF5_
 
 #ifdef _QUADPRECISION_
-use tssmq
+use tssmq_base
 use tssmq_grid
 #else
-use tssm
+use tssm_base
 use tssm_grid
 #endif
 
@@ -29,14 +29,12 @@ function hdf5_open_gridfun(filename) result(file_id)
 #ifdef _MPI_
     if (this_proc/=0) return
 
-    CALL h5open_f(error) 
     CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
     !immediately close and reopen, because
     !MPI version needs to read from just created file
     CALL h5fclose_f(file_id, error)
     CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
 #else
-    CALL h5open_f(error) 
     CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
 #endif
 end function hdf5_open_gridfun
@@ -52,7 +50,6 @@ function hdf5_open_gridfun_read_only(filename) result(file_id)
 #ifdef _MPI_
     if (this_proc/=0) return
 #endif    
-    CALL h5open_f(error) 
     CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
 end function hdf5_open_gridfun_read_only
 
@@ -66,7 +63,6 @@ subroutine hdf5_close_gridfun(file_id)
     if (this_proc/=0) return
 #endif    
     CALL h5fclose_f(file_id, error)
-    CALL h5close_f(error)
 end subroutine hdf5_close_gridfun
 
 
@@ -535,7 +531,6 @@ subroutine hdf5_write_attributes(filename, snames, svalues, inames, ivalues, dna
     if (this_proc/=0) return
 #endif    
 
-    CALL h5open_f(error) 
       CALL h5eset_auto_f(0, error)
         CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, not_exists)
       CALL h5eset_auto_f(1, error)
@@ -582,7 +577,6 @@ subroutine hdf5_write_attributes(filename, snames, svalues, inames, ivalues, dna
 
       CALL h5sclose_f(ir_attr, error)
       CALL h5fclose_f(file_id, error)
-    CALL h5close_f(error)
 end subroutine hdf5_write_attributes
 
 
@@ -606,7 +600,6 @@ subroutine hdf5_read_string_attribute(filename, name, value, len)
     if (this_proc/=0) return
 #endif    
 
-    CALL h5open_f(error) 
     CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
     call h5aopen_f (file_id, name, attr, error)
     !
@@ -630,7 +623,6 @@ subroutine hdf5_read_string_attribute(filename, name, value, len)
     CALL H5tclose_f(memtype, error)
     call h5aclose_f(attr, error)
     CALL h5fclose_f(file_id, error)
-    CALL h5close_f(error)
     len = string_size
 end subroutine hdf5_read_string_attribute
 
@@ -646,13 +638,11 @@ function hdf5_read_integer_attribute(filename, name) result(value)
     integer(HSIZE_T) :: dummy(7)
     integer :: error ! Error flag
 
-    CALL h5open_f(error) 
     CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
     call h5aopen_f (file_id, name, attr, error)
     call h5aread_f (attr, H5T_NATIVE_INTEGER, value, dummy, error)
     call h5aclose_f(attr, error)
     CALL h5fclose_f(file_id, error)
-    CALL h5close_f(error)
 end function hdf5_read_integer_attribute
 
 
@@ -674,7 +664,6 @@ function hdf5_read_double_attribute(filename, name) result(value)
     if (this_proc/=0) return
 #endif    
 
-    CALL h5open_f(error) 
     CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
     call h5aopen_f (file_id, name, attr, error)
 #ifdef _QUADPRECISION_
@@ -685,7 +674,6 @@ function hdf5_read_double_attribute(filename, name) result(value)
 #endif     
     call h5aclose_f(attr, error)
     CALL h5fclose_f(file_id, error)
-    CALL h5close_f(error)
 end function hdf5_read_double_attribute
 
 
@@ -708,20 +696,17 @@ subroutine hdf5_get_dimensions_0(file_id,  dset_name, rank, dims)
     if (this_proc/=0) return
 #endif    
 
-    !CALL h5open_f(error) 
     !CALL  h5eset_auto_f(0, error)
     !call  h5fopen_f (filename, H5F_ACC_RDONLY_F, file_id, not_exists)
     !CALL  h5eset_auto_f(1, error)
     !      if (not_exists/=0) then
     !         rank = -1 
-    !         CALL h5close_f(error)
     !         return
     !      end if    
     CALL   h5eset_auto_f(0, error)
     call   h5dopen_f(file_id, dset_name, dset_id, not_exists)
            if (not_exists/=0) then
               rank = -2 
-              CALL h5close_f(error)
               return
            end if    
     CALL   h5eset_auto_f(1, error)
@@ -736,7 +721,6 @@ subroutine hdf5_get_dimensions_0(file_id,  dset_name, rank, dims)
     call    h5sclose_f(space_id, error)
     CALL   h5dclose_f(dset_id, error)
     !CALL  h5fclose_f(file_id, error)
-    !CALL h5close_f(error)
 end subroutine hdf5_get_dimensions_0
 
 
@@ -1118,10 +1102,6 @@ subroutine hdf5_read_gridfun_0(file_id, g, u, real_wavefunction, &
     end if
 
     !
-    ! Initialize HDF5
-    !
-!    CALL h5open_f(error) 
-    !
     ! Open file
     !
 
@@ -1206,10 +1186,6 @@ subroutine hdf5_read_gridfun_0(file_id, g, u, real_wavefunction, &
 !    ! Close the file.
 !    !
 !    CALL h5fclose_f(file_id, error)
-!    !
-!    ! Close HDF5
-!    !
-!    CALL h5close_f(error)
 
 end subroutine hdf5_read_gridfun_0
 

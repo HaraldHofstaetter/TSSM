@@ -57,11 +57,11 @@
 
 module _MODULE_
 #ifdef _QUADPRECISION_ 
-    use tssmq
+    use tssmq_base
     use tssmq_grid
     use tssmq_fourier_common
 #else
-    use tssm
+    use tssm_base
     use tssm_grid
     use tssm_fourier_common
 #endif    

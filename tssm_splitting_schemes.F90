@@ -1,9 +1,9 @@
 #ifdef _QUADPRECISION_
 module tssmq_splitting_schemes
-    use tssmq
+    use tssmq_base
 #else
 module tssm_splitting_schemes
-    use tssm
+    use tssm_base
 #endif    
 
 !Source: Coefficients of various splitting methods

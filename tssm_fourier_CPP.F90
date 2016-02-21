@@ -39,12 +39,12 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_fourier)
-    use tssmq, only: spectral_method, _WAVE_FUNCTION_
+    use tssmq_base, only: spectral_method, _WAVE_FUNCTION_
     use tssmq_grid
     use tssmq_fourier_common
 #else
 module S(tssm_fourier)
-    use tssm, only: spectral_method, _WAVE_FUNCTION_
+    use tssm_base, only: spectral_method, _WAVE_FUNCTION_
     use tssm_grid
     use tssm_fourier_common
 #endif    
@@ -535,8 +535,6 @@ contains
         deallocate( this%jf )
 #endif        
     end subroutine finalize_method
-
-
 
     function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc

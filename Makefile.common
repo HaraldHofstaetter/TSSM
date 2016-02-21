@@ -1,6 +1,6 @@
 all: $(TSSM)
 
-OBJS = tssm_common.o tssm_complex.o tssm_real.o tssm.o \
+OBJS = tssm_common.o tssm_base_complex.o tssm_base_real.o tssm_base.o \
        tssm_splitting_schemes.o \
        tssm_grid.o tssm_hdf5.o tssm_hdf5_helper.o \
        tssm_fourier_common.o \
@@ -62,25 +62,25 @@ lapack_dsterf.o: ../lapack_dsterf.f
 
 
 tssm_common.o: ../tssm_common.F90
-	$(FC) $(FOPTS) -c ../tssm_common.F90  -o tssm_common.o
+	$(FC) $(FOPTS) -c ../tssm_common.F90 -I$(HDF5_INCLUDE) -o tssm_common.o
 
 tssm_splitting_schemes.o: ../tssm_splitting_schemes.F90
 	$(FC) $(FOPTS) -c ../tssm_splitting_schemes.F90  -o tssm_splitting_schemes.o
 
-tssm_complex.f90: ../tssm_CPP.F90
-	$(CPP)  ../tssm_CPP.F90 > tssm_complex.f90
+tssm_base_complex.f90: ../tssm_base_CPP.F90
+	$(CPP)  ../tssm_base_CPP.F90 > tssm_base_complex.f90
 
-tssm_complex.o: tssm_complex.f90
-	$(FC) $(FOPTS) -c tssm_complex.f90  -o tssm_complex.o
+tssm_base_complex.o: tssm_base_complex.f90
+	$(FC) $(FOPTS) -c tssm_base_complex.f90  -o tssm_base_complex.o
 
-tssm_real.f90: ../tssm_CPP.F90
-	$(CPP) -D_REAL_ ../tssm_CPP.F90 > tssm_real.f90
+tssm_base_real.f90: ../tssm_base_CPP.F90
+	$(CPP) -D_REAL_ ../tssm_base_CPP.F90 > tssm_base_real.f90
 
-tssm_real.o: tssm_real.f90
-	$(FC) $(FOPTS) -c tssm_real.f90  -o tssm_real.o
+tssm_base_real.o: tssm_base_real.f90
+	$(FC) $(FOPTS) -c tssm_base_real.f90  -o tssm_base_real.o
 
-tssm.o: ../tssm.F90
-	$(FC) $(FOPTS) -c ../tssm.F90  -o tssm.o
+tssm_base.o: ../tssm_base.F90
+	$(FC) $(FOPTS) -c ../tssm_base.F90  -o tssm_base.o
 
 tssm_grid.o: ../tssm_grid.F90
 	$(FC) $(FOPTS) -c ../tssm_grid.F90 -o tssm_grid.o

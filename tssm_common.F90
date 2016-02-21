@@ -32,9 +32,13 @@ contains
 #ifdef _OPENMP
         use omp_lib
 #endif 
+#ifndef _NO_HDF5_
+        use hdf5
+#endif        
         logical, save :: already_initialized = .false.
+        integer :: ierr
 #ifdef _MPI_
-        integer :: ierr, provided
+        integer :: provided
 #endif
         if(already_initialized) return 
 #ifdef _MPI_
@@ -71,16 +75,24 @@ contains
         print *, "*** SERIAL (no MPI/OPENMP)" 
 #endif
 #endif
+#ifndef _NO_HDF5_
+        CALL h5open_f(ierr) 
+#endif
+
         already_initialized = .true.
     end subroutine initialize_tssm
 
     subroutine finalize_tssm
-#ifdef _MPI_
+#ifndef _NO_HDF5_
+        use hdf5
+#endif        
         integer :: ierr
+#ifndef _NO_HDF5_
+        CALL h5close_f(ierr) 
 #endif
 #ifdef _MPI_
         call MPI_Finalize(ierr)
-#endif 
+#endif
     end subroutine finalize_tssm
 
 

@@ -45,11 +45,11 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_c)
-    use tssmq
+    use tssmq_base
     use tssmq_fourier_bessel
 #else
 module S(tssm_c)
-    use tssm
+    use tssm_base
     use tssm_fourier_bessel
 #endif
     implicit none

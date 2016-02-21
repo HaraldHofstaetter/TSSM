@@ -5,7 +5,8 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             QUADPRECISION/Makefile MINGW/Makefile \
             QUADPREC_OPENMP/Makefile \
             lapack_dsterf.f tssm_splitting_schemes.F90 \
-            tssm_common.F90 tssm_CPP.F90 tssm.F90 tssm_grid.F90 tssm_hdf5.F90 tssm_hdf5_helper.F90 \
+            tssm_common.F90 tssm_base_CPP.F90 tssm_base.F90 tssm_grid.F90 \
+            tssm_hdf5.F90 tssm_hdf5_helper.F90 \
             tssm_fourier.F90 tssm_fourier_common.F90 tssm_fourier_CPP.F90 \
             tssm_multicomponent_fourier_CPP.F90 \
             tssm_c.F90 tssm_c_fourier.F90 tssm_c_fourier_CPP.F90\

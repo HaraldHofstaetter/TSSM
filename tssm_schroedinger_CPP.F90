@@ -64,7 +64,8 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_schroedinger) ! (Nonlinear) Schroedinger
-    use tssmq
+    use tssmq_base
+    use tssmq_fourier_common ! fftw_free
 #if defined(_HERMITE_)
     use tssmq_hermite
 #else
@@ -72,7 +73,8 @@ module S(tssmq_schroedinger) ! (Nonlinear) Schroedinger
 #endif
 #else
 module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
-    use tssm
+    use tssm_base
+    use tssm_fourier_common ! fftw_free
 #if defined(_HERMITE_)
     use tssm_hermite
 #else
@@ -222,7 +224,7 @@ contains
         end if
 
         if (present(potential)) then
-            call S(set_potential_schroedinger)(this, potential) 
+            call this%set_potential(potential) 
         end if
     end function new_method
 

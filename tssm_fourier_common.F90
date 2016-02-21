@@ -11,10 +11,10 @@
 
 #ifdef _QUADPRECISION_
 module tssmq_fourier_common
-    use tssmq
+    use tssmq_base
 #else
 module tssm_fourier_common
-    use tssm
+    use tssm_base
 #endif    
     use, intrinsic :: iso_c_binding !needed for fftw3.f03
     implicit none

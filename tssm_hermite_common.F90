@@ -1,9 +1,9 @@
 #ifdef _QUADPRECISION_
 module tssmq_hermite_common
-use tssmq
+use tssmq_base
 #else
 module tssm_hermite_common
-use tssm
+use tssm_base
 #endif
 implicit none
 

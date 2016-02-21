@@ -9,10 +9,10 @@
 #endif  
 
 #ifdef _QUADPRECISION_
-module S(tssmq)
+module S(tssmq_base)
      use tssmq_common
 #else
-module S(tssm)
+module S(tssm_base)
      use tssm_common
 #endif
      implicit none
@@ -800,9 +800,9 @@ contains
 
 
 #ifdef _QUADPRECISION_
-end module S(tssmq)
+end module S(tssmq_base)
 #else
-end module S(tssm)
+end module S(tssm_base)
 #endif
 
 

@@ -1,9 +1,9 @@
 #ifdef _QUADPRECISION_
 module tssmq_hdf5_helper
-use tssmq
+use tssmq_base
 #else
 module tssm_hdf5_helper
-use tssm
+use tssm_base
 #endif
 
 use hdf5 
@@ -29,10 +29,8 @@ subroutine create_file(filename)
     character(len=*), intent(in) :: filename
     integer(HID_T) :: file_id  
     integer :: error
-    call h5open_f(error) 
     call h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end subroutine create_file
 
 
@@ -69,16 +67,15 @@ subroutine write_array(filename, arrayname, u, rank, dimensions)
     integer(HID_T) :: file_id  
     integer :: error
     integer(HID_T) :: HDF5_FLOAT_TYPE 
+
 #ifdef _QUADPRECISION_    
     HDF5_FLOAT_TYPE = get_quad_type()  
 #else    
     HDF5_FLOAT_TYPE = H5T_IEEE_F64LE 
 #endif    
-    call h5open_f(error) 
     call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
     call write_array_0(file_id, arrayname, HDF5_FLOAT_TYPE, u, rank, dimensions)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end subroutine write_array
 
 
@@ -104,11 +101,9 @@ subroutine write_integer_attr(filename, attrname, u)
     integer, intent(in) :: u
     integer :: error
     integer(HID_T) :: file_id  
-    call h5open_f(error) 
     call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
     call write_integer_attr_0(file_id, attrname, u)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end subroutine write_integer_attr
 
 
@@ -136,16 +131,15 @@ subroutine write_real_attr(filename, attrname, u)
     integer :: error
     integer(HID_T) :: file_id  
     integer(HID_T) :: HDF5_FLOAT_TYPE
+
 #ifdef _QUADPRECISION_    
     HDF5_FLOAT_TYPE = get_quad_type()  
 #else    
     HDF5_FLOAT_TYPE = H5T_IEEE_F64LE 
 #endif    
-    call h5open_f(error) 
     call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
     call write_real_attr_0(file_id, attrname, u, HDF5_FLOAT_TYPE)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end subroutine write_real_attr
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -179,16 +173,15 @@ subroutine read_array(filename, arrayname, u, rank, dimensions)
     integer :: error
     integer(HID_T) :: file_id  
     integer(HID_T) :: HDF5_FLOAT_TYPE
+
 #ifdef _QUADPRECISION_    
     HDF5_FLOAT_TYPE = get_quad_type()  
 #else    
     HDF5_FLOAT_TYPE = H5T_IEEE_F64LE 
 #endif    
-    call h5open_f(error) 
     call h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
     call read_array_0(file_id, arrayname, HDF5_FLOAT_TYPE, u, rank, dimensions)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end subroutine read_array
 
 function read_integer_attr_0(file_id, attrname) result(u)
@@ -210,11 +203,9 @@ function read_integer_attr(filename, attrname) result(u)
     integer :: u
     integer(HID_T) :: file_id  
     integer :: error
-    call h5open_f(error) 
     call h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
     u =  read_integer_attr_0(file_id, attrname)
     call h5fclose_f(file_id, error)
-    call h5close_f(error)
 end function read_integer_attr
 
 

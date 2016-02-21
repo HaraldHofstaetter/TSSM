@@ -46,11 +46,11 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_c_schroedinger)
-    use tssmq
+    use tssmq_base
     use tssmq_schroedinger
 #else
 module S(tssm_c_schroedinger)
-    use tssm
+    use tssm_base
     use tssm_schroedinger
 #endif    
     implicit none

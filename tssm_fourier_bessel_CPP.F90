@@ -5,6 +5,7 @@
  #define _MODULE_ tssm_fourier_bessel_real_2d
 #endif
  #define _COMPLEX_OR_REAL_ real
+ #define _WAVE_FUNCTION_ real_wave_function
  #define _METHOD_ fourier_bessel_real_2d
  #define _WF_ wf_fourier_bessel_real_2d
  #define _BASE_METHOD_ polar_real_2d
@@ -21,6 +22,7 @@
  #define _MODULE_ tssm_fourier_bessel_2d
 #endif
  #define _COMPLEX_OR_REAL_ complex
+ #define _WAVE_FUNCTION_ wave_function
  #define _METHOD_ fourier_bessel_2d
  #define _WF_ wf_fourier_bessel_2d
  #define _BASE_METHOD_ polar_2d
@@ -34,14 +36,14 @@
 
 module _MODULE_
 #ifdef _QUADPRECISION_
-    use tssmq
+    use tssmq_base
     use tssmq_grid
     use tssmq_polar
     use tssmq_tensorial
     use tssmq_fourier_common
     use tssmq_fourier_bessel_common
 #else
-    use tssm
+    use tssm_base
     use tssm_grid
     use tssm_polar
     use tssm_tensorial
@@ -211,8 +213,6 @@ contains
         call write_integer_attr(filename, "quadrature_formula", this%quadrature_formula)
     end subroutine save_method
     
-
-
     function new_wf(m, u, coefficient) result(this)
         use, intrinsic :: iso_c_binding, only: c_f_pointer, c_ptr, c_loc
         type(_WF_) :: this

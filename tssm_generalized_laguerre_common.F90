@@ -1,9 +1,9 @@
 #ifdef _QUADPRECISION_
 module tssmq_generalized_laguerre_common
-use tssmq
+use tssmq_base
 #else
 module tssm_generalized_laguerre_common
-use tssm
+use tssm_base
 #endif
 implicit none
 

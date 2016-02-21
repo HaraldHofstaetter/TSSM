@@ -22,12 +22,12 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_tensorial)
-    use tssmq
+    use tssmq_base
     use tssmq_grid
     use tssmq_fourier_common
 #else
 module S(tssm_tensorial)
-    use tssm
+    use tssm_base
     use tssm_grid
     use tssm_fourier_common
 #endif    

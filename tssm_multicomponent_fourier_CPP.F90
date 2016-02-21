@@ -15,11 +15,11 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_multicomponent_fourier)    
-    use tssmq
+    use tssmq_base
     use S(tssmq_fourier)
 #else
 module S(tssm_multicomponent_fourier)    
-    use tssm
+    use tssm_base
     use S(tssm_fourier)
 #endif    
     implicit none
@@ -38,7 +38,7 @@ module S(tssm_multicomponent_fourier)
        character(len=32), allocatable :: dset_names_imag(:)
 #endif
         integer :: method_for_B = 2 
-
+    contains
 !       TODO: finalize
     end type S(multicomponent_fourier)
 

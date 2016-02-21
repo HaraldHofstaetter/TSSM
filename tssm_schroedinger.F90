@@ -1,6 +1,7 @@
 #ifdef _QUADPRECISION_
 
 module tssmq_schroedinger ! (Nonlinear) Schroedinger equation
+    use tssmq_fourier_common
     use tssmq_schroedinger_1D
     use tssmq_schroedinger_2D
     use tssmq_schroedinger_3D
@@ -17,6 +18,7 @@ end module tssmq_schroedinger
 #else
 
 module tssm_schroedinger ! (Nonlinear) Schroedinger equation
+    use tssm_fourier_common
     use tssm_schroedinger_1D
     use tssm_schroedinger_2D
     use tssm_schroedinger_3D

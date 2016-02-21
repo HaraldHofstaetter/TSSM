@@ -21,13 +21,13 @@
 
 #ifdef _QUADPRECISION_
 module S(tssmq_hermite)
-    use tssmq
+    use tssmq_base
     use tssmq_grid
     use tssmq_tensorial
     use tssmq_hermite_common
 #else
 module S(tssm_hermite)
-    use tssm
+    use tssm_base
     use tssm_grid
     use tssm_tensorial
     use tssm_hermite_common

@@ -1,10 +1,10 @@
 #ifdef _QUADPRECISION_
 module tssmq_fourier_bessel_common
-use tssmq
+use tssmq_base
 use tssmq_fourier_common, only: dirichlet, neumann
 #else
 module tssm_fourier_bessel_common
-use tssm
+use tssm_base
 use tssm_fourier_common, only: dirichlet, neumann
 #endif
 implicit none

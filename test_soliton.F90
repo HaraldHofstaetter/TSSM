@@ -1,5 +1,9 @@
 module soliton_module
-    use tssm, only: prec
+#ifdef _QUADPRECISION_
+    use tssmq_base, only: prec
+#else
+    use tssm_base, only: prec
+#endif    
     implicit none 
 
     real(prec) :: a = 2_prec
@@ -20,9 +24,14 @@ end module soliton_module
 
 
 program test_soliton
+#ifdef _QUADPRECISION_
+    use tssmq_schroedinger
+    use tssmq_splitting_schemes
+#else
     use tssm_schroedinger
-    use soliton_module  
     use tssm_splitting_schemes
+#endif    
+    use soliton_module  
 
     implicit none 
 
@@ -48,6 +57,8 @@ program test_soliton
 
     !get initial solution:
     call psi%set_t(soliton, 0.0_prec) 
+    call psi%save("xxx.h5")
+    call psi%load("xxx.h5")
 
     !get exact final solution
     call psi_ex%set_t(soliton, tend) 

@@ -24,6 +24,7 @@
     #define S(x) x ## _gen_laguerre_real_2d
  #endif
  #define _COMPLEX_OR_REAL_ real
+ #define _WAVE_FUNCTION_ real_wave_function
 #else
  #ifdef _HERMITE_
    #ifdef _QUADPRECISION_
@@ -49,19 +50,20 @@
     #define S(x) x ## _gen_laguerre_2d
  #endif 
  #define _COMPLEX_OR_REAL_ complex
+ #define _WAVE_FUNCTION_ wave_function
 #endif
 
 
 module _MODULE_
 #ifdef _QUADPRECISION_
-    use tssmq
+    use tssmq_base
     use tssmq_grid
     use tssmq_polar
     use tssmq_fourier_common
     use tssmq_hermite_common
     use tssmq_generalized_laguerre_common
 #else
-    use tssm
+    use tssm_base
     use tssm_grid
     use tssm_polar
     use tssm_fourier_common
