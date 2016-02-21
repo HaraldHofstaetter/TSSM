@@ -85,11 +85,13 @@ subroutine write_integer_attr_0(file_id, attrname, u)
     character(len=*), intent(in) :: attrname
     integer, intent(in), target :: u
     integer(HID_T) :: space_id       
-    integer(HID_T) :: attr_id 
+    integer(HID_T) :: attr_id
+    integer(HSIZE_T) :: dummy(1)
     integer :: error
     CALL h5screate_f(H5S_SCALAR_F, space_id, error)
     call h5acreate_f (file_id, attrname, H5T_STD_I32LE, space_id, attr_id, error)
-    call h5awrite_f (attr_id, H5T_NATIVE_INTEGER, c_loc(u), error)
+    !call h5awrite_f (attr_id, H5T_NATIVE_INTEGER, c_loc(u), error)
+    call h5awrite_f (attr_id, H5T_NATIVE_INTEGER, u, dummy, error)
     call h5aclose_f(attr_id, error)
     call h5sclose_f(space_id, error)
 end subroutine write_integer_attr_0
@@ -115,10 +117,14 @@ subroutine write_real_attr_0(file_id, attrname, u, HDF5_FLOAT_TYPE)
     real(kind=prec), intent(in), target :: u
     integer(HID_T) :: space_id       
     integer(HID_T) :: attr_id 
+    real(8), pointer :: ur
+    integer(HSIZE_T) :: dummy(1)
     integer :: error
     CALL h5screate_f(H5S_SCALAR_F, space_id, error)
     call h5acreate_f (file_id, attrname, HDF5_FLOAT_TYPE, space_id, attr_id, error)
-    call h5awrite_f (attr_id, HDF5_FLOAT_TYPE, c_loc(u), error)
+    !call h5awrite_f (attr_id, HDF5_FLOAT_TYPE, c_loc(u), error)
+    call c_f_pointer(c_loc(u), ur)
+    call h5awrite_f (attr_id, HDF5_FLOAT_TYPE, ur, dummy, error)
     call h5sclose_f(space_id, error)
     call h5aclose_f(attr_id, error)
 end subroutine write_real_attr_0
