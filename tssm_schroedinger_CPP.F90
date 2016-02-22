@@ -105,13 +105,10 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         real(kind=prec) :: cubic_coupling = 0.0_prec
 #if(_DIM_==1)
         real(kind=prec), pointer :: V(:) => null()      ! for potential
-        real(kind=prec), pointer :: V_imag(:) => null() ! "imaginary" (absorbing) potential
 #elif(_DIM_==2)
         real(kind=prec), pointer :: V(:,:) => null()      ! for potential
-        real(kind=prec), pointer :: V_imag(:,:) => null() ! "imaginary" (absorbing) potential
 #elif(_DIM_==3)
         real(kind=prec), pointer :: V(:,:,:) => null()      ! for potential
-        real(kind=prec), pointer :: V_imag(:,:,:) => null() ! "imaginary" (absorbing) potential
 #endif
         type(S(wf_schroedinger)), pointer :: tmp => null()
 
@@ -120,11 +117,6 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         procedure :: set_potential
         procedure :: save_potential
         procedure :: load_potential
-#ifndef _REAL_
-        procedure :: set_imaginary_potential
-        !procedure :: save_maginary_potential
-        !procedure :: load_maginary_potential
-#endif
         procedure :: initialize_tmp
         procedure :: finalize_tmp
     end type S(schroedinger)
@@ -296,9 +288,6 @@ contains
         if(associated(this%V)) then 
             deallocate( this%V)
         end if 
-        if(associated(this%V_imag)) then 
-            deallocate( this%V_imag)
-        end if 
         call this%finalize_tmp
     end subroutine finalize_method
 
@@ -444,19 +433,6 @@ contains
 
 
 
-#ifndef _REAL_
-
-    subroutine set_imaginary_potential(this, f)
-        class(S(schroedinger)), intent(inout) :: this
-        real(kind=prec), external :: f
-
-        if (.not.associated(this%V_imag)) then
-            call this%g%allocate_real_gridfun(this%V)
-        end if
-        call this%g%set_real_gridfun(this%V_imag, f)
-    end subroutine set_imaginary_potential
-
-#endif
 
     subroutine imaginary_time_propagate_A(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
@@ -875,9 +851,7 @@ contains
     subroutine propagate_B(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
-#ifndef _REAL_
         complex(kind=prec) :: f
-#endif
 #ifdef _OPENMP
 #if(_DIM_==1)            
         _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:)
@@ -896,27 +870,6 @@ contains
         call this%to_real_space
 
         if (associated(m%V)) then
-#ifdef _REAL_
-#ifndef _OPENMP
-           this%u = exp((-dt/m%hbar)*m%V) * this%u
-#else
-!$OMP PARALLEL DO PRIVATE(j, u, V) 
-            do j=1,n_threads
-#if(_DIM_==1)
-                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
-                V => m%V(lbound(m%V,1)+m%g%jj(j-1):lbound(m%V,1)+m%g%jj(j)-1)
-#elif(_DIM_==2)
-                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-                V => m%V(:,lbound(m%V,2)+m%g%jj(j-1):lbound(m%V,2)+m%g%jj(j)-1)
-#elif(_DIM_==3)
-                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-                V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
-#endif 
-                u = exp((-dt/m%hbar)*V) * u
-            end do
-!$OMP END PARALLEL DO
-#endif 
-#else
 !!!! CHECK Speicherzugriffsfehler
            f = -dt/m%hbar*(0.0_prec, 1.0_prec)
 #ifndef _OPENMP
@@ -938,40 +891,11 @@ contains
             end do
 !$OMP END PARALLEL DO
 #endif 
-#endif 
         end if
-
-#ifndef _REAL_
-        if (associated(m%V_imag)) then
-#ifndef _OPENMP
-           this%u = exp((-dt/m%hbar)*m%V_imag) * this%u
-#else
-!$OMP PARALLEL DO PRIVATE(j, u, V) 
-            do j=1,n_threads
-#if(_DIM_==1)
-                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
-                V => m%V_imag(lbound(m%V_imag,1)+m%g%jj(j-1):lbound(m%V_imag,1)+m%g%jj(j)-1)
-#elif(_DIM_==2)
-                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-                V => m%V_imag(:,lbound(m%V_imag,2)+m%g%jj(j-1):lbound(m%V_imag,2)+m%g%jj(j)-1)
-#elif(_DIM_==3)
-                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-                V => m%V_imag(:,:,lbound(m%V_imag,3)+m%g%jj(j-1):lbound(m%V_imag,3)+m%g%jj(j)-1)
-#endif 
-                u = exp((-dt/m%hbar)*V) * u
-            end do
-!$OMP END PARALLEL DO
-#endif 
-        end if
-#endif
 
         if (m%cubic_coupling/=0.0_prec) then
 #ifndef _OPENMP
-#ifdef _REAL_
-           this%u = exp((-dt/m%hbar*m%cubic_coupling)*this%u**2) * this%u
-#else
            this%u = exp((-dt/m%hbar*m%cubic_coupling*(0.0_prec, 1.0_prec))*(real(this%u, prec)**2+aimag(this%u)**2)) * this%u
-#endif
 #else
 !$OMP PARALLEL DO PRIVATE(j, u) 
             do j=1,n_threads
@@ -982,11 +906,7 @@ contains
 #elif(_DIM_==3)
                 u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
 #endif 
-#ifdef _REAL_
-                u = exp((-dt/m%hbar*m%cubic_coupling)*u**2) * u
-#else
                 u = exp((-dt/m%hbar*m%cubic_coupling*(0.0_prec, 1.0_prec))*(real(u, prec)**2+aimag(u)**2)) * u
-#endif
             end do
 !$OMP END PARALLEL DO
 #endif 
@@ -1094,10 +1014,6 @@ contains
 !$OMP END PARALLEL DO
 #endif 
         end if
-
-        !if (associated(m%V_imag)) then
-        !   wf%u = wf.u  + xp((-dt/m%hbar)*m%V_imag) * this%u
-        !end if
 
         if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
