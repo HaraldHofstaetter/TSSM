@@ -427,6 +427,7 @@ contains
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
         this%is_real_space = .true.
+        this%time = t 
     end subroutine set_t
 
 
@@ -444,6 +445,7 @@ contains
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
         this%is_real_space = .true.
+        this%time = t 
     end subroutine rset_t
 
 #endif        
@@ -758,6 +760,9 @@ contains
     subroutine propagate_A(this, dt)
         class(S(wf_tensorial)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+        if (dt==0.0_prec) then
+            return
+        end if    
         call this%to_frequency_space
 
 !xxx$OMP PARALLEL WORKSHARE 

@@ -41,6 +41,7 @@ module S(tssm_c_fourier)
     use tssm_fourier
 #endif
     implicit none
+    private
 
 contains
 
@@ -48,7 +49,7 @@ contains
 !        call initialize_tssm_fourier
 !    end subroutine c_initialize_tssm_fourier 
 
-    function S(c_new_fourier)(nx, xmin, xmax, &
+    function c_new(nx, xmin, xmax, &
 #if(_DIM_>=2)
                               ny, ymin, ymax, &
 #endif
@@ -85,10 +86,10 @@ contains
 #endif
                        boundary_conditions)
         this =  c_loc(m)
-    end function S(c_new_fourier)
+    end function c_new
 
 
-    subroutine S(c_finalize_fourier)(m) &
+    subroutine c_finalize(m) &
         bind(c, name=SC(finalize_fourier))
         use iso_c_binding
         type(c_ptr) :: m
@@ -97,11 +98,11 @@ contains
         call c_f_pointer(m, mp)
         call mp%finalize
         deallocate( mp )
-    end subroutine S(c_finalize_fourier)
+    end subroutine c_finalize
 
 
 
-    function S(c_new_wf_fourier)(m) &
+    function c_new_wf(m) &
         result(this) bind(c, name=SC(new_wf_fourier))
         use iso_c_binding
         type(c_ptr) :: this 
@@ -113,9 +114,9 @@ contains
         allocate( psi )
         psi = S(wf_fourier)(mp)
         this =  c_loc(psi)
-    end function S(c_new_wf_fourier)
+    end function c_new_wf
 
-    subroutine S(c_finalize_wf_fourier)(psi) &
+    subroutine c_finalize_wf(psi) &
         bind(c, name=SC(finalize_wf_fourier))
         use iso_c_binding
         type(c_ptr) :: psi 
@@ -124,10 +125,10 @@ contains
         call c_f_pointer(psi, psip)
         call psip%finalize
         deallocate( psip )
-    end subroutine S(c_finalize_wf_fourier)
+    end subroutine c_finalize_wf
 
 
-    function S(c_is_real_space_wf_fourier)(psi) &
+    function c_is_real_space_wf(psi) &
         result(ans) bind(c, name=SC(is_real_space_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -136,9 +137,9 @@ contains
 
         call c_f_pointer(psi, psip)
         ans = psip%is_real_space
-    end function S(c_is_real_space_wf_fourier)
+    end function c_is_real_space_wf
 
-    subroutine S(c_to_real_space_wf_fourier)(psi) &
+    subroutine c_to_real_space_wf(psi) &
         bind(c, name=SC(to_real_space_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -146,9 +147,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%to_real_space
-    end subroutine S(c_to_real_space_wf_fourier)
+    end subroutine c_to_real_space_wf
   
-    subroutine S(c_to_frequency_space_wf_fourier)(psi) &
+    subroutine c_to_frequency_space_wf(psi) &
         bind(c, name=SC(to_frequency_space_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -156,9 +157,43 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%to_frequency_space
-    end subroutine S(c_to_frequency_space_wf_fourier)
+    end subroutine c_to_frequency_space_wf
 
-    subroutine S(c_propagate_A_wf_fourier)(psi, dt) &
+    subroutine c_set_time_wf(psi, t) &
+        bind(c, name=SC(set_time_wf_fourier)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        real(kind=prec), value :: t
+        type(S(wf_fourier)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        psip%time = t
+    end subroutine c_set_time_wf
+
+    function c_get_time_wf(psi) &
+        result(ans) bind(c, name=SC(get_time_wf_fourier))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_fourier)), pointer :: psip
+        real(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%time
+    end function c_get_time_wf
+
+    subroutine c_propagate_time_wf(psi, dt) &
+        bind(c, name=SC(propagate_time_wf_fourier)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        real(kind=prec), value :: dt
+        type(S(wf_fourier)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%propagate_time(dt)
+    end subroutine c_propagate_time_wf
+    
+
+    subroutine c_propagate_A_wf(psi, dt) &
         bind(c, name=SC(propagate_A_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
@@ -167,9 +202,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%propagate_A(dt)
-    end subroutine S(c_propagate_A_wf_fourier)
+    end subroutine c_propagate_A_wf
 
-    subroutine S(c_propagate_B_wf_fourier)(psi, dt) & 
+    subroutine c_propagate_B_wf(psi, dt) & 
         bind(c, name=SC(propagate_B_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
@@ -178,9 +213,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%propagate_B(dt)
-    end subroutine S(c_propagate_B_wf_fourier)
+    end subroutine c_propagate_B_wf
 
-    subroutine S(c_propagate_C_wf_fourier)(psi, dt) &
+    subroutine c_propagate_C_wf(psi, dt) &
         bind(c, name=SC(propagate_C_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
@@ -189,9 +224,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%propagate_C(dt)
-    end subroutine S(c_propagate_C_wf_fourier)
+    end subroutine c_propagate_C_wf
 
-    subroutine S(c_add_apply_A_wf_fourier)(this, other, coefficient) &
+    subroutine c_add_apply_A_wf(this, other, coefficient) &
         bind(c, name=SC(add_apply_A_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: this
@@ -203,10 +238,10 @@ contains
         call c_f_pointer(this, thisp)
         call c_f_pointer(other, otherp)
         call thisp%add_apply_A(otherp, coefficient)
-    end subroutine S(c_add_apply_A_wf_fourier)
+    end subroutine c_add_apply_A_wf
 
 
-    subroutine S(c_save_wf_fourier)(psi, filename, filename_length) &
+    subroutine c_save_wf(psi, filename, filename_length) &
         bind(c, name=SC(save_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
@@ -220,9 +255,9 @@ contains
             fn(j:j) = filename(j)
         end do
         call psip%save(fn)
-    end subroutine S(c_save_wf_fourier)
+    end subroutine c_save_wf
 
-    subroutine S(c_load_wf_fourier)(psi, filename, filename_length) &
+    subroutine c_load_wf(psi, filename, filename_length) &
         bind(c, name=SC(load_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
@@ -236,9 +271,9 @@ contains
             fn(j:j) = filename(j)
         end do
         call psip%load(fn)
-    end subroutine S(c_load_wf_fourier)
+    end subroutine c_load_wf
 
-    function S(c_norm_wf_fourier)(psi) &
+    function c_norm_wf(psi) &
         result(ans) bind(c, name=SC(norm_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -247,9 +282,9 @@ contains
 
         call c_f_pointer(psi, psip)
         ans = psip%norm()
-    end function S(c_norm_wf_fourier)
+    end function c_norm_wf
 
-    function S(c_norm_in_frequency_space_wf_fourier)(psi) &
+    function c_norm_in_frequency_space_wf(psi) &
         result(ans) bind(c, name=SC(norm_in_frequency_space_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -258,10 +293,10 @@ contains
 
         call c_f_pointer(psi, psip)
         ans = psip%norm_in_frequency_space()
-    end function S(c_norm_in_frequency_space_wf_fourier)
+    end function c_norm_in_frequency_space_wf
     
 
-   function S(c_normalize_wf_fourier)(psi) &
+   function c_normalize_wf(psi) &
         result(ans) bind(c, name=SC(normalize_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -270,9 +305,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%normalize(ans)
-    end function S(c_normalize_wf_fourier)
+    end function c_normalize_wf
 
-   subroutine S(c_scale_wf_fourier)(psi, factor) &
+   subroutine c_scale_wf(psi, factor) &
         bind(c, name=SC(scale_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -281,9 +316,9 @@ contains
 
         call c_f_pointer(psi, psip)
         call psip%scale(factor)
-    end subroutine S(c_scale_wf_fourier)
+    end subroutine c_scale_wf
 
-   subroutine S(c_axpy_wf_fourier)(this, other, factor) &
+   subroutine c_axpy_wf(this, other, factor) &
         bind(c, name=SC(axpy_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: this
@@ -295,11 +330,11 @@ contains
         call c_f_pointer(this, thisp)
         call c_f_pointer(other, otherp)
         call thisp%axpy(otherp, factor)
-    end subroutine S(c_axpy_wf_fourier)
+    end subroutine c_axpy_wf
 
 
 
-    function S(c_get_data_wf_fourier)(psi, dim) &
+    function c_get_data_wf(psi, dim) &
         result(up) bind(c, name=SC(get_data_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -324,10 +359,10 @@ contains
 #if(_DIM_>=3)        
         dim(3) = psip%m%g%m3max-psip%m%g%m3min+1
 #endif        
-    end function S(c_get_data_wf_fourier)
+    end function c_get_data_wf
 
 
-    function S(c_get_eigenvalues_fourier)(m, dim, which) &
+    function c_get_eigenvalues(m, dim, which) &
         result(evp) bind(c, name=SC(get_eigenvalues_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -355,10 +390,10 @@ contains
            dim(1) = mp%nf3max-mp%nf3min+1
 #endif        
         end select
-    end function S(c_get_eigenvalues_fourier)
+    end function c_get_eigenvalues
 
 
-    function S(c_get_nodes_fourier)(m, dim, which) &
+    function c_get_nodes(m, dim, which) &
         result(np) bind(c, name=SC(get_nodes_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -381,9 +416,9 @@ contains
             dim(1) = mp%g%n3max-mp%g%n3min+1
 #endif
         end select
-    end function S(c_get_nodes_fourier)
+    end function c_get_nodes
     
-    function S(c_get_nx_fourier)(m) &
+    function c_get_nx(m) &
         result(nx) bind(c, name=SC(get_nx_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -391,10 +426,10 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         nx = mp%g%nx
-    end function S(c_get_nx_fourier)   
+    end function c_get_nx   
 
 
-    function S(c_get_xmin_fourier)(m) &
+    function c_get_xmin(m) &
         result(xmin) bind(c, name=SC(get_xmin_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -402,9 +437,9 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         xmin = mp%g%xmin
-    end function S(c_get_xmin_fourier)   
+    end function c_get_xmin   
 
-    function S(c_get_xmax_fourier)(m) &
+    function c_get_xmax(m) &
         result(xmax) bind(c, name=SC(get_xmax_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -412,10 +447,10 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         xmax = mp%g%xmax
-    end function S(c_get_xmax_fourier)     
+    end function c_get_xmax     
 
 #if(_DIM_>=2)
-    function S(c_get_ny_fourier)(m) &
+    function c_get_ny(m) &
         result(ny) bind(c, name=SC(get_ny_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -423,10 +458,10 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         ny = mp%g%ny
-    end function S(c_get_ny_fourier)   
+    end function c_get_ny   
 
 
-    function S(c_get_ymin_fourier)(m) &
+    function c_get_ymin(m) &
         result(ymin) bind(c, name=SC(get_ymin_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -434,9 +469,9 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         ymin = mp%g%ymin
-    end function S(c_get_ymin_fourier)   
+    end function c_get_ymin   
 
-    function S(c_get_ymax_fourier)(m) &
+    function c_get_ymax(m) &
         result(ymax) bind(c, name=SC(get_ymax_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -444,12 +479,12 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         ymax = mp%g%ymax
-    end function S(c_get_ymax_fourier)     
+    end function c_get_ymax     
 
 #endif
 
 #if(_DIM_>=3)
-    function S(c_get_nz_fourier)(m) &
+    function c_get_nz(m) &
         result(nz) bind(c, name=SC(get_nz_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -457,10 +492,10 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         nz = mp%g%nz
-    end function S(c_get_nz_fourier)   
+    end function c_get_nz   
 
 
-    function S(c_get_zmin_fourier)(m) &
+    function c_get_zmin(m) &
         result(zmin) bind(c, name=SC(get_zmin_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -468,9 +503,9 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         zmin = mp%g%zmin
-    end function S(c_get_zmin_fourier)   
+    end function c_get_zmin   
 
-    function S(c_get_zmax_fourier)(m) &
+    function c_get_zmax(m) &
         result(zmax) bind(c, name=SC(get_zmax_fourier))
         use iso_c_binding
         type(c_ptr), value :: m
@@ -478,12 +513,12 @@ contains
         type(S(fourier)), pointer :: mp
         call c_f_pointer(m, mp)
         zmax = mp%g%zmax
-    end function S(c_get_zmax_fourier)     
+    end function c_get_zmax     
 #endif
     
 
 #ifndef _REAL_ 
-    subroutine S(c_rset_wf_fourier)(psi, f) &
+    subroutine c_rset_wf(psi, f) &
         bind(c, name=SC(rset_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -534,10 +569,10 @@ contains
             ff = f(x, y, z)
 #endif
         end function ff
-    end subroutine S(c_rset_wf_fourier)
+    end subroutine c_rset_wf
 #endif    
 
-    subroutine S(c_set_wf_fourier)(psi, f) &
+    subroutine c_set_wf(psi, f) &
         bind(c, name=SC(set_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -588,11 +623,11 @@ contains
             ff = f(x, y, z)
 #endif
         end function ff
-    end subroutine S(c_set_wf_fourier)
+    end subroutine c_set_wf
 
 
 #ifndef _REAL_ 
-    subroutine S(c_rset_t_wf_fourier)(psi, f, t) &
+    subroutine c_rset_t_wf(psi, f, t) &
         bind(c, name=SC(rset_t_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -646,10 +681,10 @@ contains
             ff = f(x, y, z, t)
 #endif
         end function ff
-    end subroutine S(c_rset_t_wf_fourier)
+    end subroutine c_rset_t_wf
 #endif    
 
-    subroutine S(c_set_t_wf_fourier)(psi, f, t) &
+    subroutine c_set_t_wf(psi, f, t) &
         bind(c, name=SC(set_t_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -703,11 +738,11 @@ contains
             ff = f(x, y, z, t)
 #endif
         end function ff
-    end subroutine S(c_set_t_wf_fourier)
+    end subroutine c_set_t_wf
 
 
 
-    subroutine S(c_copy_wf_fourier)(psi, source) &
+    subroutine c_copy_wf(psi, source) &
         bind(c, name=SC(copy_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
@@ -717,9 +752,9 @@ contains
         call c_f_pointer(psi, psip)
         call c_f_pointer(source, sourcep)
         call psip%copy(sourcep)
-    end subroutine S(c_copy_wf_fourier)
+    end subroutine c_copy_wf
 
-    function S(c_distance_wf_fourier)(psi1, psi2) &
+    function c_distance_wf(psi1, psi2) &
         result(d) bind(c, name=SC(distance_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi1 
@@ -730,7 +765,7 @@ contains
         call c_f_pointer(psi1, psi1p)
         call c_f_pointer(psi2, psi2p)
         d =  psi1p%distance(psi2p)
-    end function S(c_distance_wf_fourier)
+    end function c_distance_wf
 
 
 #ifdef _QUADPRECISION_

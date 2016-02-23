@@ -689,7 +689,9 @@ contains
         real(kind=prec), pointer :: ev(:)
         real(kind=prec), pointer :: ev1(:,:)
 #endif        
-
+        if (dt==0.0_prec) then
+            return
+        end if    
         call this%to_frequency_space
 
 #ifndef _CYLINDRICAL_
@@ -1075,6 +1077,7 @@ contains
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
         this%is_real_space = .true.
+        this%time = t 
     end subroutine set_t
 
 
@@ -1093,6 +1096,7 @@ contains
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
         this%is_real_space = .true.
+        this%time = t 
     end subroutine rset_t
 
 #endif        

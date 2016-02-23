@@ -142,26 +142,47 @@ void W(to_frequency_space_wf)(void *psi)
     S(to_frequency_space_wf)(psi);
 }
 
+void S(set_time_wf)(void *psi, __float128 t);
+void W(set_time_wf)(void *psi, myfloat128 t)
+{
+    S(set_time_wf)(psi, F(t));
+}  
 
-void S(propagate_A_wf)(void *psi, __float128 dt);
-void W(propagate_A_wf)(void *psi, myfloat128 dt)
+__float128 S(get_time_wf)(void *psi);
+myfloat128 W(get_time_wf)(void *psi)
+{
+    myfloat128 res;
+    F(res) = S(get_time_wf)(psi);
+    return res;
+}  
+
+
+void S(propagate_time_wf)(void *psi, __float128 dt);
+void W(propagate_time_wf)(void *psi, myfloat128 dt)
+{
+    S(propagate_time_wf)(psi, F(dt));
+}    
+
+
+void S(propagate_A_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
+void W(propagate_A_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     S(propagate_A_wf)(psi, F(dt));
 }    
 
 
-void S(propagate_B_wf)(void *psi, __float128 dt);
-void W(propagate_B_wf)(void *psi, myfloat128 dt)
+void S(propagate_B_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
+void W(propagate_B_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     S(propagate_B_wf)(psi, F(dt));
 }    
 
 
-void S(propagate_C_wf)(void *psi, __float128 dt);
-void W(propagate_C_wf)(void *psi, myfloat128 dt)
+void S(propagate_C_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
+void W(propagate_C_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
     S(propagate_C_wf)(psi, F(dt));
-}    
+}
 
 
 void S(add_apply_A_wf)(void *this, void *other,

@@ -85,6 +85,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 
     private
     public :: S(schroedinger), S(wf_schroedinger)
+#ifdef _QUADPRECISION_
+    public :: wrapped_float128
+#endif
 
 #if defined(_HERMITE_)
     type, extends(SB(hermite)) :: S(schroedinger)
@@ -104,22 +107,90 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #endif
         real(kind=prec) :: cubic_coupling = 0.0_prec
 #if(_DIM_==1)
-        real(kind=prec), pointer :: V(:) => null()      ! for potential
+        real(kind=prec), pointer :: V(:) => null()   ! for potential
+        real(kind=prec), pointer :: V_t(:) => null() ! temporary storage for time-dependent potential 
 #elif(_DIM_==2)
-        real(kind=prec), pointer :: V(:,:) => null()      ! for potential
+        real(kind=prec), pointer :: V(:,:) => null()
+        real(kind=prec), pointer :: V_t(:,:) => null()
 #elif(_DIM_==3)
-        real(kind=prec), pointer :: V(:,:,:) => null()      ! for potential
+        real(kind=prec), pointer :: V(:,:,:) => null()
+        real(kind=prec), pointer :: V_t(:,:,:) => null()
 #endif
+        procedure(potential_t_interface), pointer, nopass :: potential_t => null()
+        procedure(c_potential_t_interface), pointer, nopass :: c_potential_t => null()
+
         type(S(wf_schroedinger)), pointer :: tmp => null()
 
     contains
         procedure :: finalize => finalize_method
         procedure :: set_potential
+#ifndef _REAL_        
+        procedure :: set_potential_t
+        procedure :: set_c_potential_t
+#endif        
         procedure :: save_potential
         procedure :: load_potential
         procedure :: initialize_tmp
         procedure :: finalize_tmp
     end type S(schroedinger)
+
+#ifdef _QUADPRECISION_
+    type, bind(c) :: wrapped_float128
+        real(kind=prec) :: v
+    end type
+#endif    
+
+    abstract interface
+#if(_DIM_==1)
+        function potential_t_interface(x,t) 
+#elif(_DIM_==2)
+        function potential_t_interface(x,y,t) 
+#elif(_DIM_==3)
+        function potential_t_interface(x,y,z,t) 
+#endif            
+            import prec
+#if(_DIM_==1)
+            real(kind=prec), intent(in) :: x,t
+#elif(_DIM_==2)
+            real(kind=prec), intent(in) :: x,y,t
+#elif(_DIM_==3)
+            real(kind=prec), intent(in) :: x,y,z,t
+#endif            
+            real(kind=prec) :: potential_t_interface
+        end function potential_t_interface
+
+#if(_DIM_==1)
+        function c_potential_t_interface(x,t) bind(c) 
+#elif(_DIM_==2)
+        function c_potential_t_interface(x,y,t) bind(c) 
+#elif(_DIM_==3)
+        function c_potential_t_interface(x,y,z,t) bind(c) 
+#endif            
+#ifdef _QUADPRECISION_
+           import wrapped_float128
+           type(wrapped_float128), value :: t
+           type(wrapped_float128), value :: x
+#if(_DIM_>=2)
+           type(wrapped_float128), value :: y
+#endif               
+#if(_DIM_>=3)
+           type(wrapped_float128), value :: z
+#endif               
+           type(wrapped_float128) :: c_potential_t_interface 
+#else
+            import prec
+#if(_DIM_==1)
+            real(kind=prec), value :: x,t
+#elif(_DIM_==2)
+            real(kind=prec), value :: x,y,t
+#elif(_DIM_==3)
+            real(kind=prec), value :: x,y,z,t
+#endif            
+            real(kind=prec) :: c_potential_t_interface
+#endif            
+        end function c_potential_t_interface
+    end interface
+
 
     interface S(schroedinger)
         module procedure new_method 
@@ -160,16 +231,16 @@ contains
 
 #if defined(_HERMITE_)
 
+    function new_method( &
 #if(_DIM_==1)
-    function new_method(nx, omega_x, &
-               hbar, mass, potential, cubic_coupling) result(this)
+               nx, omega_x, &
 #elif(_DIM_==2)
-    function new_method(nx, omega_x, ny, omega_y, &
-               hbar, mass, potential, cubic_coupling) result(this)
+               nx, omega_x, ny, omega_y, &
 #elif(_DIM_==3)
-    function new_method(nx, omega_x, ny, omega_y, nz, omega_z,  &
-               hbar, mass, potential, cubic_coupling) result(this)
+               nx, omega_x, ny, omega_y, nz, omega_z,  &
 #endif
+               hbar, mass, potential, &
+               cubic_coupling) result(this)
         type(S(schroedinger)) :: this
         real(kind=prec), intent(in) :: omega_x 
         integer, intent(in) :: nx
@@ -196,7 +267,6 @@ contains
         this%omega_z = omega_z
 #endif
 
- 
         f = sqrt(this%mass)/this%hbar
 #if(_DIM_==1)
         this%SB(hermite) = SB(hermite)(nx, f*omega_x)
@@ -223,16 +293,16 @@ contains
 
 #else
 
+    function new_method( &
 #if(_DIM_==1)
-    function new_method(nx, xmin, xmax, &
-               hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
+               nx, xmin, xmax, &
 #elif(_DIM_==2)
-    function new_method(nx, xmin, xmax, ny, ymin, ymax, &
-               hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
+               nx, xmin, xmax, ny, ymin, ymax, &
 #elif(_DIM_==3)
-    function new_method(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
-               hbar, mass, potential, cubic_coupling, boundary_conditions) result(this)
+               nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
 #endif
+               hbar, mass, potential, &
+               cubic_coupling, boundary_conditions) result(this)
         type(S(schroedinger)) :: this
         real(kind=prec), intent(in) :: xmin 
         real(kind=prec), intent(in) :: xmax
@@ -288,6 +358,9 @@ contains
         if(associated(this%V)) then 
             deallocate( this%V)
         end if 
+        if(associated(this%V_t)) then 
+            deallocate( this%V_t)
+        end if 
         call this%finalize_tmp
     end subroutine finalize_method
 
@@ -335,6 +408,105 @@ contains
         end if
         call this%g%set_real_gridfun(this%V, f)
     end subroutine set_potential
+
+#ifndef _REAL_
+    subroutine set_potential_t(this, f)
+        class(S(schroedinger)), intent(inout) :: this
+        real(kind=prec), external :: f
+        if (.not.associated(this%V)) then
+            call this%g%allocate_real_gridfun(this%V_t)
+        end if
+        this%potential_t => f
+    end subroutine set_potential_t
+
+    subroutine set_c_potential_t(this, f)
+        class(S(schroedinger)), intent(inout) :: this
+        interface 
+#if(_DIM_==1)
+           function f(x, t) bind(c)
+#elif(_DIM_==2)
+           function f(x, y, t) bind(c)
+#elif(_DIM_==3)
+           function f(x, y, z, t) bind(c)
+#endif          
+#ifdef _QUADPRECISION_
+               import wrapped_float128
+               type(wrapped_float128), value :: t
+               type(wrapped_float128), value :: x
+#if(_DIM_>=2)
+               type(wrapped_float128), value :: y
+#endif               
+#if(_DIM_>=3)
+               type(wrapped_float128), value :: z
+#endif               
+               type(wrapped_float128) :: f 
+#else
+
+               import prec
+               real(kind=prec), value :: t
+               real(kind=prec), value :: x
+#if(_DIM_>=2)
+               real(kind=prec), value :: y
+#endif               
+#if(_DIM_>=3)
+               real(kind=prec), value :: z
+#endif               
+               real(kind=prec) :: f 
+#endif               
+           end function f
+        end interface 
+        this%c_potential_t => f
+        call this%set_potential_t(eval_c_potential_t)
+    contains
+#if(_DIM_==1)    
+        function eval_c_potential_t(x,t)
+            real(kind=prec), intent(in) :: x,t
+            real(kind=prec) :: eval_c_potential_t
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,tt,res
+            xx%v = x
+            tt%v = t
+            res = this%c_potential_t(xx,tt)
+            eval_c_potential_t = res%v
+#else
+            eval_c_potential_t = this%c_potential_t(x,t)
+#endif            
+        end function eval_c_potential_t
+#elif(_DIM_==2)    
+        function eval_c_potential_t(x,y,t)
+            real(kind=prec), intent(in) :: x,y,t
+            real(kind=prec) :: eval_c_potential_t
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,yy,tt,res
+            xx%v = x
+            yy%v = y
+            tt%v = t
+            res = this%c_potential_t(xx,yy,tt)
+            eval_c_potential_t = res%v
+#else
+            eval_c_potential_t = this%c_potential_t(x,y,t)
+#endif            
+        end function eval_c_potential_t
+#elif(_DIM_==3)    
+        function eval_c_potential_t(x,y,z,t)
+            real(kind=prec), intent(in) :: x,y,z,t
+            real(kind=prec) :: eval_c_potential_t
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,yy,zz,tt,res
+            xx%v = x
+            yy%v = y
+            zz%v = z
+            tt%v = t
+            res = this%c_potential_t(xx,yy,zz,tt)
+            eval_c_potential_t = res%v
+#else
+            eval_c_potential_t = this%c_potential_t(x,y,z,t)
+#endif        
+        end function eval_c_potential_t
+#endif        
+    end subroutine set_c_potential_t
+#endif
+
 
     subroutine save_potential(this, filename)
 #ifdef _NO_HDF5_
@@ -636,6 +808,10 @@ contains
         integer :: j
 #endif        
         real(kind=prec) :: N
+
+        if (dt==0.0_prec) then
+            return
+        endif
         
         select type (m=>this%m); class is (S(schroedinger))
 
@@ -865,13 +1041,17 @@ contains
 #endif
         integer :: j
 #endif        
+        if (dt==0.0_prec) then
+            return
+        endif
         
         select type (m=>this%m); class is (S(schroedinger))
         call this%to_real_space
 
+        f = -dt/m%hbar*(0.0_prec, 1.0_prec)
+
         if (associated(m%V)) then
 !!!! CHECK Speicherzugriffsfehler
-           f = -dt/m%hbar*(0.0_prec, 1.0_prec)
 #ifndef _OPENMP
            this%u = exp(f*m%V) * this%u
 #else
@@ -893,9 +1073,32 @@ contains
 #endif 
         end if
 
+        if (associated(m%potential_t)) then
+            call m%g%set_t_real_gridfun(m%V_t, m%potential_t, this%time)
+#ifndef _OPENMP
+            this%u = exp(f*m%V_t) * this%u
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) 
+            do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+                u = exp(f*V) * u
+            end do
+!$OMP END PARALLEL DO
+#endif 
+        end if
+
         if (m%cubic_coupling/=0.0_prec) then
 #ifndef _OPENMP
-           this%u = exp((-dt/m%hbar*m%cubic_coupling*(0.0_prec, 1.0_prec))*(real(this%u, prec)**2+aimag(this%u)**2)) * this%u
+           this%u = exp(m%cubic_coupling*f*(real(this%u, prec)**2+aimag(this%u)**2)) * this%u
 #else
 !$OMP PARALLEL DO PRIVATE(j, u) 
             do j=1,n_threads
@@ -906,7 +1109,7 @@ contains
 #elif(_DIM_==3)
                 u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
 #endif 
-                u = exp((-dt/m%hbar*m%cubic_coupling*(0.0_prec, 1.0_prec))*(real(u, prec)**2+aimag(u)**2)) * u
+                u = exp(m%cubic_coupling*f*(real(u, prec)**2+aimag(u)**2)) * u
             end do
 !$OMP END PARALLEL DO
 #endif 

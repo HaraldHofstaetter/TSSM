@@ -257,6 +257,40 @@ contains
         call psip%to_frequency_space
     end subroutine S(c_to_frequency_space_wf)
 
+    subroutine c_set_time_wf(psi, t) &
+        bind(c, name=SC(set_time_wf)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        real(kind=prec), value :: t
+        type(_WF_), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%time = t
+    end subroutine c_set_time_wf
+
+    function c_get_time_wf(psi) &
+        result(ans) bind(c, name=SC(get_time_wf))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(_WF_), pointer :: psip
+        real(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%time
+    end function c_get_time_space_wf
+
+    subroutine c_propagate_time_wf(psi, dt) &
+        bind(c, name=SC(propagate_time_wf)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        real(kind=prec), value :: dt
+        type(_WF_), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%propagate_time(dt)
+    end subroutine c_propagate_time_wf
+    
+
     subroutine S(c_propagate_A_wf)(psi, dt) bind(c) 
         use iso_c_binding
         type(c_ptr), value :: psi
