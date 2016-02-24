@@ -108,13 +108,19 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         real(kind=prec) :: cubic_coupling = 0.0_prec
 #if(_DIM_==1)
         real(kind=prec), pointer :: V(:) => null()   ! for potential
-        real(kind=prec), pointer :: V_t(:) => null() ! temporary storage for time-dependent potential 
 #elif(_DIM_==2)
         real(kind=prec), pointer :: V(:,:) => null()
-        real(kind=prec), pointer :: V_t(:,:) => null()
 #elif(_DIM_==3)
         real(kind=prec), pointer :: V(:,:,:) => null()
+#endif
+#ifndef _REAL_
+#if(_DIM_==1)
+        real(kind=prec), pointer :: V_t(:) => null() ! temporary storage for time-dependent potential 
+#elif(_DIM_==2)
+        real(kind=prec), pointer :: V_t(:,:) => null()
+#elif(_DIM_==3)
         real(kind=prec), pointer :: V_t(:,:,:) => null()
+#endif
 #endif
         procedure(potential_t_interface), pointer, nopass :: potential_t => null()
         procedure(c_potential_t_interface), pointer, nopass :: c_potential_t => null()
@@ -358,9 +364,11 @@ contains
         if(associated(this%V)) then 
             deallocate( this%V)
         end if 
+#ifndef _REAL_        
         if(associated(this%V_t)) then 
             deallocate( this%V_t)
-        end if 
+        end if
+#endif        
         call this%finalize_tmp
     end subroutine finalize_method
 
@@ -413,7 +421,7 @@ contains
     subroutine set_potential_t(this, f)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
-        if (.not.associated(this%V)) then
+        if (.not.associated(this%V_t)) then
             call this%g%allocate_real_gridfun(this%V_t)
         end if
         this%potential_t => f
