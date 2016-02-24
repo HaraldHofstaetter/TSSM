@@ -1128,16 +1128,19 @@ contains
         type(c_ptr)  :: Vp
         integer, intent(out)  :: dim(_DIM_)
         type(S(schroedinger)), pointer :: mp
-
         call c_f_pointer(m, mp)
+        if (.not.associated(mp%V)) then
+             Vp = c_null_ptr
+        else
         !Vp = c_loc(mp%V)
 #if(_DIM_==1)
-        Vp = c_loc(mp%V(mp%g%m1min))
+            Vp = c_loc(mp%V(mp%g%m1min))
 #elif(_DIM_==2)
-        Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min))
+            Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min))
 #elif(_DIM_==3)
-        Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min, mp%g%m3min))
+            Vp = c_loc(mp%V(mp%g%m1min, mp%g%m2min, mp%g%m3min))
 #endif
+        endif
         dim(1) = mp%g%m1max-mp%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = mp%g%m2max-mp%g%m2min+1
@@ -1158,15 +1161,19 @@ contains
         type(S(schroedinger)), pointer :: mp
 
         call c_f_pointer(m, mp)
-        call mp%evaluate_potential_t(t)
-        !Vp = c_loc(mp%V_t)
+        if (.not.associated(mp%V_t)) then
+             Vp = c_null_ptr
+        else
+            call mp%evaluate_potential_t(t)
+            !Vp = c_loc(mp%V_t)
 #if(_DIM_==1)
-        Vp = c_loc(mp%V_t(mp%g%m1min))
+            Vp = c_loc(mp%V_t(mp%g%m1min))
 #elif(_DIM_==2)
-        Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min))
+            Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min))
 #elif(_DIM_==3)
-        Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min, mp%g%m3min))
+            Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min, mp%g%m3min))
 #endif
+        end if
         dim(1) = mp%g%m1max-mp%g%m1min+1
 #if(_DIM_>=2)        
         dim(2) = mp%g%m2max-mp%g%m2min+1

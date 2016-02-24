@@ -756,6 +756,20 @@ void  W(set_t_wf)(void *psi,
 !! schroedinger specific methods !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
+void S(set_cubic_coupling)(void *m, __float128 cc);
+void W(set_cubic_coupling)(void *m, myfloat128 cc)
+{
+    S(set_cubic_coupling)(m, F(cc));
+} 
+
+__float128 S(get_cubic_coupling)(void *m);
+myfloat128 W(get_cubic_coupling)(void *m)
+{
+    myfloat128 res;
+    F(res) = S(get_cubic_coupling)(m);
+    return res;
+}
+
 #if(_DIM_==1)
 void S(set_potential)(void *m, __float128 (*f)(__float128));
 void W(set_potential)(void *m, myfloat128 (*f)(myfloat128))
@@ -834,6 +848,14 @@ void* W(get_potential)(void *m, int dim[_DIM_])
 {
     return S(get_potential)(m, dim);
 }
+
+#ifndef _REAL_
+void* S(get_potential_t)(void *m, __float128 t, int dim[_DIM_]);
+void* W(get_potential_t)(void *m, myfloat128 t, int dim[_DIM_])
+{
+    return S(get_potential_t)(m,  F(t), dim);
+}
+#endif
 
 void S(load_potential)(void *m, char* filename, int filename_length);
 void W(load_potential)(void *m, char* filename, int filename_length)
