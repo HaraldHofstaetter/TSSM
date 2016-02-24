@@ -542,6 +542,17 @@ contains
         mass = mp%mass
     end function c_get_mass   
 
+    subroutine c_set_cubic_coupling(m, cc) &
+        bind(c, name=SC(set_cubic_coupling_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: m
+        real(kind=prec), value :: cc
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        mp%cubic_coupling = cc
+    end subroutine c_set_cubic_coupling
+
     function c_get_cubic_coupling(m) &
         result(cubic_coupling) bind(c, name=SC(get_cubic_coupling_schroedinger))
         use iso_c_binding
@@ -1136,6 +1147,35 @@ contains
 #endif        
      end function c_get_potential
 
+#ifndef _REAL_
+    function c_get_potential_t(m, t, dim) &
+        result(Vp) bind(c, name=SC(get_potential_t_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        real(kind=prec), value :: t
+        type(c_ptr)  :: Vp
+        integer, intent(out)  :: dim(_DIM_)
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        call mp%evaluate_potential_t(t)
+        !Vp = c_loc(mp%V_t)
+#if(_DIM_==1)
+        Vp = c_loc(mp%V_t(mp%g%m1min))
+#elif(_DIM_==2)
+        Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min))
+#elif(_DIM_==3)
+        Vp = c_loc(mp%V_t(mp%g%m1min, mp%g%m2min, mp%g%m3min))
+#endif
+        dim(1) = mp%g%m1max-mp%g%m1min+1
+#if(_DIM_>=2)        
+        dim(2) = mp%g%m2max-mp%g%m2min+1
+#endif        
+#if(_DIM_>=3)        
+        dim(3) = mp%g%m3max-mp%g%m3min+1
+#endif        
+    end function c_get_potential_t
+#endif    
 
     subroutine c_load_potential(m, filename, filename_length) &
         bind(c, name=SC(load_potential_schroedinger)) 

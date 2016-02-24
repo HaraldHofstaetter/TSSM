@@ -1739,6 +1739,7 @@ contains
         end if    
        
         this%is_real_space = source%is_real_space
+        this%time = source%time
 
         if (this%is_real_space) then
 #ifndef _OPENMP

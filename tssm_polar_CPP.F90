@@ -1157,6 +1157,10 @@ contains
         if (.not.associated(source%m,this%m)) then
             stop "E: wave functions not belonging to the same method"
         end if    
+
+        this%is_real_space = source%is_real_space
+        this%time = source%time
+        
         if (this%is_real_space) then
 #ifndef _OPENMP
             this%u = source%u

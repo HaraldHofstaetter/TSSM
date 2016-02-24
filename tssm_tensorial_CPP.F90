@@ -516,7 +516,8 @@ contains
         end if    
        
         this%is_real_space = source%is_real_space
-
+        this%time = source%time
+        
 #ifdef _REAL_
         call this%m%g%copy_real_gridfun(this%u, source%u)
 #else        

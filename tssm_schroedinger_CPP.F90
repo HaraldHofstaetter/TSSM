@@ -121,9 +121,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #elif(_DIM_==3)
         real(kind=prec), pointer :: V_t(:,:,:) => null()
 #endif
-#endif
         procedure(potential_t_interface), pointer, nopass :: potential_t => null()
         procedure(c_potential_t_interface), pointer, nopass :: c_potential_t => null()
+#endif
 
         type(S(wf_schroedinger)), pointer :: tmp => null()
 
@@ -131,6 +131,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         procedure :: finalize => finalize_method
         procedure :: set_potential
 #ifndef _REAL_        
+        procedure :: evaluate_potential_t
         procedure :: set_potential_t
         procedure :: set_c_potential_t
 #endif        
@@ -146,6 +147,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     end type
 #endif    
 
+#ifndef _REAL_
     abstract interface
 #if(_DIM_==1)
         function potential_t_interface(x,t) 
@@ -196,7 +198,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #endif            
         end function c_potential_t_interface
     end interface
-
+#endif
 
     interface S(schroedinger)
         module procedure new_method 
@@ -406,13 +408,12 @@ contains
     end function clone
 
 
-
     subroutine set_potential(this, f)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
 
         if (.not.associated(this%V)) then
-        call this%g%allocate_real_gridfun(this%V)
+            call this%g%allocate_real_gridfun(this%V)
         end if
         call this%g%set_real_gridfun(this%V, f)
     end subroutine set_potential
@@ -463,8 +464,23 @@ contains
 #endif               
            end function f
         end interface 
+        if (.not.associated(this%V_t)) then
+            call this%g%allocate_real_gridfun(this%V_t)
+        end if
         this%c_potential_t => f
-        call this%set_potential_t(eval_c_potential_t)
+    end subroutine set_c_potential_t
+
+    subroutine evaluate_potential_t(this, time)
+        class(S(schroedinger)), intent(inout) :: this
+        real(kind=prec) :: time
+        
+        if (associated(this%c_potential_t)) then
+            call this%g%set_t_real_gridfun(this%V_t, eval_c_potential_t, time)
+            return 
+        end if    
+        if (associated(this%potential_t)) then
+            call this%g%set_t_real_gridfun(this%V_t, this%potential_t, time)
+        end if    
     contains
 #if(_DIM_==1)    
         function eval_c_potential_t(x,t)
@@ -512,9 +528,8 @@ contains
 #endif        
         end function eval_c_potential_t
 #endif        
-    end subroutine set_c_potential_t
+    end subroutine evaluate_potential_t
 #endif
-
 
     subroutine save_potential(this, filename)
 #ifdef _NO_HDF5_
@@ -1081,8 +1096,8 @@ contains
 #endif 
         end if
 
-        if (associated(m%potential_t)) then
-            call m%g%set_t_real_gridfun(m%V_t, m%potential_t, this%time)
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+            call m%evaluate_potential_t(this%time)
 #ifndef _OPENMP
             this%u = exp(f*m%V_t) * this%u
 #else
