@@ -112,6 +112,7 @@ module _MODULE_
         character(len=32) :: dset_name_real = "psi_real" 
         character(len=32) :: dset_name_imag = "psi_imag"
 #endif
+         logical :: propagate_time_together_with_A = .true.
     contains    
         !final :: final_laguerre_1D
         !! Fortran 2003 feature final seems to be not properly implemented
@@ -691,7 +692,12 @@ contains
 #endif        
         if (dt==0.0_prec) then
             return
-        end if    
+        end if  
+
+        if (this%m%propagate_time_together_with_A) then
+            call this%propagate_time(dt)
+        end if
+        
         call this%to_frequency_space
 
 #ifndef _CYLINDRICAL_

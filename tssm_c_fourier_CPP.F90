@@ -100,7 +100,27 @@ contains
         deallocate( mp )
     end subroutine c_finalize
 
+    subroutine c_set_propagate_time_together_with_A(m, flag) &
+        bind(c, name=SC(set_propagate_time_together_with_A_fourier)) 
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        logical, value :: flag 
+        type(S(fourier)), pointer :: mp
 
+        call c_f_pointer(m, mp)
+        mp%propagate_time_together_with_A = flag 
+    end subroutine c_set_propagate_time_together_with_A
+
+    function c_get_propagate_time_together_with_A(m) &
+        result(flag) bind(c, name=SC(get_propagate_time_together_with_A_fourier))
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        type(S(fourier)), pointer :: mp
+        logical :: flag 
+
+        call c_f_pointer(m, mp)
+        flag = mp%propagate_time_together_with_A
+    end function c_get_propagate_time_together_with_A
 
     function c_new_wf(m) &
         result(this) bind(c, name=SC(new_wf_fourier))
@@ -163,7 +183,7 @@ contains
         bind(c, name=SC(set_time_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
-        real(kind=prec), value :: t
+        _COMPLEX_OR_REAL_(kind=prec), value :: t
         type(S(wf_fourier)), pointer :: psip
 
         call c_f_pointer(psi, psip)
@@ -175,7 +195,7 @@ contains
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(S(wf_fourier)), pointer :: psip
-        real(kind=prec) :: ans
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
         ans = psip%time
@@ -185,7 +205,7 @@ contains
         bind(c, name=SC(propagate_time_wf_fourier)) 
         use iso_c_binding
         type(c_ptr), value :: psi
-        real(kind=prec), value :: dt
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
         type(S(wf_fourier)), pointer :: psip
 
         call c_f_pointer(psi, psip)

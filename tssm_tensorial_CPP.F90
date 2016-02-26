@@ -78,6 +78,7 @@ module S(tssm_tensorial)
         character(len=32) :: dset_name_real = "psi_real" 
         character(len=32) :: dset_name_imag = "psi_imag"
 #endif
+        logical :: propagate_time_together_with_A = .true.
     contains    
         procedure :: finalize => finalize_method
         !final :: final_tensorial_1D
@@ -763,7 +764,12 @@ contains
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         if (dt==0.0_prec) then
             return
-        end if    
+        end if  
+
+        if (this%m%propagate_time_together_with_A) then
+            call this%propagate_time(dt)
+        end if
+
         call this%to_frequency_space
 
 !xxx$OMP PARALLEL WORKSHARE 

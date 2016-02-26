@@ -1097,7 +1097,7 @@ contains
         end if
 
         if (associated(m%potential_t).or.associated(m%c_potential_t)) then
-            call m%evaluate_potential_t(this%time)
+            call m%evaluate_potential_t(real(this%time, kind=prec))
 #ifndef _OPENMP
             this%u = exp(f*m%V_t) * this%u
 #else

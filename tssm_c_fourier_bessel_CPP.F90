@@ -115,6 +115,27 @@ contains
         deallocate( mp )
     end subroutine c_finalize
 
+   subroutine c_set_propagate_time_together_with_A(m, flag) &
+        bind(c, name=SC(set_propagate_time_together_with_A)) 
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        logical, value :: flag 
+        type(_METHOD_), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        mp%propagate_time_together_with_A = flag 
+    end subroutine c_set_propagate_time_together_with_A
+
+    function c_get_propagate_time_together_with_A(m) &
+        result(flag) bind(c, name=SC(get_propagate_time_together_with_A))
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        type(_METHOD_), pointer :: mp
+        logical :: flag 
+
+        call c_f_pointer(m, mp)
+        flag = mp%propagate_time_together_with_A
+    end function c_get_propagate_time_together_with_A
 
 #ifndef _ROTSYM_        
     subroutine c_save_method(m, filename, filename_length) &
@@ -332,7 +353,7 @@ contains
         bind(c, name=SC(set_time_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
-        real(kind=prec), value :: t
+        _COMPLEX_OR_REAL_(kind=prec), value :: t
         type(_WF_), pointer :: psip
 
         call c_f_pointer(psi, psip)
@@ -344,7 +365,7 @@ contains
         use iso_c_binding
         type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
-        real(kind=prec) :: ans
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
 
         call c_f_pointer(psi, psip)
         ans = psip%time
@@ -354,7 +375,7 @@ contains
         bind(c, name=SC(propagate_time_wf)) 
         use iso_c_binding
         type(c_ptr), value :: psi
-        real(kind=prec), value :: dt
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
         type(_WF_), pointer :: psip
 
         call c_f_pointer(psi, psip)

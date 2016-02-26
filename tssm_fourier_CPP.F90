@@ -95,6 +95,7 @@ module S(tssm_fourier)
         character(len=32) :: dset_name_real = "psi_real" 
         character(len=32) :: dset_name_imag = "psi_imag"
 #endif
+        logical :: propagate_time_together_with_A = .true.
     contains    
         procedure :: finalize => finalize_method
         !final :: final_fourier_1D
@@ -1062,6 +1063,11 @@ contains
         if (dt==0.0_prec) then
             return
         end if    
+
+        if (this%m%propagate_time_together_with_A) then
+            call this%propagate_time(dt)
+        end if
+
         call this%to_frequency_space
 
 #if(_DIM_==1)
@@ -1636,6 +1642,7 @@ contains
         if (.not.associated(other%m,this%m)) then
             stop "E: wave functions not belonging to the same method"
         end if 
+
         call this%to_real_space 
         call other%to_real_space 
 #ifndef _OPENMP

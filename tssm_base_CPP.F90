@@ -22,7 +22,7 @@ module S(tssm_base)
 
      type, abstract :: _WAVE_FUNCTION_
         logical :: is_real_space = .true.
-        real(kind=prec) :: time = 0.0_prec
+        _COMPLEX_OR_REAL_(kind=prec) :: time = 0.0_prec
      contains 
         procedure :: propagate_time
         procedure :: propagate_A
@@ -135,7 +135,7 @@ contains
 
     subroutine propagate_time(this, dt)
         class(_WAVE_FUNCTION_), intent(inout) :: this
-        real(kind=prec), intent(in) :: dt
+        _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         this%time = this%time + dt
     end subroutine propagate_time
 
