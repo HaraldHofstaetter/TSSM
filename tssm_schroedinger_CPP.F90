@@ -214,7 +214,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     contains
         procedure :: clone
 #ifndef _REAL_
+        procedure :: propagate_B_prepare
         procedure :: propagate_B
+        procedure :: propagate_B_derivative
 #endif
         procedure :: imaginary_time_propagate_A
         procedure :: imaginary_time_propagate_B
@@ -297,6 +299,9 @@ contains
         if (present(potential)) then
             call this%set_potential(potential) 
         end if
+#ifndef _REAL_        
+        call this%g%allocate_real_gridfun(this%V_t)
+#endif        
     end function new_method
 
 
@@ -351,6 +356,9 @@ contains
         if (present(potential)) then
             call this%set_potential(potential) 
         end if
+#ifndef _REAL_        
+        call this%g%allocate_real_gridfun(this%V_t)
+#endif        
     end function new_method
 
 #endif
@@ -423,9 +431,6 @@ contains
     subroutine set_potential_t(this, f)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
-        if (.not.associated(this%V_t)) then
-            call this%g%allocate_real_gridfun(this%V_t)
-        end if
         this%potential_t => f
     end subroutine set_potential_t
 
@@ -465,9 +470,6 @@ contains
 #endif               
            end function f
         end interface 
-        if (.not.associated(this%V_t)) then
-            call this%g%allocate_real_gridfun(this%V_t)
-        end if
         this%c_potential_t => f
     end subroutine set_c_potential_t
 
@@ -1046,7 +1048,67 @@ contains
 
 
 #ifndef _REAL_
-    
+    subroutine propagate_B_prepare(this)
+        class(S(wf_schroedinger)), intent(inout) :: this
+        complex(kind=prec) :: f
+#ifdef _OPENMP
+#if(_DIM_==1)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:)
+        real(kind=prec), pointer :: V(:)
+#elif(_DIM_==2)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:)
+        real(kind=prec), pointer :: V(:,:)
+#elif(_DIM_==3)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:,:)
+        real(kind=prec), pointer :: V(:,:,:)
+#endif
+        integer :: j
+#endif        
+        
+        select type (m=>this%m); class is (S(schroedinger))
+
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+            call m%evaluate_potential_t(real(this%time, kind=prec))
+            if (associated(m%V)) then
+                call m%g%axpy_real_gridfun(m%V_t, m%V, 1.0_prec)
+            end if
+        else
+            if (associated(m%V)) then
+                call m%g%copy_real_gridfun(m%V_t, m%V) 
+            else
+                m%V_t = 0.0_prec
+            end if    
+        end if
+
+        if (m%cubic_coupling/=0.0_prec) then
+           call this%to_real_space
+#ifndef _OPENMP
+           m%V_t = m%V_t + m%cubic_coupling*(real(this%u, prec)**2+aimag(this%u)**2)
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) 
+            do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+                V = V + m%cubic_coupling*(real(u, prec)**2+aimag(u)**2)
+            end do
+!$OMP END PARALLEL DO
+#endif 
+        end if    
+
+        class default
+           stop "E: wrong spectral method for schroedinger wave function"
+        end select
+    end subroutine propagate_B_prepare
+
+
     subroutine propagate_B(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
@@ -1070,80 +1132,114 @@ contains
         
         select type (m=>this%m); class is (S(schroedinger))
         call this%to_real_space
+        call this%propagate_B_prepare
 
         f = -dt/m%hbar*(0.0_prec, 1.0_prec)
 
-        if (associated(m%V)) then
-!!!! CHECK Speicherzugriffsfehler
 #ifndef _OPENMP
-           this%u = exp(f*m%V) * this%u
+        this%u = exp(f*m%V_t) * this%u
 #else
 !$OMP PARALLEL DO PRIVATE(j, u, V) 
-            do j=1,n_threads
+        do j=1,n_threads
 #if(_DIM_==1)
-                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
-                V => m%V(lbound(m%V,1)+m%g%jj(j-1):lbound(m%V,1)+m%g%jj(j)-1)
+            u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+            V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
 #elif(_DIM_==2)
-                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-                V => m%V(:,lbound(m%V,2)+m%g%jj(j-1):lbound(m%V,2)+m%g%jj(j)-1)
+            u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+            V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
 #elif(_DIM_==3)
-                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-                V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
+            u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+            V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
 #endif 
-                u = exp(f*V) * u
-            end do
+            u = exp(f*V) * u
+        end do
 !$OMP END PARALLEL DO
 #endif 
-        end if
-
-        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
-            call m%evaluate_potential_t(real(this%time, kind=prec))
-#ifndef _OPENMP
-            this%u = exp(f*m%V_t) * this%u
-#else
-!$OMP PARALLEL DO PRIVATE(j, u, V) 
-            do j=1,n_threads
-#if(_DIM_==1)
-                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
-                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
-#elif(_DIM_==2)
-                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
-#elif(_DIM_==3)
-                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
-#endif 
-                u = exp(f*V) * u
-            end do
-!$OMP END PARALLEL DO
-#endif 
-        end if
-
-        if (m%cubic_coupling/=0.0_prec) then
-#ifndef _OPENMP
-           this%u = exp(m%cubic_coupling*f*(real(this%u, prec)**2+aimag(this%u)**2)) * this%u
-#else
-!$OMP PARALLEL DO PRIVATE(j, u) 
-            do j=1,n_threads
-#if(_DIM_==1)
-                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
-#elif(_DIM_==2)
-                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-#elif(_DIM_==3)
-                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-#endif 
-                u = exp(m%cubic_coupling*f*(real(u, prec)**2+aimag(u)**2)) * u
-            end do
-!$OMP END PARALLEL DO
-#endif 
-        end if    
 
         class default
            stop "E: wrong spectral method for schroedinger wave function"
         end select
     end subroutine propagate_B
 
+
+    subroutine propagate_B_derivative(this, wf, dt)
+        class(S(wf_schroedinger)), intent(inout) :: this
+        class(_WAVE_FUNCTION_), intent(inout) :: wf 
+        _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+        complex(kind=prec) :: f
+#ifdef _OPENMP
+#if(_DIM_==1)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: h(:)
+        real(kind=prec), pointer :: V(:)
+#elif(_DIM_==2)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: h(:,:)
+        real(kind=prec), pointer :: V(:,:)
+#elif(_DIM_==3)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:,:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: h(:,:,:)
+        real(kind=prec), pointer :: V(:,:,:)
 #endif
+        integer :: j
+#endif        
+        select type (wf)
+        class is (S(wf_schroedinger))
+        
+        if (.not.associated(wf%m,this%m)) then
+            stop "E: wave functions not belonging to the same method"
+        end if    
+
+        select type (m=>this%m); class is (S(schroedinger))
+        call this%to_real_space
+        call wf%to_real_space
+        call this%propagate_B_prepare
+
+        f = -dt/m%hbar*(0.0_prec, 1.0_prec)
+
+#ifndef _OPENMP
+        if (m%cubic_coupling==0.0_prec) then
+            wf%u  = exp(f*m%V_t) * wf%u
+        else
+            wf%u  = exp(f*m%V_t) * (wf%u  + 2.0_prec*f*m%cubic_coupling* &
+            (real(this%u, kind=prec)*real(wf%u, kind=prec) +aimag(this%u)*aimag(wf%u))*this%u)
+        end if
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) 
+        do j=1,n_threads
+#if(_DIM_==1)
+            u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+            h => wf%u(lbound(wf%u,1)+m%g%jj(j-1):lbound(wf%u,1)+m%g%jj(j)-1)
+            V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+            u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+            u => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+            V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+            u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+            u => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+            V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+            if (m%cubic_coupling==0.0_prec) then
+                h  = exp(f*V) * h 
+            else
+                !h  = exp(f*V) * (h  + 2.0_prec*f*(real(u*conj(h),kind=prec)*u));
+                h  = exp(f*V) * (h  + 2.0_prec*f*m%cubic_coupling* &
+                    (real(u, kind=prec)*real(h, kind=prec)+aimag(u)*aimag(h))*u)
+            end if    
+        end do
+!$OMP END PARALLEL DO
+#endif 
+
+        end select
+        class default
+           stop "E: wrong spectral method for schroedinger wave function"
+        end select
+    end subroutine propagate_B_derivative
+
+#endif
+
+
 
 
     subroutine initialize_tmp(this)
@@ -1167,6 +1263,7 @@ contains
         deallocate( this%tmp )
         this%tmp => null()
     end subroutine finalize_tmp
+
 
 
     subroutine add_apply_B(this, wf, coefficient)
@@ -1240,6 +1337,42 @@ contains
 !$OMP END PARALLEL DO
 #endif 
         end if
+
+#ifndef _REAL_        
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+            call m%evaluate_potential_t(real(this%time, kind=prec))
+#ifndef _OPENMP
+#ifdef _REAL_
+           wf%u = wf%u + (-C/m%hbar) * m%V_t * this%u
+#else
+           wf%u = wf%u + (-C/m%hbar*(0.0_prec, 1.0_prec))* m%V_t * this%u
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2, V) 
+           do j=1,n_threads
+#if(_DIM_==1)
+                u1 => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                u2 => wf%u(lbound(wf%u,1)+m%g%jj(j-1):lbound(wf%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+#ifdef _REAL_
+                u2 = u2 + (-C/m%hbar) * V * u1
+#else
+                u2 = u2 + (-C/m%hbar*(0.0_prec, 1.0_prec))* V * u1
+#endif 
+           end do
+!$OMP END PARALLEL DO
+#endif 
+        end if
+#endif        
 
         if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
