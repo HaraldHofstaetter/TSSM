@@ -142,8 +142,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     end type S(schroedinger)
 
 #ifdef _QUADPRECISION_
-    type, bind(c) :: wrapped_float128
-        real(kind=prec) :: v
+    type, bind(c) :: wrapped_float128  !outwit c-calling convention
+        integer(c_int64_t) :: v1
+        integer(c_int64_t) :: v2
     end type
 #endif    
 
@@ -488,10 +489,10 @@ contains
             real(kind=prec) :: eval_c_potential_t
 #ifdef _QUADPRECISION_
             type(wrapped_float128) :: xx,tt,res
-            xx%v = x
-            tt%v = t
+            xx = transfer(x, xx)
+            tt = transfer(t, tt)
             res = this%c_potential_t(xx,tt)
-            eval_c_potential_t = res%v
+            eval_c_potential_t = transfer(res,eval_c_potential_t)
 #else
             eval_c_potential_t = this%c_potential_t(x,t)
 #endif            
@@ -502,11 +503,11 @@ contains
             real(kind=prec) :: eval_c_potential_t
 #ifdef _QUADPRECISION_
             type(wrapped_float128) :: xx,yy,tt,res
-            xx%v = x
-            yy%v = y
-            tt%v = t
+            xx = transfer(x, xx)
+            yy = transfer(x, yy)
+            tt = transfer(t, tt)
             res = this%c_potential_t(xx,yy,tt)
-            eval_c_potential_t = res%v
+            eval_c_potential_t = transfer(res,eval_c_potential_t)
 #else
             eval_c_potential_t = this%c_potential_t(x,y,t)
 #endif            
@@ -517,12 +518,11 @@ contains
             real(kind=prec) :: eval_c_potential_t
 #ifdef _QUADPRECISION_
             type(wrapped_float128) :: xx,yy,zz,tt,res
-            xx%v = x
-            yy%v = y
-            zz%v = z
-            tt%v = t
+            xx = transfer(x, xx)
+            yy = transfer(x, yy)
+            zz = transfer(z, zz)
+            tt = transfer(t, tt)
             res = this%c_potential_t(xx,yy,zz,tt)
-            eval_c_potential_t = res%v
 #else
             eval_c_potential_t = this%c_potential_t(x,y,z,t)
 #endif        

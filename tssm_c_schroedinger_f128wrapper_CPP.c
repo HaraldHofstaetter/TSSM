@@ -95,6 +95,7 @@ typedef __complex128  mycomplex128;
 
 
 #if(_DIM_==1)                        
+void W(set_potential)(void *m, myfloat128 (*f)(myfloat128));
 void* S(new)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -103,8 +104,11 @@ void* S(new)(
 #endif                        
                         __float128 hbar, __float128 mass, 
                         __float128 (*potential)(__float128), int with_potential, 
+#ifndef _REAL_                        
+                        /* __float128 (*potential_t)(__float128, __float128), int with_potential_t, */
+                        myfloat128 (*potential_t)(myfloat128, myfloat128), int with_potential_t, 
+#endif                        
                         __float128 cubic_coupling, int boundary_conditions);
-
 void* W(new)(
 #ifdef _HERMITE_
                         int nx, myfloat128 omega_x, 
@@ -113,26 +117,43 @@ void* W(new)(
 #endif                        
                         myfloat128 hbar, myfloat128 mass, 
                         myfloat128 (*potential)(myfloat128), int with_potential, 
+#ifndef _REAL_                        
+                        myfloat128 (*potential_t)(myfloat128,myfloat128), int with_potential_t,
+#endif
                         myfloat128 cubic_coupling, int boundary_conditions)
 {
-    __float128 pp(__float128 x)
+    void *m;
+/*    __float128 pp(__float128 x)
     {
         myfloat128 res, xx;
         F(xx) = x;
         res = potential(xx);
         return F(res);
-    }        
-    return   S(new)(
+    } */
+    m = S(new)(
 #ifdef _HERMITE_
                               nx, F(omega_x),
 #else
                               nx, F(xmin), F(xmax), 
 #endif                        
                               F(hbar), F(mass), 
-                              pp, with_potential, 
+                              /* pp, with_potential, */
+                              NULL, 0, 
+#ifndef _REAL_                              
+                              potential_t, with_potential_t, 
+#endif                              
                               F(cubic_coupling), boundary_conditions);
+     if (with_potential) {
+         W(set_potential)(m, potential);
+     }
+     return m;
 }
-#elif(_DIM_==2)                        
+#elif(_DIM_==2)         
+void W(set_potential)(void *m, myfloat128 (*f)(myfloat128,myfloat128));
+#ifndef _REAL_
+void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128,myfloat128,myfloat128));
+#endif
+
 void* S(new)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -143,6 +164,9 @@ void* S(new)(
 #endif             
                         __float128 hbar, __float128 mass, 
                         __float128 (*potential)(__float128,__float128), int with_potential,
+#ifndef _REAL_                        
+                        __float128 (*potential_t)(__float128, __float128, __float128), int with_potential_t, 
+#endif                        
                         __float128 cubic_coupling, int boundary_conditions);
 
 void* W(new)(
@@ -155,17 +179,13 @@ void* W(new)(
 #endif                              
                         myfloat128 hbar, myfloat128 mass, 
                         myfloat128 (*potential)(myfloat128,myfloat128), int with_potential,
+#ifndef _REAL_                        
+                        myfloat128 (*potential_t)(myfloat128,myfloat128,myfloat128), int with_potential_t,
+#endif
                         myfloat128 cubic_coupling, int boundary_conditions)
 {
-    __float128 pp(__float128 x, __float128 y)
-    {
-        myfloat128 res, xx, yy;
-        F(xx) = x;
-        F(yy) = y;
-        res = potential(xx, yy);
-        return F(res);
-    }        
-    return   S(new)(
+    void *m;
+    m = S(new)(
 #ifdef _HERMITE_
                               nx, F(omega_x),
                               ny, F(omega_y),
@@ -174,11 +194,28 @@ void* W(new)(
                               ny, F(ymin), F(ymax), 
 #endif                        
                               F(hbar), F(mass),
-                              pp, with_potential, 
+                              NULL, 0, 
+#ifndef _REAL_                              
+                              NULL, 0, 
+#endif                              
                               F(cubic_coupling),
                               boundary_conditions);
+     if (with_potential) {
+           W(set_potential)(m, potential);
+     }
+#ifndef _REAL_                              
+     if (with_potential_t) {
+           W(set_potential_t)(m, potential_t);
+     }
+#endif     
+     return m;
 }
-#elif(_DIM_==3)                        
+#elif(_DIM_==3)     
+void W(set_potential)(void *m, myfloat128 (*f)(myfloat128,myfloat128,myfloat128));
+#ifndef _REAL_
+void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128,myfloat128,myfloat128,myfloat128));
+#endif
+
 void* S(new)(
 #ifdef _HERMITE_
                         int nx, __float128 omega_x,
@@ -191,6 +228,9 @@ void* S(new)(
 #endif             
                         __float128 hbar, __float128 mass, 
                         __float128 (*potential)(__float128,__float128,__float128), int with_potential,
+#ifndef _REAL_                        
+                        __float128 (*potential_t)(__float128, __float128, __float128, __float128), int with_potential_t, 
+#endif                        
                         __float128 cubic_coupling, int boundary_conditions);
 
 void* W(new)(
@@ -205,18 +245,13 @@ void* W(new)(
 #endif                              
                         myfloat128 hbar, myfloat128 mass, 
                         myfloat128 (*potential)(myfloat128,myfloat128,myfloat128), int with_potential, 
+#ifndef _REAL_                        
+                        myfloat128 (*potential_t)(myfloat128,myfloat128,myfloat128,myfloat128), int with_potential_t,
+#endif
                         myfloat128 cubic_coupling, int boundary_conditions)
 {
-    __float128 pp(__float128 x, __float128 y, __float128 z)
-    {
-        myfloat128 res, xx, yy, zz;
-        F(xx) = x;
-        F(yy) = y;
-        F(zz) = z;
-        res = potential(xx, yy, zz);
-        return F(res);
-    }        
-    return   S(new)(
+    void *m;
+    m = S(new)(
 #ifdef _HERMITE_
                               nx, F(omega_x),
                               ny, F(omega_y),
@@ -227,8 +262,20 @@ void* W(new)(
                               nz, F(zmin), F(zmax), 
 #endif                        
                               F(hbar), F(mass), 
-                              pp, with_potential, 
+                              NULL, 0, 
+#ifndef _REAL_                              
+                              NULL, 0, 
+#endif                              
                               F(cubic_coupling), boundary_conditions);
+     if (with_potential) {
+           W(set_potential)(m, potential);
+     }
+#ifndef _REAL_                              
+     if (with_potential_t) {
+           W(set_potential_t)(m, potential_t);
+     }
+#endif     
+     return m;
 }
 
 #endif
@@ -784,8 +831,8 @@ void W(set_potential)(void *m, myfloat128 (*f)(myfloat128))
     S(set_potential)(m, ff);
 }
 #ifndef _REAL_
-void S(set_potential_t)(void *m, myfloat128 (*f)(myfloat128));
-void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128))
+void S(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128));
+void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128))
 {                                 
     S(set_potential_t)(m, f);
 }
@@ -807,8 +854,8 @@ void W(set_potential)(void *m, myfloat128 (*f)(myfloat128, myfloat128))
 }    
 
 #ifndef _REAL_
-void S(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128));
-void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128))
+void S(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128, myfloat128));
+void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, myfloat128, myfloat128))
 {                                 
     S(set_potential_t)(m, f);
 }
@@ -834,9 +881,9 @@ void W(set_potential)(void *m, myfloat128 (*f)(myfloat128,
 
 #ifndef _REAL_
 void S(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, 
-                                 myfloat128, myfloat128));
+                                 myfloat128, myfloat128, myfloat128));
 void W(set_potential_t)(void *m, myfloat128 (*f)(myfloat128, 
-                                 myfloat128, myfloat128))
+                                 myfloat128, myfloat128, myfloat128))
 {                                 
     S(set_potential_t)(m, f);
 }
