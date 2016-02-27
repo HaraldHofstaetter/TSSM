@@ -1204,6 +1204,7 @@ contains
             wf%u  = exp(f*m%V_t) * (wf%u  + 2.0_prec*f*m%cubic_coupling* &
             (real(this%u, kind=prec)*real(wf%u, kind=prec) +aimag(this%u)*aimag(wf%u))*this%u)
         end if
+        this%u = exp(f*m%V_t) * this%u
 #else
 !$OMP PARALLEL DO PRIVATE(j, u, V) 
         do j=1,n_threads
@@ -1227,6 +1228,7 @@ contains
                 h  = exp(f*V) * (h  + 2.0_prec*f*m%cubic_coupling* &
                     (real(u, kind=prec)*real(h, kind=prec)+aimag(u)*aimag(h))*u)
             end if    
+            u = exp(f*V) * u
         end do
 !$OMP END PARALLEL DO
 #endif 
@@ -1299,6 +1301,9 @@ contains
         C = 1.0_prec
         if (present(coefficient)) then
             C = coefficient
+        end if    
+        if (C==0.0_prec) then
+            return
         end if    
 
         select type (m=>this%m); class is (S(schroedinger))

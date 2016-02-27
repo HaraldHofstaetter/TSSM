@@ -168,6 +168,7 @@ module _MODULE_
         procedure :: to_real_space
         procedure :: to_frequency_space
         procedure :: propagate_A
+        procedure :: propagate_A_derivative
         procedure :: add_apply_A
         procedure :: save
         procedure :: load
@@ -804,8 +805,27 @@ contains
 !$OMP END PARALLEL DO 
 #endif
 #endif
-
     end subroutine propagate_A
+
+
+    subroutine propagate_A_derivative(this, wf, dt)
+        class(_WF_), intent(inout) :: this
+        class(_WAVE_FUNCTION_), intent(inout) :: wf 
+        _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+        select type (wf)
+        class is (_WF_)
+        if (.not.associated(wf%m,this%m)) then
+            stop "E: wave functions not belonging to the same method"
+        end if    
+        
+        call wf%propagate_A(dt)
+        call this%propagate_A(dt)
+
+        class default
+           stop "E: wrong spectral method for schroedinger wave function"
+        end select
+    end subroutine propagate_A_derivative
+    
 
 
     subroutine add_apply_A(this, wf, coefficient)

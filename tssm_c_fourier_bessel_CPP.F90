@@ -394,6 +394,21 @@ contains
         call psip%propagate_A(dt)
     end subroutine c_propagate_A_wf
 
+    subroutine c_propagate_A_derivative_wf(psi, wf, dt) & 
+        bind(c, name=SC(propagate_A_derivative_wf)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        type(c_ptr), value :: wf
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        type(_WF_), pointer :: psip
+        type(_WF_), pointer :: wfp 
+
+        call c_f_pointer(psi, psip)
+        call c_f_pointer(wf, wfp)
+        call psip%propagate_A_derivative(wfp, dt)
+    end subroutine c_propagate_A_derivative_wf
+    
+
     subroutine c_propagate_B_wf(psi, dt) &
         bind(c, name=SC(propagate_B_wf)) 
         use iso_c_binding
