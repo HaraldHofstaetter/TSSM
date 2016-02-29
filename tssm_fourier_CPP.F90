@@ -1210,6 +1210,7 @@ contains
         class(S(wf_fourier)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf 
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+        logical :: f
 
         select type (wf)
         class is (S(wf_fourier))
@@ -1217,7 +1218,11 @@ contains
             stop "E: wave functions not belonging to the same method"
         end if    
 
+        f = this%m%propagate_time_together_with_A
+        this%m%propagate_time_together_with_A = .false.
         call wf%propagate_A(dt)
+        this%m%propagate_time_together_with_A = f
+
         call this%propagate_A(dt)
         
         class default
@@ -1269,6 +1274,19 @@ contains
         if (C==0) then
             return
         end if    
+
+        if (this%m%propagate_time_together_with_A) then
+            if (present(coefficient)) then
+                call wf%propagate_time(coefficient)
+            else
+#ifdef _REAL_            
+                call wf%propagate_time(1.0_prec)
+#else                
+                call wf%propagate_time((0.0_prec,1.0_prec))
+#endif                
+            end if
+        end if
+        
 
         call this%to_frequency_space
         call wf%to_frequency_space

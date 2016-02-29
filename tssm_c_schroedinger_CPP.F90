@@ -72,6 +72,7 @@ contains
                   potential, with_potential, &
 #ifndef _REAL_                  
                   potential_t, with_potential_t, &
+                  potential_t_derivative, with_potential_t_derivative, &
 #endif                  
                   cubic_coupling) &
         result(this) bind(c, name=SC(new_schroedinger))
@@ -94,10 +95,13 @@ contains
 #ifndef _REAL_        
 #ifdef _QUADPRECISION_
         type(wrapped_float128), external, bind(c) :: potential_t 
+        type(wrapped_float128), external, bind(c) :: potential_t_derivative
 #else
         real(kind=prec), external, bind(c) :: potential_t 
+        real(kind=prec), external, bind(c) :: potential_t_derivative
 #endif        
         logical, value  :: with_potential_t
+        logical, value  :: with_potential_t_derivative
 #endif        
         real(kind=prec), value  :: cubic_coupling 
 
@@ -117,7 +121,10 @@ contains
         end if
 #ifndef _REAL_        
         if (with_potential_t) then
-           call c_set_potential_t(this, potential_t)
+           call c_set_potential_t(this, potential_t, is_derivative=.false.)
+        end if
+        if (with_potential_t_derivative) then
+           call c_set_potential_t(this, potential_t_derivative, is_derivative=.true.)
         end if
 #endif
     end function c_new
@@ -135,6 +142,7 @@ contains
                    potential, with_potential, &
 #ifndef _REAL_        
                    potential_t, with_potential_t, &
+                   potential_t_derivative, with_potential_t_derivative, &
 #endif                   
                    cubic_coupling, boundary_conditions) & 
         result(this) bind(c, name=SC(new_schroedinger))
@@ -160,10 +168,13 @@ contains
 #ifndef _REAL_        
 #ifdef _QUADPRECISION_
         type(wrapped_float128), external, bind(c) :: potential_t 
+        type(wrapped_float128), external, bind(c) :: potential_t_derivative 
 #else
         real(kind=prec), external, bind(c) :: potential_t 
+        real(kind=prec), external, bind(c) :: potential_t_derivative 
 #endif        
         logical, value  :: with_potential_t
+        logical, value  :: with_potential_t_derivative
 #endif        
         real(kind=prec), value  :: cubic_coupling 
         integer, value :: boundary_conditions
@@ -184,7 +195,10 @@ contains
         end if
 #ifndef _REAL_        
         if (with_potential_t) then
-            call c_set_potential_t(this, potential_t)          
+            call c_set_potential_t(this, potential_t, is_derivative=.false.)          
+        end if
+        if (with_potential_t_derivative) then
+           call c_set_potential_t(this, potential_t_derivative, is_derivative=.true.)
         end if
 #endif
     end function c_new
@@ -1125,11 +1139,12 @@ contains
 
 
 #ifndef _REAL_
-    subroutine c_set_potential_t(m, f) &
+    subroutine c_set_potential_t(m, f, is_derivative) &
         bind(c, name=SC(set_potential_t_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(S(schroedinger)), pointer :: mp
+        logical, value :: is_derivative
         interface 
 #if(_DIM_==1)
            function f(x, t) bind(c)
@@ -1166,7 +1181,7 @@ contains
         !type(c_funptr), value :: f
 
         call c_f_pointer(m, mp)
-        call mp%set_c_potential_t(f)
+        call mp%set_c_potential_t(f, is_derivative=is_derivative)
     end subroutine c_set_potential_t
 #endif    
 
@@ -1201,11 +1216,12 @@ contains
      end function c_get_potential
 
 #ifndef _REAL_
-    function c_get_potential_t(m, t, dim) &
+    function c_get_potential_t(m, t, is_derivative, dim) &
         result(Vp) bind(c, name=SC(get_potential_t_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         real(kind=prec), value :: t
+        logical, value :: is_derivative
         type(c_ptr)  :: Vp
         integer, intent(out)  :: dim(_DIM_)
         type(S(schroedinger)), pointer :: mp
@@ -1214,7 +1230,7 @@ contains
         if (.not.associated(mp%V_t)) then
              Vp = c_null_ptr
         else
-            call mp%evaluate_potential_t(t)
+            call mp%evaluate_potential_t(t, is_derivative=is_derivative)
             !Vp = c_loc(mp%V_t)
 #if(_DIM_==1)
             Vp = c_loc(mp%V_t(mp%g%m1min))

@@ -123,6 +123,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #endif
         procedure(potential_t_interface), pointer, nopass :: potential_t => null()
         procedure(c_potential_t_interface), pointer, nopass :: c_potential_t => null()
+        procedure(potential_t_interface), pointer, nopass :: potential_t_derivative => null()
+        procedure(c_potential_t_interface), pointer, nopass :: c_potential_t_derivative => null()
 #endif
 
         type(S(wf_schroedinger)), pointer :: tmp => null()
@@ -251,6 +253,9 @@ contains
                nx, omega_x, ny, omega_y, nz, omega_z,  &
 #endif
                hbar, mass, potential, &
+#ifndef _REAL_        
+               potential_t, potential_t_derivative, &
+#endif               
                cubic_coupling) result(this)
         type(S(schroedinger)) :: this
         real(kind=prec), intent(in) :: omega_x 
@@ -266,6 +271,10 @@ contains
         real(kind=prec), intent(in), optional :: hbar 
         real(kind=prec), intent(in), optional :: mass 
         real(kind=prec), external, optional   :: potential 
+#ifndef _REAL_        
+        real(kind=prec), external, optional   :: potential_t 
+        real(kind=prec), external, optional   :: potential_t_derivative 
+#endif        
         real(kind=prec), intent(in), optional :: cubic_coupling 
 
         real(kind=prec) :: f 
@@ -300,6 +309,12 @@ contains
             call this%set_potential(potential) 
         end if
 #ifndef _REAL_        
+        if (present(potential_t)) then
+            call this%set_potential_t(potential_t) 
+        end if
+        if (present(potential_t_derivative)) then
+            call this%set_potential_t(potential_t_derivative, is_derivative=.true.) 
+        end if
         call this%g%allocate_real_gridfun(this%V_t)
 #endif        
     end function new_method
@@ -316,6 +331,9 @@ contains
                nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
 #endif
                hbar, mass, potential, &
+#ifndef _REAL_        
+               potential_t, potential_t_derivative, &
+#endif
                cubic_coupling, boundary_conditions) result(this)
         type(S(schroedinger)) :: this
         real(kind=prec), intent(in) :: xmin 
@@ -334,6 +352,10 @@ contains
         real(kind=prec), intent(in), optional :: hbar 
         real(kind=prec), intent(in), optional :: mass 
         real(kind=prec), external, optional   :: potential 
+#ifndef _REAL_        
+        real(kind=prec), external, optional   :: potential_t 
+        real(kind=prec), external, optional   :: potential_t_derivative 
+#endif
         real(kind=prec), intent(in), optional :: cubic_coupling 
         integer, intent(in), optional :: boundary_conditions
 
@@ -357,6 +379,12 @@ contains
             call this%set_potential(potential) 
         end if
 #ifndef _REAL_        
+        if (present(potential_t)) then
+            call this%set_potential_t(potential_t) 
+        end if
+        if (present(potential_t_derivative)) then
+            call this%set_potential_t(potential_t_derivative, is_derivative=.true.) 
+        end if
         call this%g%allocate_real_gridfun(this%V_t)
 #endif        
     end function new_method
@@ -428,14 +456,20 @@ contains
     end subroutine set_potential
 
 #ifndef _REAL_
-    subroutine set_potential_t(this, f)
+    subroutine set_potential_t(this, f, is_derivative)
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
-        this%potential_t => f
+        logical, optional :: is_derivative
+        if (present(is_derivative).and.is_derivative) then
+            this%potential_t_derivative => f
+        else
+            this%potential_t => f
+        end if            
     end subroutine set_potential_t
 
-    subroutine set_c_potential_t(this, f)
+    subroutine set_c_potential_t(this, f, is_derivative)
         class(S(schroedinger)), intent(inout) :: this
+        logical, optional :: is_derivative
         interface 
 #if(_DIM_==1)
            function f(x, t) bind(c)
@@ -470,19 +504,38 @@ contains
 #endif               
            end function f
         end interface 
-        this%c_potential_t => f
+        if (present(is_derivative).and.is_derivative) then
+            this%c_potential_t_derivative => f
+        else
+            this%c_potential_t => f
+        end if            
     end subroutine set_c_potential_t
 
-    subroutine evaluate_potential_t(this, time)
+
+    subroutine evaluate_potential_t(this, time, is_derivative)
         class(S(schroedinger)), intent(inout) :: this
+        logical, optional :: is_derivative
         real(kind=prec) :: time
-        
-        if (associated(this%c_potential_t)) then
-            call this%g%set_t_real_gridfun(this%V_t, eval_c_potential_t, time)
-            return 
-        end if    
-        if (associated(this%potential_t)) then
-            call this%g%set_t_real_gridfun(this%V_t, this%potential_t, time)
+        procedure(c_potential_t_interface), pointer :: c_potential_t  
+
+        if (present(is_derivative).and.is_derivative) then
+            if (associated(this%c_potential_t_derivative)) then
+                c_potential_t => this%c_potential_t_derivative 
+                call this%g%set_t_real_gridfun(this%V_t, eval_c_potential_t, time)
+                return 
+            end if    
+            if (associated(this%potential_t_derivative)) then
+                call this%g%set_t_real_gridfun(this%V_t, this%potential_t_derivative, time)
+            end if    
+        else
+            if (associated(this%c_potential_t)) then
+                c_potential_t => this%c_potential_t 
+                call this%g%set_t_real_gridfun(this%V_t, eval_c_potential_t, time)
+                return 
+            end if    
+            if (associated(this%potential_t)) then
+                call this%g%set_t_real_gridfun(this%V_t, this%potential_t, time)
+            end if    
         end if    
     contains
 #if(_DIM_==1)    
@@ -493,10 +546,10 @@ contains
             type(wrapped_float128) :: xx,tt,res
             xx = transfer(x, xx)
             tt = transfer(t, tt)
-            res = this%c_potential_t(xx,tt)
+            res = c_potential_t(xx,tt)
             eval_c_potential_t = transfer(res,eval_c_potential_t)
 #else
-            eval_c_potential_t = this%c_potential_t(x,t)
+            eval_c_potential_t = c_potential_t(x,t)
 #endif            
         end function eval_c_potential_t
 #elif(_DIM_==2)    
@@ -508,10 +561,10 @@ contains
             xx = transfer(x, xx)
             yy = transfer(x, yy)
             tt = transfer(t, tt)
-            res = this%c_potential_t(xx,yy,tt)
+            res = c_potential_t(xx,yy,tt)
             eval_c_potential_t = transfer(res,eval_c_potential_t)
 #else
-            eval_c_potential_t = this%c_potential_t(x,y,t)
+            eval_c_potential_t = c_potential_t(x,y,t)
 #endif            
         end function eval_c_potential_t
 #elif(_DIM_==3)    
@@ -524,9 +577,9 @@ contains
             yy = transfer(x, yy)
             zz = transfer(z, zz)
             tt = transfer(t, tt)
-            res = this%c_potential_t(xx,yy,zz,tt)
+            res = c_potential_t(xx,yy,zz,tt)
 #else
-            eval_c_potential_t = this%c_potential_t(x,y,z,t)
+            eval_c_potential_t = c_potential_t(x,y,z,t)
 #endif        
         end function eval_c_potential_t
 #endif        
@@ -1193,9 +1246,36 @@ contains
         select type (m=>this%m); class is (S(schroedinger))
         call this%to_real_space
         call wf%to_real_space
-        call this%propagate_B_prepare
 
         f = -dt/m%hbar*(0.0_prec, 1.0_prec)
+
+        if (associated(m%potential_t_derivative).or.associated(m%c_potential_t_derivative)) then
+            call m%evaluate_potential_t(real(this%time, kind=prec), is_derivative=.true.)
+#ifndef _OPENMP
+            wf%u =wf%u + (f*wf%time) * m%V_t * this%u
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) 
+            do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                h => wf%u(lbound(wf%u,1)+m%g%jj(j-1):lbound(wf%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                h => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                h => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+                h = h +(f*wf%time) * V * u         
+            end do
+!$OMP END PARALLEL DO
+#endif 
+        end if
+            
+        call this%propagate_B_prepare
 
 #ifndef _OPENMP
         if (m%cubic_coupling==0.0_prec) then
@@ -1214,11 +1294,11 @@ contains
             V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
 #elif(_DIM_==2)
             u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
-            u => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+            h => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
             V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
 #elif(_DIM_==3)
             u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
-            u => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+            h => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
             V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
 #endif 
             if (m%cubic_coupling==0.0_prec) then
@@ -1238,10 +1318,7 @@ contains
            stop "E: wrong spectral method for schroedinger wave function"
         end select
     end subroutine propagate_B_derivative
-
 #endif
-
-
 
 
     subroutine initialize_tmp(this)
