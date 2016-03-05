@@ -319,6 +319,10 @@ contains
         allocate( this%g%nodes_theta(this%g%nthetamin:this%g%nthetamax ) ) 
         this%g%nodes_theta = (/ (real(j, kind=prec)*(2.0_prec*pi/real(M, kind=prec)), &
                               j=this%g%nthetamin, this%g%nthetamax ) /)
+
+        allocate( this%g%nodes_x(this%g%nrmin:this%g%nrmax, this%g%nthetamin:this%g%nthetamax) )
+        allocate( this%g%nodes_y(this%g%nrmin:this%g%nrmax, this%g%nthetamin:this%g%nthetamax) )
+        call this%g%compute_nodes_xy
         
         if ((.not.present(separated_eigenvalues)).or.separated_eigenvalues) then
             allocate( this%eigenvalues_r(this%nfrmin:this%nfrmax ) ) 
@@ -353,6 +357,8 @@ contains
 
         deallocate( this%g%nodes_r )
         deallocate( this%g%weights_r )
+        deallocate( this%g%nodes_x )
+        deallocate( this%g%nodes_y )
         deallocate( this%L )
         if (allocated(this%eigenvalues_r_theta)) then
             deallocate( this%eigenvalues_r_theta )

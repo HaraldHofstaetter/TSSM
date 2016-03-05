@@ -260,7 +260,10 @@ module tssm_grid
         !real(kind=prec), allocatable :: weights_r(:)
         real(kind=prec), pointer :: weights_r(:)
         real(kind=prec), allocatable :: nodes_theta(:)
+        real(kind=prec), allocatable :: nodes_x(:,:)
+        real(kind=prec), allocatable :: nodes_y(:,:)
     contains
+        procedure :: compute_nodes_xy => compute_nodes_xy_polar_2D
         procedure :: set_real_gridfun => set_real_gridfun_polar_2D
         procedure :: set_complex_gridfun => set_complex_gridfun_polar_2D
         procedure :: rset_complex_gridfun => rset_complex_gridfun_polar_2D
@@ -292,7 +295,10 @@ module tssm_grid
         !real(kind=prec), allocatable :: weights_z(:)
         real(kind=prec), pointer :: weights_z(:)
         real(kind=prec), allocatable :: nodes_theta(:)
+        real(kind=prec), allocatable :: nodes_x(:,:)
+        real(kind=prec), allocatable :: nodes_y(:,:)
     contains
+        procedure :: compute_nodes_xy => compute_nodes_xy_cylindrical_3D 
         procedure :: set_real_gridfun => set_real_gridfun_cylindrical_3D
         procedure :: set_complex_gridfun => set_complex_gridfun_cylindrical_3D
         procedure :: rset_complex_gridfun => rset_complex_gridfun_cylindrical_3D
@@ -2002,6 +2008,41 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
     end subroutine rset_complex_gridfun_tensorial_3D
 
 
+    subroutine compute_nodes_xy_polar_2D(this)
+        class(grid_polar_2D) :: this
+        integer :: itheta, ir
+        real(kind=prec) :: r, theta
+!$OMP PARALLEL DO PRIVATE(ir, itheta, r, theta)
+        do itheta = this%n2min, this%n2max
+            theta = itheta*this%dtheta 
+            do ir = this%n1min,this%n1max
+                r = this%nodes_r(ir)
+                this%nodes_x(ir, itheta) = r*cos(theta)
+                this%nodes_y(ir, itheta) = r*sin(theta)
+            end do
+        end do
+!$OMP END PARALLEL DO
+    end subroutine compute_nodes_xy_polar_2D
+
+
+    subroutine compute_nodes_xy_cylindrical_3D(this)
+        class(grid_cylindrical_3D) :: this
+        integer :: itheta, ir
+        real(kind=prec) :: r, theta
+!$OMP PARALLEL DO PRIVATE(ir, itheta, r, theta)
+        do itheta = this%n3min, this%n3max
+            theta = itheta*this%dtheta 
+            do ir = this%n1min,this%n1max
+                r = this%nodes_r(ir)
+                this%nodes_x(ir, itheta) = r*cos(theta)
+                this%nodes_y(ir, itheta) = r*sin(theta)
+            end do
+        end do
+!$OMP END PARALLEL DO
+    end subroutine compute_nodes_xy_cylindrical_3D
+
+
+
     subroutine set_real_gridfun_polar_2D(this, u, f, polar_coordinates)
         class(grid_polar_2D) :: this
         real(kind=prec), intent(inout) :: u(this%n1min:this%n1max,this%n2min:this%n2max)
@@ -2024,12 +2065,13 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, r, theta, x, y)
             do itheta = this%n2min, this%n2max
-                theta = itheta*this%dtheta 
+        !       theta = itheta*this%dtheta 
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, itheta) = cmplx(f(x,y), kind=prec)
+        !           r = this%nodes_r(ir)
+        !           x = r*cos(theta)
+        !           y = r*sin(theta)
+        !           u(ir, itheta) = cmplx(f(x,y), kind=prec)
+                    u(ir, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta)), kind=prec)
                 end do
             end do
 !$OMP END PARALLEL DO
@@ -2058,12 +2100,13 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, r, theta, x, y)
             do itheta = this%n2min, this%n2max
-                theta = itheta*this%dtheta 
+        !       theta = itheta*this%dtheta 
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, itheta) = cmplx(f(x,y), kind=prec)
+        !           r = this%nodes_r(ir)
+        !           x = r*cos(theta)
+        !           y = r*sin(theta)
+        !           u(ir, itheta) = cmplx(f(x,y), kind=prec)
+                    u(ir, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta)), kind=prec)
                 end do
             end do
 !$OMP END PARALLEL DO
@@ -2092,12 +2135,13 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, r, theta, x, y)
             do itheta = this%n2min, this%n2max
-                theta = itheta*this%dtheta 
+        !       theta = itheta*this%dtheta 
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, itheta) = cmplx(f(x,y), kind=prec)
+        !           r = this%nodes_r(ir)
+        !           x = r*cos(theta)
+        !           y = r*sin(theta)
+        !           u(ir, itheta) = cmplx(f(x,y), kind=prec)
+                    u(ir, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta)), kind=prec)
                 end do
             end do
 !$OMP END PARALLEL DO
@@ -2131,14 +2175,15 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, iz, r, theta, x, y, z)
           do itheta = this%n3min, this%n3max
-            theta = itheta*this%dtheta 
+        !   theta = itheta*this%dtheta 
             do iz = this%n2min, this%n2max
                 z = this%nodes_z(iz)
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+         !          r = this%nodes_r(ir)
+         !          x = r*cos(theta)
+         !          y = r*sin(theta)
+         !          u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+                    u(ir, iz, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta),z), kind=prec)
                 end do
             end do
           end do
@@ -2171,14 +2216,15 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, iz, r, theta, x, y, z)
           do itheta = this%n3min, this%n3max
-            theta = itheta*this%dtheta 
+        !   theta = itheta*this%dtheta 
             do iz = this%n2min, this%n2max
                 z = this%nodes_z(iz)
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+        !           r = this%nodes_r(ir)
+        !           x = r*cos(theta)
+        !           y = r*sin(theta)
+        !           u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+                    u(ir, iz, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta),z), kind=prec)
                 end do
             end do
           end do
@@ -2211,14 +2257,15 @@ subroutine set_real_gridfun_equidistant_3D(this, u, f)
         else
 !$OMP PARALLEL DO PRIVATE(ir, itheta, iz, r, theta, x, y, z)
           do itheta = this%n3min, this%n3max
-            theta = itheta*this%dtheta 
+        !   theta = itheta*this%dtheta 
             do iz = this%n2min, this%n2max
                 z = this%nodes_z(iz)
                 do ir = this%n1min,this%n1max
-                    r = this%nodes_r(ir)
-                    x = r*cos(theta)
-                    y = r*sin(theta)
-                    u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+        !           r = this%nodes_r(ir)
+        !           x = r*cos(theta)
+        !           y = r*sin(theta)
+        !           u(ir, iz, itheta) = cmplx(f(x,y,z), kind=prec)
+                    u(ir, iz, itheta) = cmplx(f(this%nodes_x(ir,itheta),this%nodes_y(ir,itheta),z), kind=prec)
                 end do
             end do
           end do

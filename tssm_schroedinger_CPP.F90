@@ -68,6 +68,8 @@ module S(tssmq_schroedinger) ! (Nonlinear) Schroedinger
     use tssmq_fourier_common ! fftw_free
 #if defined(_HERMITE_)
     use tssmq_hermite
+#elif defined(_LAGUERRE_)
+    use tssmq_generalized_laguerre
 #else
     use tssmq_fourier
 #endif
@@ -77,6 +79,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     use tssm_fourier_common ! fftw_free
 #if defined(_HERMITE_)
     use tssm_hermite
+#elif defined(_LAGUERRE_)
+    use tssm_generalized_laguerre
 #else
     use tssm_fourier
 #endif
@@ -91,6 +95,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 
 #if defined(_HERMITE_)
     type, extends(SB(hermite)) :: S(schroedinger)
+#elif defined(_LAGUERRE_)
+    type, extends(SB(generalized_laguerre)) :: S(schroedinger)
 #else
     type, extends(SB(fourier)) :: S(schroedinger)
 #endif
@@ -101,6 +107,12 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #if(_DIM_>=2)
         real(kind=prec) :: omega_y = 1.0_prec 
 #endif
+#if(_DIM_>=3)
+        real(kind=prec) :: omega_z = 1.0_prec 
+#endif
+#elif defined(_LAGUERRE_)
+        real(kind=prec) :: Omega = 0.0_prec 
+        real(kind=prec) :: omega_r = 1.0_prec 
 #if(_DIM_>=3)
         real(kind=prec) :: omega_z = 1.0_prec 
 #endif
@@ -210,6 +222,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 
 #if defined(_HERMITE_)
     type, extends(SB(wf_hermite)) :: S(wf_schroedinger)
+#elif defined(_LAGUERRE_)
+    type, extends(SB(wf_generalized_laguerre)) :: S(wf_schroedinger)
 #else
     type, extends(SB(wf_fourier)) :: S(wf_schroedinger)
 #endif
@@ -242,22 +256,42 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 
 contains
 
-#if defined(_HERMITE_)
-
     function new_method( &
+#if defined(_HERMITE_)
 #if(_DIM_==1)
                nx, omega_x, &
 #elif(_DIM_==2)
                nx, omega_x, ny, omega_y, &
 #elif(_DIM_==3)
                nx, omega_x, ny, omega_y, nz, omega_z,  &
+#else
+#endif
+#elif defined(_LAGUERRE_)
+               M, K, omega_r, Omega, &
+#if(_DIM_==3)
+               nz, omega_z, &
+#endif
+#else
+#if(_DIM_==1)
+               nx, xmin, xmax, &
+#elif(_DIM_==2)
+               nx, xmin, xmax, ny, ymin, ymax, &
+#elif(_DIM_==3)
+               nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
+#endif
+
 #endif
                hbar, mass, potential, &
 #ifndef _REAL_        
-               potential_t, potential_t_derivative, &
+               potential_t, potential_t_derivative,  &
+#endif           
+               cubic_coupling & 
+#ifdef _FOURIER_
+               , boundary_conditions &
 #endif               
-               cubic_coupling) result(this)
+               ) result(this)
         type(S(schroedinger)) :: this
+#if defined(_HERMITE_)
         real(kind=prec), intent(in) :: omega_x 
         integer, intent(in) :: nx
 #if(_DIM_>=2)
@@ -268,74 +302,15 @@ contains
         real(kind=prec), intent(in) :: omega_z 
         integer, intent(in) :: nz
 #endif
-        real(kind=prec), intent(in), optional :: hbar 
-        real(kind=prec), intent(in), optional :: mass 
-        real(kind=prec), external, optional   :: potential 
-#ifndef _REAL_        
-        real(kind=prec), external, optional   :: potential_t 
-        real(kind=prec), external, optional   :: potential_t_derivative 
-#endif        
-        real(kind=prec), intent(in), optional :: cubic_coupling 
-
-        real(kind=prec) :: f 
-        
-        this%omega_x = omega_x
-#if(_DIM_>=2)
-        this%omega_y = omega_y
-#endif
+#elif defined(_LAGUERRE_)
+        integer, intent(in) :: M 
+        integer, intent(in) :: K 
+        real(kind=prec), intent(in) :: omega_r 
 #if(_DIM_>=3)
-        this%omega_z = omega_z
+        real(kind=prec), intent(in) :: omega_z 
+        integer, intent(in) :: nz
 #endif
-
-        f = sqrt(this%mass)/this%hbar
-#if(_DIM_==1)
-        this%SB(hermite) = SB(hermite)(nx, f*omega_x)
-#elif(_DIM_==2)
-        this%SB(hermite) = SB(hermite)(nx, f*omega_x, ny, f*omega_y)
-#elif(_DIM_==3)
-        this%SB(hermite) = SB(hermite)(nx, f*omega_x, ny, f*omega_y, nz, f*omega_z)
-#endif
-       if (present(hbar)) then
-            this%hbar = hbar
-        end if
-        if (present(mass)) then
-            this%mass = mass
-        end if
-        if (present(cubic_coupling)) then
-            this%cubic_coupling = cubic_coupling
-        end if
-
-        if (present(potential)) then
-            call this%set_potential(potential) 
-        end if
-#ifndef _REAL_        
-        if (present(potential_t)) then
-            call this%set_potential_t(potential_t) 
-        end if
-        if (present(potential_t_derivative)) then
-            call this%set_potential_t(potential_t_derivative, is_derivative=.true.) 
-        end if
-        call this%g%allocate_real_gridfun(this%V_t)
-#endif        
-    end function new_method
-
-
 #else
-
-    function new_method( &
-#if(_DIM_==1)
-               nx, xmin, xmax, &
-#elif(_DIM_==2)
-               nx, xmin, xmax, ny, ymin, ymax, &
-#elif(_DIM_==3)
-               nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
-#endif
-               hbar, mass, potential, &
-#ifndef _REAL_        
-               potential_t, potential_t_derivative, &
-#endif
-               cubic_coupling, boundary_conditions) result(this)
-        type(S(schroedinger)) :: this
         real(kind=prec), intent(in) :: xmin 
         real(kind=prec), intent(in) :: xmax
         integer, intent(in) :: nx
@@ -349,22 +324,57 @@ contains
         real(kind=prec), intent(in) :: zmax
         integer, intent(in) :: nz
 #endif
+#endif
         real(kind=prec), intent(in), optional :: hbar 
         real(kind=prec), intent(in), optional :: mass 
         real(kind=prec), external, optional   :: potential 
 #ifndef _REAL_        
         real(kind=prec), external, optional   :: potential_t 
         real(kind=prec), external, optional   :: potential_t_derivative 
-#endif
+#endif        
         real(kind=prec), intent(in), optional :: cubic_coupling 
+#ifdef _FOURIER_
         integer, intent(in), optional :: boundary_conditions
+#endif
 
+#if defined(_HERMITE_)||defined(_LAGUERRE_)
+        real(kind=prec) :: f 
+#endif        
+        
+#if defined(_HERMITE_)
+        this%omega_x = omega_x
+#if(_DIM_>=2)
+        this%omega_y = omega_y
+#endif
+#if(_DIM_>=3)
+        this%omega_z = omega_z
+#endif
+        f = sqrt(this%mass)/this%hbar
+#if(_DIM_==1)
+        this%SB(hermite) = SB(hermite)(nx, f*omega_x)
+#elif(_DIM_==2)
+        this%SB(hermite) = SB(hermite)(nx, f*omega_x, ny, f*omega_y)
+#elif(_DIM_==3)
+        this%SB(hermite) = SB(hermite)(nx, f*omega_x, ny, f*omega_y, nz, f*omega_z)
+#endif
+#elif defined(_LAGUERRE_)
+        this%omega_r = omega_r
+        this%Omega = Omega
+        f = sqrt(this%mass)/this%hbar
+#if(_DIM_==2)
+        !TODO: scaling of Omega w.r.t. hbar, mass!!!
+        this%SB(generalized_laguerre) = SB(generalized_laguerre)(M, K, f*omega_r, Omega)
+#else
+        this%SB(generalized_laguerre) = SB(generalized_laguerre)(M, K, f*omega_r, Omega, nz, f*omega_z)
+#endif
+#else 
 #if(_DIM_==1)
         this%SB(fourier) = SB(fourier)(nx, xmin, xmax, boundary_conditions)
 #elif(_DIM_==2)
         this%SB(fourier) = SB(fourier)(nx, xmin, xmax, ny, ymin, ymax, boundary_conditions)
 #elif(_DIM_==3)
         this%SB(fourier) = SB(fourier)(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, boundary_conditions)
+#endif
 #endif
         if (present(hbar)) then
             this%hbar = hbar
@@ -375,6 +385,7 @@ contains
         if (present(cubic_coupling)) then
             this%cubic_coupling = cubic_coupling
         end if
+
         if (present(potential)) then
             call this%set_potential(potential) 
         end if
@@ -389,14 +400,14 @@ contains
 #endif        
     end function new_method
 
-#endif
-
 
     subroutine finalize_method(this)
         class(S(schroedinger)), intent(inout) :: this
 
 #if defined(_HERMITE_)
         call this%SB(hermite)%finalize()
+#elif defined(_LAGUERRE_)
+        call this%SB(generalized_laguerre)%finalize()
 #else
         call this%SB(fourier)%finalize()
 #endif
@@ -421,6 +432,13 @@ contains
         this%SB(wf_hermite) = SB(wf_hermite)(m, coefficient=m%hbar/m%mass)
 #else
         this%SB(wf_hermite) = SB(wf_hermite)(m, coefficient=cmplx(0_prec, m%hbar/m%mass, kind=prec))
+#endif
+#elif defined(_LAGUERRE_)
+! TODO: nondefault values for hbar, omega
+#ifdef _REAL_
+        this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, coefficient=m%hbar/m%mass)
+#else
+        this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, coefficient=cmplx(0_prec, m%hbar/m%mass, kind=prec))
 #endif
 #else
 #ifdef _REAL_
@@ -602,6 +620,8 @@ contains
         call hdf5_save_real_gridfun(this%g, this%V, filename, "potential")
 #if defined(_HERMITE_)
 !TODO write grid attributes for hermite grid
+#elif defined(_LAGUERRE_)
+!TODO write grid attributes for laguerre grid
 #else
         call hdf5_write_grid_attributes(this%g, filename)
 #endif
@@ -630,6 +650,8 @@ contains
 #endif
         integer :: offset(3)
 #if defined(_HERMITE_)
+!TODO
+#elif defined(_LAGUERRE_)
 !TODO
 #else
 #if(_DIM_==1)
@@ -1583,6 +1605,50 @@ contains
 #endif
 #endif
 
+#elif defined(_LAGUERRE_)
+
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = sum( (spread(this%m%eigenvalues_r,2, this%m%nfthetamax-this%m%nfthetamin+1) &
+                + spread(this%m%eigenvalues_theta,1, this%m%nfrmax-this%m%nfrmin+1)) &
+            * this%uf**2 )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
+            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
+                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
+            h = h + sum( (spread(this%m%eigenvalues_r,2, this%m%jf(j)-this%m%jf(j-1)) &
+                       + spread(ev,1, this%m%nfrmax-this%m%nfrmin+1)) &
+                       * uf**2 )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+#ifndef _OPENMP
+        h = sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
+               + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
+               + spread(spread(this%m%eigenvalues_theta, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+            * this%uf**2 )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
+            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
+                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
+            h = h + sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), &
+                                       3,this%m%jf(j)-this%m%jf(j-1)) &
+                  + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), &
+                                       3,this%m%jf(j)-this%m%jf(j-1)) &
+                  + spread(spread(ev, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+                  * uf**2 )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+
 #else
         select case(this%m%boundary_conditions)
         case(periodic) 
@@ -1704,6 +1770,51 @@ contains
         end select
 #endif
 #else
+
+#if defined(_LAGUERRE_)
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = sum( (spread(this%m%eigenvalues_r,2, this%m%nfthetamax-this%m%nfthetamin+1) &
+                + spread(this%m%eigenvalues_theta,1, this%m%nfrmax-this%m%nfrmin+1)) &
+                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
+            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
+                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
+            h = h + sum( (spread(this%m%eigenvalues_r,2, this%m%jf(j)-this%m%jf(j-1)) &
+                       + spread(ev,1, this%m%nfrmax-this%m%nfrmin+1)) &
+                       * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+#ifndef _OPENMP
+        h = sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
+               + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
+               + spread(spread(this%m%eigenvalues_theta, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
+            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
+                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
+            h = h + sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), &
+                                       3,this%m%jf(j)-this%m%jf(j-1)) &
+                  + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), &
+                                       3,this%m%jf(j)-this%m%jf(j-1)) &
+                  + spread(spread(ev, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+                  * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+#else
+
 #if(_DIM_==1)
 #ifndef _OPENMP
         h = sum(this%m%eigenvalues1 &
@@ -1760,6 +1871,8 @@ contains
         end do
 !$OMP END PARALLEL DO 
 #endif
+#endif
+
 #endif
 #endif
 #ifdef _MPI_
@@ -1879,6 +1992,46 @@ contains
           end do
 !$OMP END PARALLEL DO
 #endif 
+#elif defined(_LAGUERRE_)
+
+#ifndef _OPENMP
+#if(_DIM_==2)
+    E_pot = sum( spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) *this%u**2 ) &
+#elif(_DIM_==3)
+    E_pot = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+               *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#endif
+#ifdef _REAL_
+                     *m%V *(this%u**2) )*this%g%dtheta
+#else
+                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*this%g%dtheta
+#endif 
+#else
+          E_pot = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V(:,lbound(m%V,2)+m%g%jj(j-1):lbound(m%V,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==2)
+                E_pot = E_pot + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )*this%g%dtheta
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+
 #else
 #if(_DIM_==1)
             dV = m%g%dx 
@@ -2026,13 +2179,10 @@ contains
 #ifdef _OPENMP
 #if(_DIM_==1)            
         _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:)
-        real(kind=prec), pointer :: V(:)
 #elif(_DIM_==2)            
         _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:)
-        real(kind=prec), pointer :: V(:,:)
 #elif(_DIM_==3)            
         _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:,:)
-        real(kind=prec), pointer :: V(:,:,:)
 #endif
 #if defined(_HERMITE_)
         real(kind=prec), pointer :: w(:)
@@ -2096,6 +2246,43 @@ contains
           end do
 !$OMP END PARALLEL DO
 #endif 
+
+#elif defined(_LAGUERRE_)
+#ifndef _OPENMP
+#ifdef _REAL_
+          E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(this%u**4 &
+#else
+          E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
+#endif
+#if(_DIM_==2)
+            *spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) ) 
+#elif(_DIM_==3)
+            *spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+            *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) ) 
+#endif
+#else
+          E_int = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u) REDUCTION(+:E_int)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+#endif 
+#ifdef _REAL_
+               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(u**4 &
+#else
+               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
+#endif
+#if(_DIM_==2)
+               *spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) ) 
+#elif(_DIM_==3)
+               *spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+               *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) )
+#endif
+          end do
+!$OMP END PARALLEL DO
+#endif
 
 #else
 
@@ -2258,6 +2445,10 @@ contains
 #if defined(_HERMITE_)
         real(kind=prec), pointer :: w(:)
 #endif        
+#if defined(_LAGUERRE_)
+        real(kind=prec), pointer :: nodes_x(:,:)
+        real(kind=prec), pointer :: nodes_y(:,:)
+#endif        
         real(kind=prec), pointer :: nodes(:)
         integer :: j
 #endif   
@@ -2412,6 +2603,99 @@ contains
 !$OMP END PARALLEL DO
 #endif 
 #endif
+
+#elif defined(_LAGUERRE_)
+
+#ifndef _OPENMP
+#if(_DIM_==2)
+          x_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+                       &
+#elif(_DIM_==3)
+          x_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+                      *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#endif
+#ifdef _REAL_
+                     *m%g%nodes_x*(this%u**2) ) * m%g%dtheta
+#else
+                     *m%g%nodes_x*(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+#if(_DIM_==2)
+          y_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+                       &
+#elif(_DIM_==3)
+          y_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+                      *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#endif
+#ifdef _REAL_
+                     *m%g%nodes_y*(this%u**2) ) * m%g%dtheta
+#else
+                     *m%g%nodes_y*(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+#if(_DIM_==3)
+          z_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+          *spread(spread(this%g%weights_z*this%g%nodes_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#ifdef _REAL_
+                     *(this%u**2) ) * m%g%dtheta
+#else
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+
+#endif
+#else
+          x_mean = 0.0_prec
+          y_mean = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u, nodes_x, nodes_y) REDUCTION(+:x_mean,y_mean)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+#endif 
+                nodes_x => m%g%nodes_x(:,lbound(m%g%nodes_x,2)+m%g%jj(j-1):lbound(m%g%nodes_x,2)+m%g%jj(j)-1)
+                nodes_y => m%g%nodes_y(:,lbound(m%g%nodes_y,2)+m%g%jj(j-1):lbound(m%g%nodes_y,2)+m%g%jj(j)-1)
+#if(_DIM_==2)
+                x_mean = x_mean + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                x_mean = x_mean + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                     *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *nodes_x *(u**2) )*this%g%dtheta
+#else
+                     *nodes_x *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+#if(_DIM_==2)
+                y_mean = y_mean + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                y_mean = y_mean + sum(spread(spread(this%weights_r, 2, this%n2may-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                     *spread(spread(this%weights_z, 1, this%n1may-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *nodes_y *(u**2) )*this%g%dtheta
+#else
+                     *nodes_y *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#if(_DIM_==3)
+          z_mean = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u) REDUCTION(+:z_mean)
+          do j=1,n_threads
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                z_mean =  z_mean + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), &
+                   3, m%g%jj(j)-m%g%jj(j-1) ) &
+                     *spread(spread(m%g%weights_z*m%g%nodes_z, 1, m%g%n1max-m%g%n1min+1), &
+                   3, m%g%jj(j)-m%g%jj(j-1) ) &
+#ifdef _REAL_
+                     *(u**2) )*this%g%dtheta
+#else
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+                
+          end do
+!$OMP END PARALLEL DO
+#endif 
+#endif 
 
 #else
 
@@ -2824,7 +3108,175 @@ contains
 #endif 
         endif
         
-        
+#elif defined(_LAGUERRE_)
+
+#ifndef _OPENMP
+#if(_DIM_==2)
+          x_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+#elif(_DIM_==3)
+          x_dev = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+#endif
+#ifdef _REAL_
+                     *(m%g%nodes_x-x_mean)**2 *(this%u**2) ) * m%g%dtheta
+#else
+                     *(m%g%nodes_x-x_mean)**2 *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+#if(_DIM_==2)
+          y_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+#elif(_DIM_==3)
+          y_dev = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+#endif
+#ifdef _REAL_
+                     *(m%g%nodes_y-y_mean)**2 *(this%u**2) ) * m%g%dtheta
+#else
+                     *(m%g%nodes_y-y_mean)**2 *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+#if(_DIM_==3)
+          z_dev = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+          *spread(spread(this%g%weights_z*(this%g%nodes_z-z_mean)**2, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#ifdef _REAL_
+                     *(this%u**2) ) * m%g%dtheta
+#else
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+#endif 
+#endif
+#else
+          x_dev = 0.0_prec
+          y_dev = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u, nodes_x, nodes_y) REDUCTION(+:x_dev,y_dev)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+#endif 
+                nodes_x => m%g%nodes_x(:,lbound(m%g%nodes_x,2)+m%g%jj(j-1):lbound(m%g%nodes_x,2)+m%g%jj(j)-1)
+                nodes_y => m%g%nodes_y(:,lbound(m%g%nodes_y,2)+m%g%jj(j-1):lbound(m%g%nodes_y,2)+m%g%jj(j)-1)
+#if(_DIM_==2)
+                x_dev = x_dev + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                x_dev = x_dev + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *(nodes_x-x_mean)**2 *(u**2) )*this%g%dtheta
+#else
+                     *(nodes_x-x_mean)**2 *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+#if(_DIM_==2)
+                y_dev = y_dev + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                y_dev = y_dev + sum(spread(spread(this%weights_r, 2, this%n2may-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                   *spread(spread(this%weights_z, 1, this%n1may-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *(nodes_y-y_mean)** *(u**2) )*this%g%dtheta
+#else
+                     *(nodes_y-y_mean)** *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#if(_DIM_==3)
+          z_dev = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u) REDUCTION(+:z_mean)
+          do j=1,n_threads
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                z_dev =  z_dev + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), &
+                   3, m%g%jj(j)-m%g%jj(j-1) ) &
+                     *spread(spread(m%g%weights_z*(m%g%nodes_z-z_mean)**2, 1, m%g%n1max-m%g%n1min+1), &
+                   3, m%g%jj(j)-m%g%jj(j-1) ) &
+#ifdef _REAL_
+                     *(u**2) )*this%g%dtheta
+#else
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+                
+          end do
+!$OMP END PARALLEL DO
+#endif 
+#endif
+        E_pot = 0.0_prec
+        if (associated(m%V)) then
+#ifndef _OPENMP
+#if(_DIM_==2)
+           E_pot = sum( spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) *this%u**2 ) &
+#elif(_DIM_==3)
+           E_pot = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+                    *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+#endif
+#ifdef _REAL_
+                     *m%V *(this%u**2) )*this%g%dtheta
+#else
+                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*this%g%dtheta
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V(:,lbound(m%V,2)+m%g%jj(j-1):lbound(m%V,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==2)
+                E_pot = E_pot + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )*this%g%dtheta
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+#endif 
+
+          end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+
+        E_int = 0.0_prec
+        if (m%cubic_coupling/=0_prec) then
+#ifndef _OPENMP
+#ifdef _REAL_
+           E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(this%u**4 &
+#else
+           E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
+#endif
+#if(_DIM_==2)
+            *spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) ) 
+#elif(_DIM_==3)
+            *spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
+            *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) ) 
+#endif
+#else
+          E_int = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u) REDUCTION(+:E_int)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+#endif 
+#ifdef _REAL_
+               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(u**4 &
+#else
+               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
+#endif
+#if(_DIM_==2)
+               *spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) ) 
+#elif(_DIM_==3)
+               *spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
+               *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) )
+#endif
+          end do
+!$OMP END PARALLEL DO
+#endif
+        endif 
+
 #else
 
         select case(m%boundary_conditions)
@@ -3188,81 +3640,118 @@ contains
         real(kind=prec) :: obs
 #if(_DIM_==1)
         real(kind=prec) :: x
-        integer :: ix
+        integer :: i1
 #elif(_DIM_==2)
         real(kind=prec) :: x, y
-        integer :: ix, iy
+        integer :: i1, i2
 #elif(_DIM_==3)
         real(kind=prec) :: x, y, z
-        integer :: ix, iy, iz
+        integer :: i1, i2, i3
 #endif
 #ifdef _MPI_
         integer :: ierr
         real(kind=prec) :: h 
 #endif
         integer :: n1, n2, n3
-        integer :: ox, oy, oz
+        integer :: o1, o2, o3
 
         select type (m=>this%m ); class is (S(schroedinger))
 
         call this%to_real_space
 
         n1 = m%g%n1min
-        ox = lbound(this%u, 1) - n1 
+        o1 = lbound(this%u, 1) - n1 
 #if(_DIM_>=2)
         n2 = m%g%n2min
-        oy = lbound(this%u, 2) - n2 
+        o2 = lbound(this%u, 2) - n2 
 #endif
 #if(_DIM_>=3)
         n3 = m%g%n3min
-        oz = lbound(this%u, 3) - n3 
+        o3 = lbound(this%u, 3) - n3 
 #endif
 
 #if defined(_HERMITE_)
 
         obs = 0.0_prec
 #if(_DIM_==1)
-!$OMP PARALLEL DO PRIVATE(ix) REDUCTION(+:obs)
-        do ix = n1+ox,m%g%n1max+ox
-            obs = obs + f(m%g%nodes_x(ix-ox))*m%g%weights_x(ix-ox) &
+!$OMP PARALLEL DO PRIVATE(i1) REDUCTION(+:obs)
+        do i1 = n1+o1,m%g%n1max+o1
+            obs = obs + f(m%g%nodes_x(i1-o1))*m%g%weights_x(i1-o1) &
 #ifdef _REAL_
-                   *this%u(ix)**2
+                   *this%u(i1)**2
 #else
-                   *(real(this%u(ix),prec)**2+aimag(this%u(ix))**2)
+                   *(real(this%u(i1),prec)**2+aimag(this%u(i1))**2)
 #endif
         end do
 !$OMP END PARALLEL DO 
 #elif(_DIM_==2)       
-!$OMP PARALLEL DO PRIVATE(ix, iy) REDUCTION(+:obs)
-        do iy = n2+oy, m%g%n2max+oy
-            do ix = n1+ox,m%g%n1max+ox
-                obs = obs + f(m%g%nodes_x(ix-ox),m%g%nodes_x(iy-oy)) &
-                      *m%g%weights_x(ix-ox)*m%g%weights_y(iy-oy) &
+!$OMP PARALLEL DO PRIVATE(i1, i2) REDUCTION(+:obs)
+        do i2 = n2+o2, m%g%n2max+o2
+            do i1 = n1+o1,m%g%n1max+o1
+                obs = obs + f(m%g%nodes_x(i1-o1),m%g%nodes_x(i2-o2)) &
+                      *m%g%weights_x(i1-o1)*m%g%weights_y(i2-o2) &
 #ifdef _REAL_
-                      *this%u(ix,iy)**2
+                      *this%u(i1,i2)**2
 #else
-                      *(real(this%u(ix,iy),prec)**2+aimag(this%u(ix,iy))**2)
+                      *(real(this%u(i1,i2),prec)**2+aimag(this%u(i1,i2))**2)
 #endif
             end do
         end do     
 !$OMP END PARALLEL DO 
 #elif(_DIM_==3)
-!$OMP PARALLEL DO PRIVATE(ix, iy, iz) REDUCTION(+:obs)
-        do iz = n3+oz, m%g%n3max+oz
-           do iy = n2+oy, m%g%n2max+oy
-                do ix = n1+ox,m%g%n1max+ox
-                    obs = obs + f(m%g%nodes_x(ix-ox),m%g%nodes_y(iy-oy),m%g%nodes_z(iz-oz)) &
-                          *m%g%weights_x(ix-ox)*m%g%weights_y(iy-oy)*m%g%weights_z(iz-oz) &
+!$OMP PARALLEL DO PRIVATE(i1, i2, i3) REDUCTION(+:obs)
+        do i3 = n3+o3, m%g%n3max+o3
+           do i2 = n2+o2, m%g%n2max+o2
+                do i1 = n1+o1,m%g%n1max+o1
+                    obs = obs + f(m%g%nodes_x(i1-o1),m%g%nodes_y(i2-o2),m%g%nodes_z(i3-o3)) &
+                          *m%g%weights_x(i1-o1)*m%g%weights_y(i2-o2)*m%g%weights_z(i3-o3) &
 #ifdef _REAL_
-                          *this%u(ix,iy,iz)**2
+                          *this%u(i1,i2,i3)**2
 #else
-                          *(real(this%u(ix,iy,iz),prec)**2+aimag(this%u(ix,iy,iz))**2)
+                          *(real(this%u(i1,i2,i3),prec)**2+aimag(this%u(i1,i2,i3))**2)
 #endif
                 end do
            end do     
         end do    
 !$OMP END PARALLEL DO 
 #endif
+
+#elif defined(_LAGUERRE_)
+
+        obs = 0.0_prec
+#if(_DIM_==2)       
+!$OMP PARALLEL DO PRIVATE(i1, i2) REDUCTION(+:obs)
+        do i2 = n2+o2, m%g%n2max+o2
+            do i1 = n1+o1,m%g%n1max+o1
+                obs = obs + f(m%g%nodes_x(i1-o1,i2-o2),m%g%nodes_x(i1-o1,i2-o2)) &
+                      *m%g%weights_r(i1-o1) &
+#ifdef _REAL_
+                      *this%u(i1,i2)**2
+#else
+                      *(real(this%u(i1,i2),prec)**2+aimag(this%u(i1,i2))**2)
+#endif
+            end do
+        end do     
+!$OMP END PARALLEL DO 
+#else
+!$OMP PARALLEL DO PRIVATE(i1, i2) REDUCTION(+:obs)
+        do i3 = n3+o3, m%g%n3max+o3
+          do i2 = n2+o2, m%g%n2max+o2
+            do i1 = n1+o1,m%g%n1max+o1
+                obs = obs + f(m%g%nodes_x(i1-o1,i3-o3),m%g%nodes_x(i1-o1,i3-o3), m%g%nodes_z(i2-o2)) &
+                      *m%g%weights_r(i1-o1)*m%g%weights_z(i2-o2) &
+#ifdef _REAL_
+                      *this%u(i1,i2)**2
+#else
+                      *(real(this%u(i1,i2,i3),prec)**2+aimag(this%u(i1,i2,i3))**2)
+#endif
+            end do
+          end do     
+        end do     
+!$OMP END PARALLEL DO 
+
+#endif
+        obs = obs*this%g%dtheta
 
 #else
         select case(this%m%boundary_conditions)
@@ -3279,44 +3768,44 @@ contains
 
         obs = 0.0_prec
 #if(_DIM_==1)
-!$OMP PARALLEL DO PRIVATE(ix, x) REDUCTION(+:obs)
-        do ix = n1+ox,m%g%n1max+ox
-            x = m%g%xmin + m%g%dx*(ix-ox)    
+!$OMP PARALLEL DO PRIVATE(i1, x) REDUCTION(+:obs)
+        do i1 = n1+o1,m%g%n1max+o1
+            x = m%g%xmin + m%g%dx*(i1-o1)    
 #ifdef _REAL_
-            obs = obs + f(x)*this%u(ix)**2
+            obs = obs + f(x)*this%u(i1)**2
 #else
-            obs = obs + f(x)*(real(this%u(ix),prec)**2+aimag(this%u(ix))**2)
+            obs = obs + f(x)*(real(this%u(i1),prec)**2+aimag(this%u(i1))**2)
 #endif
         end do
 !$OMP END PARALLEL DO 
         obs = obs * m%g%dx 
 #elif(_DIM_==2)       
-!$OMP PARALLEL DO PRIVATE(ix, x, iy, y) REDUCTION(+:obs)
-        do iy = n2+oy, m%g%n2max+oy
-            y = m%g%xmin + m%g%dy*(iy-oy)    
-            do ix = n1+ox,m%g%n1max+ox
-                x = m%g%xmin + m%g%dx*(ix-ox)    
+!$OMP PARALLEL DO PRIVATE(i1, x, i2, y) REDUCTION(+:obs)
+        do i2 = n2+o2, m%g%n2max+o2
+            y = m%g%xmin + m%g%dy*(i2-o2)    
+            do i1 = n1+o1,m%g%n1max+o1
+                x = m%g%xmin + m%g%dx*(i1-o1)    
 #ifdef _REAL_
-                obs = obs + f(x,y)*this%u(ix,iy)**2
+                obs = obs + f(x,y)*this%u(i1,i2)**2
 #else
-                obs = obs + f(x,y)*(real(this%u(ix,iy),prec)**2+aimag(this%u(ix,iy))**2)
+                obs = obs + f(x,y)*(real(this%u(i1,i2),prec)**2+aimag(this%u(i1,i2))**2)
 #endif
             end do
         end do     
 !$OMP END PARALLEL DO 
         obs = obs * m%g%dx * m%g%dy
 #elif(_DIM_==3)
-!$OMP PARALLEL DO PRIVATE(ix, x, iy, y, iz, z) REDUCTION(+:obs)
-        do iz = n3+oz, m%g%n3max+oz
-           z = m%g%zmin + m%g%dz*(iz-oz)    
-           do iy = n2+oy, m%g%n2max+oy
-                y = m%g%xmin + m%g%dy*(iy-oy)    
-                do ix = n1+ox,m%g%n1max+ox
-                    x = m%g%xmin + m%g%dx*(ix-ox)    
+!$OMP PARALLEL DO PRIVATE(i1, x, i2, y, i3, z) REDUCTION(+:obs)
+        do i3 = n3+o3, m%g%n3max+o3
+           z = m%g%zmin + m%g%dz*(i3-o3)    
+           do i2 = n2+o2, m%g%n2max+o2
+                y = m%g%xmin + m%g%dy*(i2-o2)    
+                do i1 = n1+o1,m%g%n1max+o1
+                    x = m%g%xmin + m%g%dx*(i1-o1)    
 #ifdef _REAL_
-                    obs = obs + f(x,y,z)*this%u(ix,iy,iz)**2
+                    obs = obs + f(x,y,z)*this%u(i1,i2,i3)**2
 #else
-                    obs = obs + f(x,y,z)*(real(this%u(ix,iy,iz),prec)**2+aimag(this%u(ix,iy,iz))**2)
+                    obs = obs + f(x,y,z)*(real(this%u(i1,i2,i3),prec)**2+aimag(this%u(i1,i2,i3))**2)
 #endif
                 end do
            end do     
@@ -3432,6 +3921,8 @@ contains
 !$OMP END PARALLEL DO
 #endif         
 
+#elif defined(_LAGUERRE_)
+!!TODO
 #else
 
 #if(_DIM_==1)
@@ -3609,6 +4100,9 @@ contains
             end do
 !$OMP END PARALLEL DO
 #endif  
+
+#elif defined(_LAGUERRE_)
+!!TODO
 
 #else
 
