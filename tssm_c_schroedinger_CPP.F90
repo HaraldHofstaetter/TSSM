@@ -1,8 +1,22 @@
-#ifdef _HERMITE_
+#if defined(_HERMITE_)
 #ifdef _REAL_
 #define S0(x,y)  x ## _hermite_real_ ## y ## d 
 #else
 #define S0(x,y)  x ## _hermite_ ## y ## d 
+#endif
+#elif defined(_LAGUERRE_)
+#if(_DIM_==2)
+#ifdef _REAL_
+#define S0(x,y)  x ## _gen_laguerre_real_ ## y ## d 
+#else
+#define S0(x,y)  x ## _gen_laguerre_ ## y ## d 
+#endif
+#elif(_DIM_==3)
+#ifdef _REAL_
+#define S0(x,y)  x ## _gen_laguerre_hermite_real_ ## y ## d 
+#else
+#define S0(x,y)  x ## _gen_laguerre_hermite_ ## y ## d 
+#endif
 #endif
 #else
 #ifdef _REAL_
@@ -59,7 +73,7 @@ module S(tssm_c_schroedinger)
 contains
 
 
-#ifdef _HERMITE_
+#if defined(_HERMITE_)
 
    function c_new(nx, omega_x, &
 #if(_DIM_>=2)
@@ -111,6 +125,67 @@ contains
 #if(_DIM_>=2)
                             ny, omega_y, &
 #endif
+#if(_DIM_>=3)
+                            nz, omega_z, &
+#endif
+            hbar, mass, cubic_coupling=cubic_coupling) 
+        this =  c_loc(m)
+        if (with_potential) then
+           call c_set_potential(this, potential)
+        end if
+#ifndef _REAL_        
+        if (with_potential_t) then
+           call c_set_potential_t(this, potential_t, is_derivative=.false.)
+        end if
+        if (with_potential_t_derivative) then
+           call c_set_potential_t(this, potential_t_derivative, is_derivative=.true.)
+        end if
+#endif
+    end function c_new
+
+#elif defined(_LAGUERRE_)
+
+   function c_new(ntheta, nfr, omega_r, Omega, &
+#if(_DIM_>=3)
+                  nz, omega_z, &
+#endif
+                  hbar, mass, &
+                  potential, with_potential, &
+#ifndef _REAL_                  
+                  potential_t, with_potential_t, &
+                  potential_t_derivative, with_potential_t_derivative, &
+#endif                  
+                  cubic_coupling) &
+        result(this) bind(c, name=SC(new_schroedinger))
+        use iso_c_binding
+        type(c_ptr) :: this 
+        real(kind=prec),  value :: omega_r 
+        real(kind=prec),  value :: Omega
+        integer, value :: ntheta, nfr
+#if(_DIM_>=3)
+        real(kind=prec),  value :: omega_z 
+        integer, value :: nz
+#endif
+        real(kind=prec), value  :: hbar 
+        real(kind=prec), value  :: mass 
+        real(kind=prec), external, bind(c) :: potential 
+        logical, value  :: with_potential
+#ifndef _REAL_        
+#ifdef _QUADPRECISION_
+        type(wrapped_float128), external, bind(c) :: potential_t 
+        type(wrapped_float128), external, bind(c) :: potential_t_derivative
+#else
+        real(kind=prec), external, bind(c) :: potential_t 
+        real(kind=prec), external, bind(c) :: potential_t_derivative
+#endif        
+        logical, value  :: with_potential_t
+        logical, value  :: with_potential_t_derivative
+#endif        
+        real(kind=prec), value  :: cubic_coupling 
+
+        type(S(schroedinger)), pointer :: m
+        allocate( m )
+        m = S(schroedinger)(ntheta, nfr, omega_r, Omega, &
 #if(_DIM_>=3)
                             nz, omega_z, &
 #endif
@@ -537,6 +612,22 @@ contains
 
         call c_f_pointer(m, mp)
         select case (which)
+#if defined(_LAGUERRE_)
+        case (1)
+           !evp = c_loc(mp%eigenvalues_r)
+           evp = c_loc(mp%eigenvalues_r(mp%nfrmin))
+           dim(1) = mp%nfrmax-mp%nfrmin+1
+        case (2)
+           !evp = c_loc(mp%eigenvalues_theta)
+           evp = c_loc(mp%eigenvalues_theta(mp%nfthetamin))
+           dim(1) = mp%nfthetamax-mp%nfthetamin+1
+#if(_DIM_>=3)        
+        case (3)
+           !evp = c_loc(mp%eigenvalues_z)
+           evp = c_loc(mp%eigenvalues_z(mp%nfzmin))
+           dim(1) = mp%nfzmax-mp%nfzmin+1
+#endif
+#else
         case (1)
            !evp = c_loc(mp%eigenvalues1)
            evp = c_loc(mp%eigenvalues1(mp%nf1min))
@@ -553,6 +644,7 @@ contains
            evp = c_loc(mp%eigenvalues3(mp%nf3min))
            dim(1) = mp%nf3max-mp%nf3min+1
 #endif        
+#endif
         end select
     end function c_get_eigenvalues
 
@@ -568,6 +660,14 @@ contains
 
         call c_f_pointer(m, mp)
         select case (which)
+#if defined(_LAGUERRE_)
+        case (1)
+            np = c_loc(mp%g%nodes_r)
+            dim(1) = mp%g%nrmax-mp%g%nrmin+1
+        case (2)
+            np = c_loc(mp%g%nodes_theta)
+            dim(1) = mp%g%nthetamax-mp%g%nthetamin+1
+#else
         case (1)
             np = c_loc(mp%g%nodes_x)
             dim(1) = mp%g%n1max-mp%g%n1min+1
@@ -575,6 +675,7 @@ contains
         case (2)
             np = c_loc(mp%g%nodes_y)
             dim(1) = mp%g%n2max-mp%g%n2min+1
+#endif
 #endif
 #if(_DIM_>=3)        
         case (3)
@@ -627,6 +728,39 @@ contains
         cubic_coupling = mp%cubic_coupling
     end function c_get_cubic_coupling   
 
+#if defined(_LAGUERRE_)
+    function c_get_ntheta(m) &
+        result(ntheta) bind(c, name=SC(get_ntheta_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: ntheta
+        type(S(schroedinger)), pointer :: mp
+        call c_f_pointer(m, mp)
+        ntheta = mp%g%ntheta 
+    end function c_get_ntheta   
+
+    function c_get_nfr(m) &
+        result(nfr) bind(c, name=SC(get_nfr_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: nfr
+        type(S(schroedinger)), pointer :: mp
+        call c_f_pointer(m, mp)
+        nfr = mp%nfr 
+    end function c_get_nfr   
+
+    function c_get_nr(m) &
+        result(nr) bind(c, name=SC(get_nr_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        integer :: nr
+        type(S(schroedinger)), pointer :: mp
+        call c_f_pointer(m, mp)
+        nr = mp%g%nr 
+    end function c_get_nr   
+
+#else
+
     function c_get_nx(m) &
         result(nx) bind(c, name=SC(get_nx_schroedinger))
         use iso_c_binding
@@ -648,6 +782,7 @@ contains
         ny = mp%g%ny
     end function c_get_ny   
 #endif
+#endif
 
 #if(_DIM_>=3)
     function c_get_nz(m) &
@@ -661,8 +796,21 @@ contains
     end function c_get_nz   
 #endif
 
+#if (defined(_HERMITE_)||defined(_LAGUERRE_))&&(_DIM_>=3)   
 
-#ifdef _HERMITE_
+    function c_get_omega_z(m) &
+        result(omega_z) bind(c, name=SC(get_omega_z_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        real(kind=prec) :: omega_z
+        type(S(schroedinger)), pointer :: mp
+        call c_f_pointer(m, mp)
+        omega_z = mp%omega_z
+    end function c_get_omega_z   
+
+#endif
+
+#if defined(_HERMITE_)
    function c_get_omega_x(m) &
         result(omega_x) bind(c, name=SC(get_omega_x_schroedinger))
         use iso_c_binding
@@ -685,17 +833,27 @@ contains
     end function c_get_omega_y   
 #endif
 
-#if(_DIM_>=3)
-   function c_get_omega_z(m) &
-        result(omega_z) bind(c, name=SC(get_omega_z_schroedinger))
+#elif defined(_LAGUERRE_)
+
+   function c_get_omega_r(m) &
+        result(omega_r) bind(c, name=SC(get_omega_r_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m
-        real(kind=prec) :: omega_z
+        real(kind=prec) :: omega_r
         type(S(schroedinger)), pointer :: mp
         call c_f_pointer(m, mp)
-        omega_z = mp%omega_z
-    end function c_get_omega_z   
-#endif
+        omega_r = mp%omega_r
+    end function c_get_omega_r   
+
+   function c_get_Omega(m) &
+        result(Omega) bind(c, name=SC(get_Omega_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        real(kind=prec) :: Omega
+        type(S(schroedinger)), pointer :: mp
+        call c_f_pointer(m, mp)
+        Omega = mp%Omega
+    end function c_get_Omega   
 
 #else
    function c_get_xmin(m) &
@@ -765,7 +923,7 @@ contains
 #endif
 !XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-#ifdef _HERMITE_
+#if defined(_HERMITE_)
 
     function c_get_weights(m, dim, which) &
         result(np) bind(c, name=SC(get_weights_schroedinger))
@@ -828,6 +986,68 @@ contains
         end select
     end function c_get_H
 
+#endif
+
+#if defined(_LAGUERRE_)
+
+    function c_get_weights_r(m, dim) &
+        result(np) bind(c, name=SC(get_weights_r_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        type(c_ptr) :: np
+        integer, intent(out)  :: dim(1)
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        !np = c_loc(mp%g%weights_r)
+        np = c_loc(mp%g%weights_r(mp%g%nrmin))
+        dim(1) = mp%g%nrmax-mp%g%nrmin+1
+    end function c_get_weights_r
+
+    function c_get_L(m, dim) &
+        result(np) bind(c, name=SC(get_L))
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        type(c_ptr)  :: np
+        integer, intent(out)  :: dim(3)
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        np = c_loc(mp%L)
+        dim(1) = mp%g%nr
+        dim(2) = mp%nfr
+        dim(3) = mp%g%ntheta/2 + 1
+    end function c_get_L
+
+#if(_DIM_>=3)
+    function c_get_weights_z(m, dim) &
+        result(np) bind(c, name=SC(get_weights_z_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m
+        type(c_ptr) :: np
+        integer, intent(out)  :: dim(1)
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        !np = c_loc(mp%g%weights_z)
+        np = c_loc(mp%g%weights_z(mp%g%nzmin))
+        dim(1) = mp%g%nzmax-mp%g%nzmin+1
+    end function c_get_weights_z
+
+    function c_get_H_z(m, dim) &
+        result(np) bind(c, name=SC(get_H_z_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: m 
+        type(c_ptr)  :: np
+        integer, intent(out)  :: dim(2)
+        type(S(schroedinger)), pointer :: mp
+
+        call c_f_pointer(m, mp)
+        np = c_loc(mp%H_z)
+        dim(1) = mp%g%nzmax-mp%g%nzmin+1
+        dim(2) = mp%nfzmax-mp%nfzmin+1
+    end function c_get_H_z
+#endif
 
 #endif
 

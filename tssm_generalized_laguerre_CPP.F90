@@ -10,7 +10,6 @@
     #define _WF_ wf_generalized_laguerre_hermite_real_3d
     #define _BASE_METHOD_ cylindrical_real_3d
     #define _BASE_WF_ wf_cylindrical_real_3d
-    #define S(x) x ## _gen_laguerre_hermite_real_3d
  #else
    #ifdef _QUADPRECISION_
     #define _MODULE_ tssmq_generalized_laguerre_real_2d
@@ -21,7 +20,6 @@
     #define _WF_ wf_generalized_laguerre_real_2d
     #define _BASE_METHOD_ polar_real_2d
     #define _BASE_WF_ wf_polar_real_2d
-    #define S(x) x ## _gen_laguerre_real_2d
  #endif
  #define _COMPLEX_OR_REAL_ real
  #define _WAVE_FUNCTION_ real_wave_function
@@ -36,7 +34,6 @@
     #define _WF_ wf_generalized_laguerre_hermite_3d
     #define _BASE_METHOD_ cylindrical_3d
     #define _BASE_WF_ wf_cylindrical_3d
-    #define S(x) x ## _gen_laguerre_hermite_3d
  #else
    #ifdef _QUADPRECISION_
     #define _MODULE_ tssmq_generalized_laguerre_2d
@@ -47,7 +44,6 @@
     #define _WF_ wf_generalized_laguerre_2d
     #define _BASE_METHOD_ polar_2d
     #define _BASE_WF_ wf_polar_2d
-    #define S(x) x ## _gen_laguerre_2d
  #endif 
  #define _COMPLEX_OR_REAL_ complex
  #define _WAVE_FUNCTION_ wave_function
@@ -108,13 +104,13 @@ contains
 
 
 #ifdef _HERMITE_
-    function new_method(M, K, gamma_r, Omega, nz, gamma_z ) result(this)
+    function new_method(ntheta, nfr, gamma_r, Omega, nz, gamma_z ) result(this)
 #else
-    function new_method(M, K, gamma_r, Omega ) result(this)
+    function new_method(ntheta, nfr, gamma_r, Omega ) result(this)
 #endif
         type(_METHOD_) :: this
-        integer, intent(in) :: M
-        integer, intent(in) :: K
+        integer, intent(in) :: ntheta
+        integer, intent(in) :: nfr
         real(kind=prec), intent(in) :: gamma_r 
         real(kind=prec), intent(in) :: Omega 
 #ifdef _HERMITE_
@@ -123,7 +119,7 @@ contains
 #endif
         real(kind=prec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_prec
 
-        integer :: nr, nfr
+        integer :: nr
         integer :: j, j1
 
         this%Omega = Omega
@@ -134,25 +130,24 @@ contains
 
 
 !adjust grid parameters, TODO MPI!!!
-        nr = K+M/2+1
-        nfr = K+1
+        nr = nfr+ntheta/2
 
 #ifndef _HERMITE_
-        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, .true., .true.) 
+        this%_BASE_METHOD_ = _BASE_METHOD_(ntheta, nr, nfr, .true., .true.) 
 #else        
-        this%_BASE_METHOD_ = _BASE_METHOD_(M, nr, nfr, nz, .true., .true.) 
+        this%_BASE_METHOD_ = _BASE_METHOD_(ntheta, nr, nfr, nz, .true., .true.) 
 #endif        
           ! symmetric coefficients
           ! separated eigenvalues ...
 
-        call generalized_laguerre_scaled_coeffs(K, M, this%g%nodes_r,  this%g%weights_r, this%L, this%gamma_r )
+        call generalized_laguerre_scaled_coeffs(nfr, ntheta, this%g%nodes_r,  this%g%weights_r, this%L, this%gamma_r )
 
         this%eigenvalues_r = (/ ( -this%gamma_r*(2.0_prec*real(j, prec)+1.0), j = this%nfrmin, this%nfrmax) /)
 
         do j = this%g%nthetamin,this%g%nthetamax
             j1 = j
-            if (j1>M/2) then
-                j1 = j-M
+            if (j1>ntheta/2) then
+                j1 = j-ntheta
             end if
             this%eigenvalues_theta(j) = -this%gamma_r*abs(real(j1, kind=prec)) + this%Omega*real(j1, kind=prec)
         end do

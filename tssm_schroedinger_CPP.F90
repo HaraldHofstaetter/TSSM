@@ -3,17 +3,24 @@
 
 #ifdef _REAL_
 #if (_DIM_==2)
-#define SB(y) generalized_ ## y ## _real_2D
-#define S(x) x ## _gen_lag_real_2D
+#define SB(y) y ## _real_2D
+!#define S(x) x ## _generalized_laguerre_real_2D
+#define S(x) x ## _gen_laguerre_real_2D
 #elif (_DIM_==3)
-#define SB(y) generalized_ ## y ## _hermite_real_3D
-#define S(x) x ## _gen_lag_herm_real_3D
+#define SB(y) y ## _hermite_real_3D
+!#define S(x) x ## _generalized_laguerre_hermite_real_3D
+!name too long, gfortran crashes...
+#define S(x) x ## _gen_laguerre_hermite_real_3D
 #endif
 #else
 #if (_DIM_==2)
-#define SB(y) generalized_ ## y ## _2D
+#define SB(y) y ##  _2D
+!#define S(x) x ## _generalized_laguerre_2D
+#define S(x) x ## _gen_laguerre_2D
 #elif (_DIM_==3)
-#define SB(y) generalized_ ## y ## _hermite_3D
+#define SB(y) y ## _hermite_3D
+!#define S(x) x ## _generalized_laguerre_hermite_3D
+#define S(x) x ## _gen_laguerre_hermite_3D
 #endif
 #endif
 
@@ -111,7 +118,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         real(kind=prec) :: omega_z = 1.0_prec 
 #endif
 #elif defined(_LAGUERRE_)
-        real(kind=prec) :: Omega = 0.0_prec 
+!        real(kind=prec) :: Omega = 0.0_prec 
         real(kind=prec) :: omega_r = 1.0_prec 
 #if(_DIM_>=3)
         real(kind=prec) :: omega_z = 1.0_prec 
@@ -267,7 +274,7 @@ contains
 #else
 #endif
 #elif defined(_LAGUERRE_)
-               M, K, omega_r, Omega, &
+               ntheta, nfr, omega_r, Omega, &
 #if(_DIM_==3)
                nz, omega_z, &
 #endif
@@ -303,9 +310,10 @@ contains
         integer, intent(in) :: nz
 #endif
 #elif defined(_LAGUERRE_)
-        integer, intent(in) :: M 
-        integer, intent(in) :: K 
+        integer, intent(in) :: ntheta 
+        integer, intent(in) :: nfr 
         real(kind=prec), intent(in) :: omega_r 
+        real(kind=prec), intent(in) :: Omega
 #if(_DIM_>=3)
         real(kind=prec), intent(in) :: omega_z 
         integer, intent(in) :: nz
@@ -363,9 +371,10 @@ contains
         f = sqrt(this%mass)/this%hbar
 #if(_DIM_==2)
         !TODO: scaling of Omega w.r.t. hbar, mass!!!
-        this%SB(generalized_laguerre) = SB(generalized_laguerre)(M, K, f*omega_r, Omega)
+        this%SB(generalized_laguerre) = SB(generalized_laguerre)(ntheta, nfr, f*omega_r, Omega)
 #else
-        this%SB(generalized_laguerre) = SB(generalized_laguerre)(M, K, f*omega_r, Omega, nz, f*omega_z)
+        this%SB(generalized_laguerre) = SB(generalized_laguerre)&
+                  (ntheta, nfr, f*omega_r, Omega, nz, f*omega_z)
 #endif
 #else 
 #if(_DIM_==1)
@@ -438,7 +447,8 @@ contains
 #ifdef _REAL_
         this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, coefficient=m%hbar/m%mass)
 #else
-        this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, coefficient=cmplx(0_prec, m%hbar/m%mass, kind=prec))
+        this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, &
+                                              coefficient=cmplx(0_prec, m%hbar/m%mass, kind=prec))
 #endif
 #else
 #ifdef _REAL_
@@ -1880,7 +1890,7 @@ contains
         if (this_proc==0) then
             h = h1
 #endif
-#if defined(_HERMITE_)
+#if defined(_HERMITE_)||defined(_LAGUERRE_)
             E_kin =  -m%hbar**2/m%mass * h 
 #else
 #if(_DIM_==1)
@@ -1996,15 +2006,15 @@ contains
 
 #ifndef _OPENMP
 #if(_DIM_==2)
-    E_pot = sum( spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) *this%u**2 ) &
+    E_pot = sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
 #elif(_DIM_==3)
-    E_pot = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-               *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+    E_pot = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+               *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *m%V *(this%u**2) )*this%g%dtheta
+                     *m%V *(this%u**2) )*m%g%dtheta
 #else
-                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*this%g%dtheta
+                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*m%g%dtheta
 #endif 
 #else
           E_pot = 0.0_prec
@@ -2018,15 +2028,15 @@ contains
                 V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
 #endif 
 #if(_DIM_==2)
-                E_pot = E_pot + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                E_pot = E_pot + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) &
 #elif(_DIM_==3)
-                E_pot = E_pot + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
 #endif
 #ifdef _REAL_
-                     *V *(u**2) )*this%g%dtheta
+                     *V *(u**2) )*m%g%dtheta
 #else
-                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
           end do
 !$OMP END PARALLEL DO
@@ -2250,15 +2260,15 @@ contains
 #elif defined(_LAGUERRE_)
 #ifndef _OPENMP
 #ifdef _REAL_
-          E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(this%u**4 &
+          E_int = 0.5_prec*m%cubic_coupling*m%g%dtheta*sum(this%u**4 &
 #else
-          E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
+          E_int = 0.5_prec*m%cubic_coupling*m%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
 #endif
 #if(_DIM_==2)
-            *spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) ) 
+            *spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) ) 
 #elif(_DIM_==3)
-            *spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-            *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) ) 
+            *spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+            *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) ) 
 #endif
 #else
           E_int = 0.0_prec
@@ -2270,15 +2280,15 @@ contains
                 u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
 #endif 
 #ifdef _REAL_
-               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(u**4 &
+               E_int = E_int + 0.5_prec*m%cubic_coupling*m%g%dtheta*sum(u**4 &
 #else
-               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
+               E_int = E_int + 0.5_prec*m%cubic_coupling*m%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
 #endif
 #if(_DIM_==2)
-               *spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) ) 
+               *spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) ) 
 #elif(_DIM_==3)
-               *spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-               *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) )
+               *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+               *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) )
 #endif
           end do
 !$OMP END PARALLEL DO
@@ -2608,32 +2618,32 @@ contains
 
 #ifndef _OPENMP
 #if(_DIM_==2)
-          x_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
-                       &
+          x_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)*m%g%nodes_x &
 #elif(_DIM_==3)
-          x_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-                      *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+          x_mean = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                      *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                      *spread(m%g%nodes_x, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *m%g%nodes_x*(this%u**2) ) * m%g%dtheta
+                     *(this%u**2) ) * m%g%dtheta
 #else
-                     *m%g%nodes_x*(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
 #endif 
 #if(_DIM_==2)
-          y_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
-                       &
+          y_mean = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)*m%g%nodes_y &
 #elif(_DIM_==3)
-          y_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-                      *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+          y_mean = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                      *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) & 
+                      *spread(m%g%nodes_y, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *m%g%nodes_y*(this%u**2) ) * m%g%dtheta
+                     *(this%u**2) ) * m%g%dtheta
 #else
-                     *m%g%nodes_y*(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
 #endif 
 #if(_DIM_==3)
-          z_mean = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-          *spread(spread(this%g%weights_z*this%g%nodes_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+          z_mean = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+          *spread(spread(m%g%weights_z*m%g%nodes_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
 #ifdef _REAL_
                      *(this%u**2) ) * m%g%dtheta
 #else
@@ -2654,26 +2664,28 @@ contains
                 nodes_x => m%g%nodes_x(:,lbound(m%g%nodes_x,2)+m%g%jj(j-1):lbound(m%g%nodes_x,2)+m%g%jj(j)-1)
                 nodes_y => m%g%nodes_y(:,lbound(m%g%nodes_y,2)+m%g%jj(j-1):lbound(m%g%nodes_y,2)+m%g%jj(j)-1)
 #if(_DIM_==2)
-                x_mean = x_mean + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                x_mean = x_mean + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1))*nodes_x &
 #elif(_DIM_==3)
-                x_mean = x_mean + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                     *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                x_mean = x_mean + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                     *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                     *spread(nodes_x, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *nodes_x *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *nodes_x *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
 #if(_DIM_==2)
-                y_mean = y_mean + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                y_mean = y_mean + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1))*nodes_y &
 #elif(_DIM_==3)
-                y_mean = y_mean + sum(spread(spread(this%weights_r, 2, this%n2may-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                     *spread(spread(this%weights_z, 1, this%n1may-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                y_mean = y_mean + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                     *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                     *spread(nodes_y, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *nodes_y *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *nodes_y *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
           end do
 !$OMP END PARALLEL DO
@@ -2687,9 +2699,9 @@ contains
                      *spread(spread(m%g%weights_z*m%g%nodes_z, 1, m%g%n1max-m%g%n1min+1), &
                    3, m%g%jj(j)-m%g%jj(j-1) ) &
 #ifdef _REAL_
-                     *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
                 
           end do
@@ -3112,30 +3124,32 @@ contains
 
 #ifndef _OPENMP
 #if(_DIM_==2)
-          x_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+          x_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)*(m%g%nodes_x-x_mean)**2 &
 #elif(_DIM_==3)
           x_dev = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
-                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1)*(m%g%nodes_x-x_mean)**2, 3,&
+                     m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *(m%g%nodes_x-x_mean)**2 *(this%u**2) ) * m%g%dtheta
+                     *(this%u**2) ) * m%g%dtheta
 #else
-                     *(m%g%nodes_x-x_mean)**2 *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
 #endif 
 #if(_DIM_==2)
-          y_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) &
+          y_dev = sum(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)*(m%g%nodes_y-y_mean)**2 &
 #elif(_DIM_==3)
           y_dev = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
-                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1)*(m%g%nodes_y-y_mean)**2, 3,&
+                     m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *(m%g%nodes_y-y_mean)**2 *(this%u**2) ) * m%g%dtheta
+                     *(this%u**2) ) * m%g%dtheta
 #else
-                     *(m%g%nodes_y-y_mean)**2 *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
+                     *(real(this%u,kind=prec)**2 +aimag(this%u)**2) ) * m%g%dtheta
 #endif 
 #if(_DIM_==3)
-          z_dev = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-          *spread(spread(this%g%weights_z*(this%g%nodes_z-z_mean)**2, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+          z_dev = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+          *spread(spread(m%g%weights_z*(m%g%nodes_z-z_mean)**2, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) & 
 #ifdef _REAL_
                      *(this%u**2) ) * m%g%dtheta
 #else
@@ -3155,26 +3169,28 @@ contains
                 nodes_x => m%g%nodes_x(:,lbound(m%g%nodes_x,2)+m%g%jj(j-1):lbound(m%g%nodes_x,2)+m%g%jj(j)-1)
                 nodes_y => m%g%nodes_y(:,lbound(m%g%nodes_y,2)+m%g%jj(j-1):lbound(m%g%nodes_y,2)+m%g%jj(j)-1)
 #if(_DIM_==2)
-                x_dev = x_dev + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                x_dev = x_dev + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1))*(nodes_x-x_mean)**2 &
 #elif(_DIM_==3)
-                x_dev = x_dev + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                x_dev = x_dev + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread((nodes_x-x_mean)**2, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *(nodes_x-x_mean)**2 *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *(nodes_x-x_mean)**2 *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
 #if(_DIM_==2)
-                y_dev = y_dev + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                y_dev = y_dev + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1))*(nodes_y-y_mean)**2 &
 #elif(_DIM_==3)
-                y_dev = y_dev + sum(spread(spread(this%weights_r, 2, this%n2may-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                   *spread(spread(this%weights_z, 1, this%n1may-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                y_dev = y_dev + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread((nodes_y-y_mean)**2, 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
-                     *(nodes_y-y_mean)** *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *(nodes_y-y_mean)** *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
           end do
 !$OMP END PARALLEL DO
@@ -3188,9 +3204,9 @@ contains
                      *spread(spread(m%g%weights_z*(m%g%nodes_z-z_mean)**2, 1, m%g%n1max-m%g%n1min+1), &
                    3, m%g%jj(j)-m%g%jj(j-1) ) &
 #ifdef _REAL_
-                     *(u**2) )*this%g%dtheta
+                     *(u**2) )*m%g%dtheta
 #else
-                     *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
                 
           end do
@@ -3201,15 +3217,15 @@ contains
         if (associated(m%V)) then
 #ifndef _OPENMP
 #if(_DIM_==2)
-           E_pot = sum( spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) *this%u**2 ) &
+           E_pot = sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
 #elif(_DIM_==3)
-           E_pot = sum(spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-                    *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) 
+           E_pot = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                    *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) & 
 #endif
 #ifdef _REAL_
-                     *m%V *(this%u**2) )*this%g%dtheta
+                     *m%V *(this%u**2) )*m%g%dtheta
 #else
-                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*this%g%dtheta
+                     *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*m%g%dtheta
 #endif 
 #else
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
@@ -3222,15 +3238,15 @@ contains
                 V => m%V(:,:,lbound(m%V,3)+m%g%jj(j-1):lbound(m%V,3)+m%g%jj(j)-1)
 #endif 
 #if(_DIM_==2)
-                E_pot = E_pot + sum(spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) &
+                E_pot = E_pot + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) &
 #elif(_DIM_==3)
-                E_pot = E_pot + sum(spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-                                   *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) &
+                E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
 #endif
 #ifdef _REAL_
-                     *V *(u**2) )*this%g%dtheta
+                     *V *(u**2) )*m%g%dtheta
 #else
-                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*this%g%dtheta
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
 #endif 
 
           end do
@@ -3242,15 +3258,15 @@ contains
         if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
 #ifdef _REAL_
-           E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(this%u**4 &
+           E_int = 0.5_prec*m%cubic_coupling*m%g%dtheta*sum(this%u**4 &
 #else
-           E_int = 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
+           E_int = 0.5_prec*m%cubic_coupling*m%g%dtheta*sum((real(this%u, prec)**2+imag(this%u)**2)**2 &
 #endif
 #if(_DIM_==2)
-            *spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1) ) 
+            *spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1) ) 
 #elif(_DIM_==3)
-            *spread(spread(this%g%weights_r, 2, this%g%n2max-this%g%n2min+1), 3, this%g%n3max-this%g%n3min+1) &
-            *spread(spread(this%g%weights_z, 1, this%g%n1max-this%g%n1min+1), 3, this%g%n3max-this%g%n3min+1) ) 
+            *spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+            *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) ) 
 #endif
 #else
           E_int = 0.0_prec
@@ -3262,15 +3278,15 @@ contains
                 u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
 #endif 
 #ifdef _REAL_
-               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum(u**4 &
+               E_int = E_int + 0.5_prec*m%cubic_coupling*m%g%dtheta*sum(u**4 &
 #else
-               E_int = E_int + 0.5_prec*m%cubic_coupling*this%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
+               E_int = E_int + 0.5_prec*m%cubic_coupling*m%g%dtheta*sum((real(u, prec)**2+imag(u)**2)**2 &
 #endif
 #if(_DIM_==2)
-               *spread(this%weights_r, 2, this%jj(j)-this%jj(j-1)) ) 
+               *spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) ) 
 #elif(_DIM_==3)
-               *spread(spread(this%weights_r, 2, this%n2max-this%n2min+1), 3, this%jj(j)-this%jj(j-1)) &
-               *spread(spread(this%weights_z, 1, this%n1max-this%n1min+1), 3, this%jj(j)-this%jj(j-1)) )
+               *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+               *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) )
 #endif
           end do
 !$OMP END PARALLEL DO
@@ -3741,7 +3757,7 @@ contains
                 obs = obs + f(m%g%nodes_x(i1-o1,i3-o3),m%g%nodes_x(i1-o1,i3-o3), m%g%nodes_z(i2-o2)) &
                       *m%g%weights_r(i1-o1)*m%g%weights_z(i2-o2) &
 #ifdef _REAL_
-                      *this%u(i1,i2)**2
+                      *this%u(i1,i2,i3)**2
 #else
                       *(real(this%u(i1,i2,i3),prec)**2+aimag(this%u(i1,i2,i3))**2)
 #endif
@@ -3751,7 +3767,7 @@ contains
 !$OMP END PARALLEL DO 
 
 #endif
-        obs = obs*this%g%dtheta
+        obs = obs*m%g%dtheta
 
 #else
         select case(this%m%boundary_conditions)
@@ -3902,7 +3918,7 @@ contains
                 w => m%g%weights_z(lbound(m%g%weights_z,1)+m%g%jj(j-1):lbound(m%g%weights_z,1)+m%g%jj(j)-1)
 #endif 
 #ifdef _REAL_
-                E_expectation = E_expectation + (-1.0_prec)*sum(u2 * u1 &
+                E_expectation = E_expectation - sum(u2 * u1 &
 #else
                 E_expectation = E_expectation + sum(aimag(conjg(u2)* u1) &
 #endif
@@ -3922,7 +3938,45 @@ contains
 #endif         
 
 #elif defined(_LAGUERRE_)
-!!TODO
+
+#ifndef _OPENMP
+#ifdef _REAL_
+       E_expectation = -m%g%dtheta*sum(m%tmp%u * this%u &
+#else
+       E_expectation = m%g%dtheta*sum(aimag(conjg(m%tmp%u)*this%u) &
+#endif
+#if(_DIM_==2)
+                *spread(m%g%weights_r, 2, m%g%nthetamax-m%g%nthetamin+1) )  
+#elif(_DIM_==3)
+                *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%nthetamax-m%g%nthetamin+1) &
+                *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%nthetamax-m%g%nthetamin+1) )
+#endif
+#else
+       E_expectation = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) REDUCTION(+:E_expectation)
+            do j=1,n_threads
+#if(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => m%tmp%u(:,lbound(m%tmp%u,2)+m%g%jj(j-1):lbound(m%tmp%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => m%tmp%u(:,:,lbound(m%tmp%u,3)+m%g%jj(j-1):lbound(m%tmp%u,3)+m%g%jj(j)-1)
+#endif 
+#ifdef _REAL_
+                E_expectation = E_expectation - m%g%dtheta*sum(u2 * u1 &
+#else
+                E_expectation = E_expectation + m%g%dtheta*sum(aimag(conjg(u2)* u1) &
+#endif
+#if(_DIM_==2)
+                   *spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) )
+#elif(_DIM_==3)
+                   *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1) ) &
+                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1) ) ) 
+#endif
+            end do
+!$OMP END PARALLEL DO
+#endif         
+
 #else
 
 #if(_DIM_==1)
@@ -4102,7 +4156,46 @@ contains
 #endif  
 
 #elif defined(_LAGUERRE_)
-!!TODO
+
+#ifndef _OPENMP
+#ifdef _REAL_
+       E_var = -m%g%dtheta * sum( (-m%tmp%u - E_expectation*this%u )**2  &
+#else
+       E_var = m%g%dtheta  *sum( ((real(m%tmp%u, prec) - E_expectation*aimag(this%u) )**2 &
+                             +   (aimag(m%tmp%u) + E_expectation*real(this%u, prec))**2) &
+#endif
+#if(_DIM_==2)
+                *spread(m%g%weights_r, 2, m%g%nthetamax-m%g%nthetamin+1) )  
+#elif(_DIM_==3)
+                *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%nthetamax-m%g%nthetamin+1) &
+                *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%nthetamax-m%g%nthetamin+1) )
+#endif
+#else
+       E_var = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, u1, u2) REDUCTION(+:E_var)
+            do j=1,n_threads
+#if(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => m%tmp%u(:,lbound(m%tmp%u,2)+m%g%jj(j-1):lbound(m%tmp%u,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => m%tmp%u(:,:,lbound(m%tmp%u,3)+m%g%jj(j-1):lbound(m%tmp%u,3)+m%g%jj(j)-1)
+#endif 
+#ifdef _REAL_
+                E_var = E_var + m%g%dtheta*sum( (-u2 - E_expectation*u1 )**2 &
+#else
+                E_var = E_var + m%g%dtheta*sum( ((real(u2, prec) - E_expectation*aimag(u1) )**2 &
+                                            +   (aimag(u2) + E_expectation*real(u1, prec))**2) &
+#endif
+#if(_DIM_==2)
+                   *spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) )
+#elif(_DIM_==3)
+                   *spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1) ) &
+                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1) ) ) 
+#endif
+            end do
+!$OMP END PARALLEL DO
+#endif
 
 #else
 
