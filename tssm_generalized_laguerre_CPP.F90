@@ -140,7 +140,7 @@ contains
           ! symmetric coefficients
           ! separated eigenvalues ...
 
-        call generalized_laguerre_scaled_coeffs(nfr, ntheta, this%g%nodes_r,  this%g%weights_r, this%L, this%gamma_r )
+        call generalized_laguerre_scaled_coeffs(nfr-1, ntheta, this%g%nodes_r,  this%g%weights_r, this%L, this%gamma_r )
 
         this%eigenvalues_r = (/ ( -this%gamma_r*(2.0_prec*real(j, prec)+1.0), j = this%nfrmin, this%nfrmax) /)
 
