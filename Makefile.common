@@ -8,6 +8,7 @@ OBJS = tssm_common.o tssm_base_complex.o tssm_base_real.o tssm_base.o \
        tssm_fourier_real_1d.o tssm_fourier_real_2d.o tssm_fourier_real_3d.o \
        tssm_multicomponent_fourier_1d.o tssm_multicomponent_fourier_2d.o tssm_multicomponent_fourier_3d.o \
        tssm_multicomponent_fourier_real_1d.o tssm_multicomponent_fourier_real_2d.o tssm_multicomponent_fourier_real_3d.o \
+       tssm_fourier_rotating_2d.o tssm_fourier_rotating_3d.o \
        tssm_fourier.o \
        tssm_c_fourier_1d.o tssm_c_fourier_2d.o tssm_c_fourier_3d.o \
        tssm_c_fourier_real_1d.o tssm_c_fourier_real_2d.o tssm_c_fourier_real_3d.o \
@@ -168,6 +169,19 @@ tssm_multicomponent_fourier_real_3d.f90: ../tssm_multicomponent_fourier_CPP.F90
 
 tssm_multicomponent_fourier_real_3d.o: tssm_multicomponent_fourier_real_3d.f90
 	$(FC) $(FOPTS) -c tssm_multicomponent_fourier_real_3d.f90 -I$(HDF5_INCLUDE) -o tssm_multicomponent_fourier_real_3d.o
+
+tssm_fourier_rotating_2d.f90: ../tssm_fourier_rotating_CPP.F90
+	$(CPP) -D_DIM_=2 ../tssm_fourier_rotating_CPP.F90 > tssm_fourier_rotating_2d.f90
+
+tssm_fourier_rotating_2d.o: tssm_fourier_rotating_2d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_rotating_2d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_rotating_2d.o
+
+tssm_fourier_rotating_3d.f90: ../tssm_fourier_rotating_CPP.F90
+	$(CPP) -D_DIM_=3 ../tssm_fourier_rotating_CPP.F90 > tssm_fourier_rotating_3d.f90
+
+tssm_fourier_rotating_3d.o: tssm_fourier_rotating_3d.f90
+	$(FC) $(FOPTS) -c tssm_fourier_rotating_3d.f90 -I$(HDF5_INCLUDE) -o tssm_fourier_rotating_3d.o
+
 
 tssm_fourier.o: ../tssm_fourier.F90
 	$(FC) $(FOPTS) -c ../tssm_fourier.F90 -o tssm_fourier.o

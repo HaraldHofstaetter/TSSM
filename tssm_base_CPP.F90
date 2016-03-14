@@ -21,7 +21,7 @@ module S(tssm_base)
      public :: _WAVE_FUNCTION_ 
 
      type, abstract :: _WAVE_FUNCTION_
-        logical :: is_real_space = .true.
+!        logical :: is_real_space = .true.
         _COMPLEX_OR_REAL_(kind=prec) :: time = 0.0_prec
      contains 
         procedure :: propagate_time

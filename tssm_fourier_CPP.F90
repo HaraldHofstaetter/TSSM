@@ -35,6 +35,8 @@
 #define fftw_execute_r2r fftwq_execute_r2r
 #define fftw_destroy_plan fftwq_destroy_plan
 #define fftw_free fftwq_free
+#define fftw_plan_guru_dft fftwq_plan_guru_dft
+#define fftw_plan_guru_r2r fftwq_plan_guru_r2r
 #endif 
 
 #ifdef _QUADPRECISION_
@@ -111,6 +113,12 @@ module S(tssm_fourier)
     type, extends(_WAVE_FUNCTION_) :: S(wf_fourier)
         class(S(fourier)), pointer :: m 
 
+        logical :: is_real_space_x = .true.
+        logical :: is_real_space_y = .true.
+#if(_DIM_==3)        
+        logical :: is_real_space_z = .true.
+#endif
+
 #ifdef _REAL_
         real(kind=prec), pointer  :: up(:)
         complex(kind=prec), pointer  :: ucp(:)
@@ -143,12 +151,36 @@ module S(tssm_fourier)
         type(c_ptr) :: plan_forward 
         type(c_ptr) :: plan_backward
 
+        type(c_ptr) :: plan_forward_x
+        type(c_ptr) :: plan_backward_x
+#if(_DIM_>=2)
+        type(c_ptr) :: plan_forward_y
+        type(c_ptr) :: plan_backward_y
+#endif
+#if(_DIM_>=3)
+        type(c_ptr) :: plan_forward_z
+        type(c_ptr) :: plan_backward_z
+#endif
+
         _COMPLEX_OR_REAL_(kind=prec) :: coefficient = 1.0_prec
 
     contains
+        procedure :: is_real_space 
+        procedure :: is_frequency_space 
+        procedure :: set_real_space 
         procedure :: create_plans 
         procedure :: to_real_space
         procedure :: to_frequency_space
+        procedure :: to_real_space_x
+        procedure :: to_frequency_space_x
+#if(_DIM_>=2)        
+        procedure :: to_real_space_y
+        procedure :: to_frequency_space_y
+#endif        
+#if(_DIM_>=3)        
+        procedure :: to_real_space_z
+        procedure :: to_frequency_space_z
+#endif        
         procedure :: propagate_A
         procedure :: propagate_A_derivative
         procedure :: add_apply_A
@@ -680,7 +712,11 @@ contains
 #else
         integer :: dft_dim(_DIM_)  
 #endif
-        integer :: dft_kind(_DIM_) 
+        integer :: dft_kind(_DIM_)
+        integer :: howmany
+
+        type(fftw_iodim) :: dims(1)        
+        type(fftw_iodim) :: howmany_dims(3)        
 
         call load_fftw_wisdom
 
@@ -700,6 +736,8 @@ contains
 #else
             this%plan_forward = fftw_plan_dft_1d(this%m%g%nx, this%up, this%up, FFTW_FORWARD, fftw_planning_rigor)
             this%plan_backward = fftw_plan_dft_1d(this%m%g%nx, this%up, this%up, FFTW_BACKWARD, fftw_planning_rigor)
+            this%plan_forward_x = this%plan_forward
+            this%plan_backward_x = this%plan_backward
 #endif            
 #endif            
 #elif(_DIM_==2)
@@ -731,6 +769,37 @@ contains
                                                  this%up, this%up, FFTW_FORWARD, fftw_planning_rigor)
             this%plan_backward = fftw_plan_dft_2d(this%m%g%ny, this%m%g%nx,&
                                                   this%up, this%up, FFTW_BACKWARD, fftw_planning_rigor)
+
+            dft_dim = (/ this%m%g%nx, 0 /)
+            howmany = this%m%g%ny
+            this%plan_forward_x = fftw_plan_many_dft(1, dft_dim, howmany, & ! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, 1, this%m%g%ny, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, 1, this%m%g%ny, &   ! *onembed, ostride, odist,
+                                               FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
+            this%plan_backward_x = fftw_plan_many_dft(1, dft_dim, howmany, &! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, 1, this%m%g%ny, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, 1, this%m%g%ny, &   ! *onembed, ostride, odist,
+                                               FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
+
+            dft_dim = (/ this%m%g%ny, 0 /)
+            howmany = this%m%g%nx
+            this%plan_forward_y = fftw_plan_many_dft(1, dft_dim, howmany, & ! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, this%m%g%nx, 1, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, this%m%g%nx, 1, &   ! *onembed, ostride, odist,
+                                               FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
+            this%plan_backward_y = fftw_plan_many_dft(1, dft_dim, howmany, &! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, this%m%g%nx, 1, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, this%m%g%nx, 1, &   ! *onembed, ostride, odist,
+                                               FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
+            
 #endif                                                  
 #endif            
 #elif(_DIM_==3)
@@ -766,6 +835,57 @@ contains
                                                  this%up, this%up, FFTW_FORWARD, fftw_planning_rigor)
             this%plan_backward = fftw_plan_dft_3d(this%m%g%nz, this%m%g%ny, this%m%g%nx,&
                                                   this%up, this%up, FFTW_BACKWARD, fftw_planning_rigor)
+
+            dft_dim = (/ this%m%g%nx, 0, 0 /)
+            howmany = this%m%g%ny*this%m%g%nz
+            this%plan_forward_x = fftw_plan_many_dft(1, dft_dim, howmany, & ! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, 1, this%m%g%nx, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, 1, this%m%g%nx, &   ! *onembed, ostride, odist,
+                                               FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
+            this%plan_backward_x = fftw_plan_many_dft(1, dft_dim, howmany, &! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, 1, this%m%g%nx, &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, 1, this%m%g%nx, &   ! *onembed, ostride, odist,
+                                               FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
+
+            dims(1)%n = this%m%g%ny
+            dims(1)%is = this%m%g%nx
+            dims(1)%os = this%m%g%nx
+            howmany_dims(1)%n = this%m%g%nx
+            howmany_dims(1)%is = 1
+            howmany_dims(1)%os = 1
+            howmany_dims(2)%n = this%m%g%nz
+            howmany_dims(2)%is = this%m%g%nx*this%m%g%ny
+            howmany_dims(2)%os = this%m%g%nx*this%m%g%ny
+            this%plan_forward_y = fftw_plan_guru_dft(1, dims,         & ! rank, *dims,
+                                                2, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%up,         & ! *in, 
+                                                this%up,         & ! *out, 
+                                                FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
+            this%plan_forward_y = fftw_plan_guru_dft(1, dims,         & ! rank, *dims,
+                                                2, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%up,         & ! *in, 
+                                                this%up,         & ! *out, 
+                                                FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
+
+            dft_dim = (/ this%m%g%nz, 0, 0 /)
+            howmany = this%m%g%nx*this%m%g%ny
+            this%plan_forward_z = fftw_plan_many_dft(1, dft_dim, howmany, & ! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, howmany, 1,    &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, howmany, 1,    &   ! *onembed, ostride, odist,
+                                               FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
+            this%plan_backward_z = fftw_plan_many_dft(1, dft_dim, howmany, &! rank, *n, howmany,
+                                               this%up, &                   ! *in, 
+                                               dft_dim, howmany, 1,     &   ! *inembed, istride, idist,
+                                               this%up, &                   ! *out, 
+                                               dft_dim, howmany, 1,     &   ! *onembed, ostride, odist,
+                                               FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
+
 #endif   
 #endif   
 #endif
@@ -834,6 +954,226 @@ contains
             this%plan_backward = this%plan_forward 
 #endif
 #endif
+#ifndef _MPI_
+#if(_DIM_==1)
+            this%plan_forward_x = this%plan_forward 
+            this%plan_backward_x = this%plan_backward
+#elif(_DIM_==2)
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%nx-1
+                    dims(1)%is = 1 
+                    howmany_dims(1)%n = this%m%g%ny-1
+                    howmany_dims(1)%is = this%m%g%nx-1
+                case (neumann)
+                    dims(1)%n = this%m%g%nx+1
+                    dims(1)%is = 1 
+                    howmany_dims(1)%n = this%m%g%ny+1
+                    howmany_dims(1)%is = this%m%g%nx+1
+            end select        
+#ifndef _REAL_
+            howmany_dims(1)%n = 2*howmany_dims(1)%n
+            howmany_dims(1)%is = 2*howmany_dims(1)%is
+#endif
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            this%plan_forward_x = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                1, howmany_dims, & ! howmany_rank *howmany_dims,
+#ifdef _REAL_
+                                                this%up,        & ! *in, 
+                                                this%up,        & ! *out, 
+#else
+                                                this%urp,        & ! *in, 
+                                                this%urp,        & ! *out, 
+#endif                                                
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+            this%plan_backward_x = this%plan_forward_x
+
+#ifdef _REAL_                    
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%ny-1
+                    dims(1)%is = this%m%g%nx-1
+                    howmany_dims(1)%n = this%m%g%nx-1
+                    howmany_dims(1)%is = 1 
+                case (neumann)
+                    dims(1)%n = this%m%g%ny+1
+                    dims(1)%is = this%m%g%nx+1
+                    howmany_dims(1)%n = this%m%g%nx+1
+                    howmany_dims(1)%is = 1 
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            this%plan_forward_y = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                1, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%up,        & ! *in, 
+                                                this%up,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#else
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%ny-1
+                    dims(1)%is = 2*(this%m%g%nx-1)
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nx-1
+                    howmany_dims(2)%is = 1 
+                case (neumann)
+                    dims(1)%n = this%m%g%ny+1
+                    dims(1)%is = 2*(this%m%g%nx+1) 
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nx+1
+                    howmany_dims(2)%is = 1 
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            this%plan_forward_y = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                2, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%urp,        & ! *in, 
+                                                this%urp,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#endif
+            this%plan_backward_y = this%plan_forward_y
+#elif(_DIM_==3)
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%nx-1
+                    dims(1)%is = 1 
+                    howmany_dims(1)%n = (this%m%g%ny-1)*(this%m%g%nz-1)
+                    howmany_dims(1)%is = (this%m%g%nx-1)
+                case (neumann)
+                    dims(1)%n = this%m%g%nx+1
+                    dims(1)%is = 1 
+                    howmany_dims(1)%n = (this%m%g%ny+1)*(this%m%g%nz+1)
+                    howmany_dims(1)%is = (this%m%g%nx+1)
+            end select        
+#ifndef _REAL_
+            howmany_dims(1)%n = 2*howmany_dims(1)%n
+            howmany_dims(2)%is = 2*howmany_dims(2)%is
+#endif
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            this%plan_forward_x = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                1, howmany_dims, & ! howmany_rank *howmany_dims,
+#ifdef _REAL_                    
+                                                this%up,        & ! *in, 
+                                                this%up,        & ! *out, 
+#else
+                                                this%urp,        & ! *in, 
+                                                this%urp,        & ! *out, 
+#endif                                                
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+            this%plan_backward_x = this%plan_forward_x
+
+#ifdef _REAL_                    
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%nz-1
+                    dims(1)%is = (this%m%g%nx-1)*(this%m%g%ny-1)
+                    howmany_dims(1)%n = (this%m%g%nx-1)*(this%m%g%ny-1)
+                    howmany_dims(1)%is = 1 
+                case (neumann)
+                    dims(1)%n = this%m%g%nz+1
+                    dims(1)%is = (this%m%g%nx+1)*(this%m%g%ny+1)
+                    howmany_dims(1)%n = (this%m%g%nx+1)*(this%m%g%ny+1)
+                    howmany_dims(1)%is = 1 
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            this%plan_forward_z = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                1, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%up,        & ! *in, 
+                                                this%up,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#else
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%ny-1
+                    dims(1)%is = 2*(this%m%g%nx-1)*(this%m%g%ny-1)
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = (this%m%g%nx-1)*(this%m%g%ny-1)
+                    howmany_dims(2)%is = 1 
+                case (neumann)
+                    dims(1)%n = this%m%g%ny+1
+                    dims(1)%is = 2*(this%m%g%nx+1)*(this%m%g%ny+1)
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1
+                    howmany_dims(2)%n = this%m%g%nx+1
+                    howmany_dims(2)%is = 1 
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            howmany_dims(2)%os =  howmany_dims(2)%is
+            this%plan_forward_z = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                2, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%urp,        & ! *in, 
+                                                this%urp,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#endif
+            this%plan_backward_z = this%plan_forward_z
+
+#ifdef _REAL_                    
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%ny-1
+                    dims(1)%is = this%m%g%nx-1
+                    howmany_dims(1)%n = this%m%g%nx-1
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nz-1
+                    howmany_dims(2)%is = (this%m%g%nx-1)*(this%m%g%ny-1)
+                case (neumann)
+                    dims(1)%n = this%m%g%ny+1
+                    dims(1)%is = this%m%g%nx+1
+                    howmany_dims(1)%n = this%m%g%nx+1
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nz+1
+                    howmany_dims(2)%is = (this%m%g%nx+1)*(this%m%g%ny+1)
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            howmany_dims(2)%os =  howmany_dims(2)%is
+            this%plan_forward_y = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                2, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%up,        & ! *in, 
+                                                this%up,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#else
+            select case(this%m%boundary_conditions) 
+                case (dirichlet)
+                    dims(1)%n = this%m%g%ny-1
+                    dims(1)%is = 2*(this%m%g%nx-1)
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nx-1
+                    howmany_dims(2)%is = 1 
+                    howmany_dims(3)%n = this%m%g%nz-1
+                    howmany_dims(3)%is = (this%m%g%nx-1)*(this%m%g%ny-1)
+                case (neumann)
+                    dims(1)%n = this%m%g%ny+1
+                    dims(1)%is = 2*(this%m%g%nx+1)
+                    howmany_dims(1)%n = 2
+                    howmany_dims(1)%is = 1 
+                    howmany_dims(2)%n = this%m%g%nx+1
+                    howmany_dims(2)%is = 1 
+                    howmany_dims(3)%n = this%m%g%nz+1
+                    howmany_dims(3)%is = (this%m%g%nx+1)*(this%m%g%ny+1)
+            end select        
+            dims(1)%os = dims(1)%is 
+            howmany_dims(1)%os =  howmany_dims(1)%is
+            howmany_dims(2)%os =  howmany_dims(2)%is
+            howmany_dims(3)%os =  howmany_dims(3)%is
+            this%plan_forward_y = fftw_plan_guru_r2r(1, dims,         & ! rank, *dims,
+                                                3, howmany_dims, & ! howmany_rank *howmany_dims,
+                                                this%urp,        & ! *in, 
+                                                this%urp,        & ! *out, 
+                                                dft_kind, fftw_planning_rigor) ! *kind, flags
+#endif
+            this%plan_backward_y = this%plan_forward_y
+#endif
+#endif
         end select
 
         call save_fftw_wisdom
@@ -841,12 +1181,213 @@ contains
     end subroutine create_plans
 
 
+    function is_real_space(this) 
+        class(S(wf_fourier)), intent(inout) :: this
+        logical :: is_real_space
+#if(_DIM_==1)
+        is_real_space = this%is_real_space_x
+#elif(_DIM_==2)
+        is_real_space = this%is_real_space_x.and. this%is_real_space_y
+#elif(_DIM_==3)
+        is_real_space = this%is_real_space_x.and. this%is_real_space_y.and.this%is_real_space_z
+#endif
+    end function is_real_space
+
+
+    function is_frequency_space(this) 
+        class(S(wf_fourier)), intent(inout) :: this
+        logical :: is_frequency_space
+#if(_DIM_==1)
+        is_frequency_space = .not.this%is_real_space_x
+#elif(_DIM_==2)
+        is_frequency_space = .not.(this%is_real_space_x.or. this%is_real_space_y)
+#elif(_DIM_==3)
+        is_frequency_space = .not.(this%is_real_space_x.or. this%is_real_space_y.or.this%is_real_space_z)
+#endif
+    end function is_frequency_space
+
+
+    subroutine set_real_space(this, flag)
+        class(S(wf_fourier)), intent(inout) :: this
+        logical :: flag 
+        this%is_real_space_x = flag
+#if(_DIM_>=2)        
+        this%is_real_space_y = flag
+#endif        
+#if(_DIM_>=3)        
+        this%is_real_space_z = flag
+#endif        
+    end subroutine set_real_space
+
+
+    subroutine to_frequency_space_x(this)
+        class(S(wf_fourier)), intent(inout) :: this
+        
+        real(kind=prec), parameter :: f = sqrt(0.5_prec)
+
+        if (this%is_real_space_x) then
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_r2c(this%plan_forward_x, this%up, this%ucp)
+#else
+                call fftw_mpi_execute_dft(this%plan_forward_x, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_forward_x, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_forward_x, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_r2c(this%plan_forward_x, this%up, this%ucp)
+#else
+                call fftw_execute_dft(this%plan_forward_x, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_forward_x, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_forward_x, this%urp, this%urp)
+#endif
+#endif
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+#if(_DIM_==1)            
+               if (this%m%nf1min==0) then
+                     this%uf(0) = f * this%uf(0)
+               end if      
+#elif(_DIM_==2)          
+               if (this%m%nf1min==0) then
+                     this%uf(0,:) = f * this%uf(0,:)
+               end if      
+#elif(_DIM_==3)
+               if (this%m%nf1min==0) then
+                     this%uf(0,:,:) = f * this%uf(0,:,:)
+               end if      
+#endif
+            end select
+
+            this%is_real_space_x = .false.
+        end if    
+    end subroutine to_frequency_space_x
+
+
+#if(_DIM_>=2)            
+    subroutine to_frequency_space_y(this)
+        class(S(wf_fourier)), intent(inout) :: this
+        
+        real(kind=prec), parameter :: f = sqrt(0.5_prec)
+
+        if (this%is_real_space_y) then
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_r2c(this%plan_forward_y, this%up, this%ucp)
+#else
+                call fftw_mpi_execute_dft(this%plan_forward_y, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_forward_y, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_forward_y, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_r2c(this%plan_forward_y, this%up, this%ucp)
+#else
+                call fftw_execute_dft(this%plan_forward_y, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_forward_y, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_forward_y, this%urp, this%urp)
+#endif
+#endif
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+#if(_DIM_==2)          
+               if (this%m%nf2min==0) then
+                     this%uf(:,0) = f * this%uf(:,0)
+               end if      
+#elif(_DIM_==3)
+               if (this%m%nf2min==0) then
+                     this%uf(:,0,:) = f * this%uf(:,0,:)
+               end if      
+#endif
+            end select
+
+            this%is_real_space_y = .false.
+        end if    
+    end subroutine to_frequency_space_y
+#endif    
+
+#if(_DIM_>=3)            
+    subroutine to_frequency_space_z(this)
+        class(S(wf_fourier)), intent(inout) :: this
+        
+        real(kind=prec), parameter :: f = sqrt(0.5_prec)
+
+        if (this%is_real_space_z) then
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_r2c(this%plan_forward_z, this%up, this%ucp)
+#else
+                call fftw_mpi_execute_dft(this%plan_forward_z, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_forward_z, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_forward_z, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_r2c(this%plan_forward_z, this%up, this%ucp)
+#else
+                call fftw_execute_dft(this%plan_forward_z, this%up, this%up)
+#endif
+            case (dirichlet, neumann)
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_forward_z, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_forward_z, this%urp, this%urp)
+#endif
+#endif
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+               if (this%m%nf3min==0) then
+                     this%uf(:,:,0) = f * this%uf(:,:,0)
+               end if      
+            end select
+
+            this%is_real_space_z = .false.
+        end if    
+    end subroutine to_frequency_space_z
+#endif    
+
+
     subroutine to_frequency_space(this)
         class(S(wf_fourier)), intent(inout) :: this
         
         real(kind=prec), parameter :: f = sqrt(0.5_prec)
 
-        if (this%is_real_space) then
+        if (this%is_frequency_space()) then
+            return            
+        else if (this%is_real_space()) then
             select case(this%m%boundary_conditions) 
             case (periodic)
 #ifdef _MPI_
@@ -902,10 +1443,214 @@ contains
 #endif
             end select
 
-            this%is_real_space = .false.
+            call this%set_real_space(.false.)
+        else 
+            call this%to_frequency_space_x
+#if(_DIM_>=2)            
+            call this%to_frequency_space_y
+#endif            
+#if(_DIM_>=3)            
+            call this%to_frequency_space_z
+#endif            
         end if    
     end subroutine to_frequency_space
 
+
+    subroutine to_real_space_x(this)
+        class(S(wf_fourier)), intent(inout) :: this
+
+        real(kind=prec), parameter :: f = sqrt(2.0_prec)
+
+        if (.not. this%is_real_space_x) then
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+#if(_DIM_==1)            
+               if (this%m%nf1min==0) then
+                     this%uf(0) = f * this%uf(0)
+               end if      
+#elif(_DIM_==2)          
+               if (this%m%nf1min==0) then
+                     this%uf(0,:) = f * this%uf(0,:)
+               end if      
+#elif(_DIM_==3)
+               if (this%m%nf1min==0) then
+                     this%uf(0,:,:) = f * this%uf(0,:,:)
+               end if      
+#endif
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_c2r(this%plan_backward_x, this%ucp, this%up)
+#else
+                call fftw_mpi_execute_dft(this%plan_backward_x, this%up, this%up)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_c2r(this%plan_backward_x, this%ucp, this%up)
+#else
+                call fftw_execute_dft(this%plan_backward_x, this%up, this%up)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/this%m%g%nx)
+#else
+                call this%scale(cmplx(1.0_prec/this%m%g%nx, kind=prec))
+#endif
+            case (dirichlet, neumann)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_backward_x, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_backward_x, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_backward_x, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_backward_x, this%urp, this%urp)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/(2.0_prec * this%m%g%nx))
+#else
+                call this%scale(cmplx(1.0_prec/(2.0_prec * this%m%g%nx), kind=prec))
+#endif
+            end select
+
+            this%is_real_space_x = .true.
+        end if
+    end subroutine to_real_space_x
+
+
+#if(_DIM_>=2)          
+    subroutine to_real_space_y(this)
+        class(S(wf_fourier)), intent(inout) :: this
+
+        real(kind=prec), parameter :: f = sqrt(2.0_prec)
+
+        if (.not. this%is_real_space_y) then
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+#if(_DIM_==2)          
+               if (this%m%nf2min==0) then
+                     this%uf(:,0) = f * this%uf(:,0)
+               end if      
+#elif(_DIM_==3)
+               if (this%m%nf2min==0) then
+                     this%uf(:,0,:) = f * this%uf(:,0,:)
+               end if      
+#endif
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_c2r(this%plan_backward_y, this%ucp, this%up)
+#else
+                call fftw_mpi_execute_dft(this%plan_backward_y, this%up, this%up)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_c2r(this%plan_backward_y, this%ucp, this%up)
+#else
+                call fftw_execute_dft(this%plan_backward_y, this%up, this%up)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/this%m%g%ny)
+#else
+                call this%scale(cmplx(1.0_prec/this%m%g%ny, kind=prec))
+#endif
+            case (dirichlet, neumann)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_backward_y, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_backward_y, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_backward_y, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_backward_y, this%urp, this%urp)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/(2.0_prec * this%m%g%ny))
+#else
+                call this%scale(cmplx(1.0_prec/(2.0_prec * this%m%g%ny), kind=prec))
+#endif
+            end select
+
+            this%is_real_space_y = .true.
+        end if
+    end subroutine to_real_space_y
+#endif
+
+
+#if(_DIM_>=3)          
+    subroutine to_real_space_z(this)
+        class(S(wf_fourier)), intent(inout) :: this
+
+        real(kind=prec), parameter :: f = sqrt(2.0_prec)
+
+        if (.not. this%is_real_space_z) then
+            select case(this%m%boundary_conditions) 
+            case (neumann)
+               if (this%m%nf3min==0) then
+                     this%uf(:,:,0) = f * this%uf(:,:,0)
+               end if      
+            end select
+
+            select case(this%m%boundary_conditions) 
+            case (periodic)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_dft_c2r(this%plan_backward_z, this%ucp, this%up)
+#else
+                call fftw_mpi_execute_dft(this%plan_backward_z, this%up, this%up)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_dft_c2r(this%plan_backward_z, this%ucp, this%up)
+#else
+                call fftw_execute_dft(this%plan_backward_z, this%up, this%up)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/this%m%g%nz)
+#else
+                call this%scale(cmplx(1.0_prec/this%m%g%nz, kind=prec))
+#endif
+            case (dirichlet, neumann)
+#ifdef _MPI_
+#ifdef _REAL_
+                call fftw_mpi_execute_r2r(this%plan_backward_z, this%up, this%up)
+#else
+                call fftw_mpi_execute_r2r(this%plan_backward_z, this%urp, this%urp)
+#endif
+#else
+#ifdef _REAL_
+                call fftw_execute_r2r(this%plan_backward_z, this%up, this%up)
+#else
+                call fftw_execute_r2r(this%plan_backward_z, this%urp, this%urp)
+#endif
+#endif
+#ifdef _REAL_
+                call this%scale(1.0_prec/(2.0_prec * this%m%g%nz))
+#else
+                call this%scale(cmplx(1.0_prec/(2.0_prec * this%m%g%nz), kind=prec))
+#endif
+            end select
+
+            this%is_real_space_z = .true.
+        end if
+    end subroutine to_real_space_z
+#endif
 
 
     subroutine to_real_space(this)
@@ -913,20 +1658,9 @@ contains
 
         real(kind=prec), parameter :: f = sqrt(2.0_prec)
 
-#ifdef _OPENMP
-#if(_DIM_==1)            
-        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:)
-#elif(_DIM_==2)            
-        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:)
-#elif(_DIM_==3)            
-        _COMPLEX_OR_REAL_(kind=prec), pointer :: u(:,:,:)
-#endif
-        integer :: j
-#endif        
-        
-        
-        if (.not. this%is_real_space) then
-
+        if (this%is_real_space()) then
+            return
+        else if (this%is_frequency_space()) then
             select case(this%m%boundary_conditions) 
             case (neumann)
 #if(_DIM_==1)            
@@ -968,31 +1702,22 @@ contains
                 call fftw_execute_dft(this%plan_backward, this%up, this%up)
 #endif
 #endif
-
-#ifndef _OPENMP
+#ifdef _REAL_
 #if(_DIM_==1)
-                this%u = this%u * (1.0_prec / this%m%g%nx)
+                call this%scale(1.0_prec/this%m%g%nx)
 #elif(_DIM_==2)
-                this%u = this%u * (1.0_prec / (this%m%g%nx * this%m%g%ny))
+                call this%scale(1.0_prec/(this%m%g%nx * this%m%g%ny))
 #elif(_DIM_==3)
-                this%u = this%u * (1.0_prec / (this%m%g%nx * this%m%g%ny * this%m%g%nz))
+                call this%scale(1.0_prec/(this%m%g%nx * this%m%g%ny * this%m%g%nz))
 #endif
-
 #else
-!$OMP PARALLEL DO PRIVATE(j, u) 
-                do j=1,n_threads
 #if(_DIM_==1)
-                   u => this%u(lbound(this%u,1)+this%m%g%jj(j-1):lbound(this%u,1)+this%m%g%jj(j)-1)
-                   u = u * (1.0_prec / this%m%g%nx)
+                call this%scale(cmplx(1.0_prec/this%m%g%nx, kind=prec))
 #elif(_DIM_==2)
-                   u => this%u(:,lbound(this%u,2)+this%m%g%jj(j-1):lbound(this%u,2)+this%m%g%jj(j)-1)
-                   u = u * (1.0_prec / (this%m%g%nx * this%m%g%ny))
+                call this%scale(cmplx(1.0_prec/(this%m%g%nx * this%m%g%ny), kind=prec))
 #elif(_DIM_==3)
-                   u => this%u(:,:,lbound(this%u,3)+this%m%g%jj(j-1):lbound(this%u,3)+this%m%g%jj(j)-1)
-                   u = u * (1.0_prec / (this%m%g%nx * this%m%g%ny * this%m%g%nz))
+                call this%scale(cmplx(1.0_prec/(this%m%g%nx * this%m%g%ny * this%m%g%nz), kind=prec))
 #endif
-                end do
-!$OMP END PARALLEL DO 
 #endif
             case (dirichlet, neumann)
 #ifdef _MPI_
@@ -1008,34 +1733,34 @@ contains
                 call fftw_execute_r2r(this%plan_backward, this%urp, this%urp)
 #endif
 #endif
-
-#ifndef _OPENMP
+#ifdef _REAL_
 #if(_DIM_==1)
-                this%u = this%u * (1.0_prec / (2.0_prec*this%m%g%nx))
+                call this%scale(1.0_prec/(2.0_prec * this%m%g%nx))
 #elif(_DIM_==2)
-                this%u = this%u * (1.0_prec / (4.0_prec * this%m%g%nx * this%m%g%ny))
+                call this%scale(1.0_prec/(4.0_prec * this%m%g%nx * this%m%g%ny))
 #elif(_DIM_==3)
-                this%u = this%u * (1.0_prec / (8.0_prec * this%m%g%nx * this%m%g%ny * this%m%g%nz))
+                call this%scale(1.0_prec/(8.0_prec * this%m%g%nx * this%m%g%ny * this%m%g%nz))
 #endif
 #else
-!$OMP PARALLEL DO PRIVATE(j, u) 
-                do j=1,n_threads
 #if(_DIM_==1)
-                    u => this%u(lbound(this%u,1)+this%m%g%jj(j-1):lbound(this%u,1)+this%m%g%jj(j)-1)
-                    u = u * (1.0_prec / (2.0_prec*this%m%g%nx))
+                call this%scale(cmplx(1.0_prec/(2.0_prec * this%m%g%nx),kind=prec))
 #elif(_DIM_==2)
-                    u => this%u(:,lbound(this%u,2)+this%m%g%jj(j-1):lbound(this%u,2)+this%m%g%jj(j)-1)
-                    u = u * (1.0_prec / (4.0_prec * this%m%g%nx * this%m%g%ny))
+                call this%scale(cmplx(1.0_prec/(4.0_prec * this%m%g%nx * this%m%g%ny),kind=prec))
 #elif(_DIM_==3)
-                    u => this%u(:,:,lbound(this%u,3)+this%m%g%jj(j-1):lbound(this%u,3)+this%m%g%jj(j)-1)
-                    u = u * (1.0_prec / (8.0_prec * this%m%g%nx * this%m%g%ny * this%m%g%nz))
+                call this%scale(cmplx(1.0_prec/(8.0_prec * this%m%g%nx * this%m%g%ny * this%m%g%nz),kind=prec))
 #endif
-                end do
-!$OMP END PARALLEL DO 
 #endif
             end select
 
-            this%is_real_space = .true.
+            call this%set_real_space(.true.)
+        else
+            call this%to_real_space_x
+#if(_DIM_>=2)            
+            call this%to_real_space_y
+#endif            
+#if(_DIM_>=3)            
+            call this%to_real_space_z
+#endif            
         end if     
     end subroutine to_real_space
 
@@ -1282,7 +2007,7 @@ contains
 #ifdef _REAL_            
                 call wf%propagate_time(1.0_prec)
 #else                
-                call wf%propagate_time((0.0_prec,1.0_prec))
+                call wf%propagate_time((1.0_prec,0.0_prec))
 #endif                
             end if
         end if
@@ -1530,7 +2255,7 @@ contains
         call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
                      trim(this%m%dset_name_real), trim(this%m%dset_name_imag), offset=offset)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
 #endif
     end subroutine load
 
@@ -1543,7 +2268,7 @@ contains
 #else
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine set
 
     subroutine set_t(this, f, t)
@@ -1555,7 +2280,7 @@ contains
 #else
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine set_t
 
@@ -1565,7 +2290,7 @@ contains
         class(S(wf_fourier)), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine rset
 
     subroutine rset_t(this, f, t)
@@ -1573,7 +2298,7 @@ contains
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine rset_t
 
@@ -1786,10 +2511,10 @@ contains
             stop "E: wave functions not belonging to the same method"
         end if    
        
-        this%is_real_space = source%is_real_space
+        call this%set_real_space(source%is_real_space())
         this%time = source%time
 
-        if (this%is_real_space) then
+        if (this%is_real_space()) then
 #ifndef _OPENMP
             this%u = source%u
 #else

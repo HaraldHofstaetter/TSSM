@@ -95,6 +95,12 @@ module S(tssm_tensorial)
     type, extends(_WAVE_FUNCTION_) :: S(wf_tensorial)
         class(S(tensorial)), pointer :: m 
 
+        logical :: is_real_space_x = .true.
+        logical :: is_real_space_y = .true.
+#if(_DIM_==3)        
+        logical :: is_real_space_z = .true.
+#endif
+
 #ifdef _REAL_
         real(kind=prec), pointer  :: up(:)
         complex(kind=prec), pointer  :: ucp(:)
@@ -117,8 +123,20 @@ module S(tssm_tensorial)
         _COMPLEX_OR_REAL_(kind=prec) :: coefficient = 1.0_prec
 
     contains
+        procedure :: is_real_space 
+        procedure :: set_real_space 
         procedure :: to_real_space
         procedure :: to_frequency_space
+        procedure :: to_real_space_x
+        procedure :: to_frequency_space_x
+#if(_DIM_>=2)        
+        procedure :: to_real_space_y
+        procedure :: to_frequency_space_y
+#endif        
+#if(_DIM_>=3)        
+        procedure :: to_real_space_z
+        procedure :: to_frequency_space_z
+#endif        
         procedure :: propagate_A
         procedure :: propagate_A_derivative
         procedure :: add_apply_A
@@ -406,6 +424,44 @@ contains
         call fftw_free(c_loc(this%up(1)))
     end subroutine finalize_wf
 
+    function is_real_space(this) 
+        class(S(wf_tensorial)), intent(inout) :: this
+        logical :: is_real_space
+#if(_DIM_==1)
+        is_real_space = this%is_real_space_x
+#elif(_DIM_==2)
+        is_real_space = this%is_real_space_x.and. this%is_real_space_y
+#elif(_DIM_==3)
+        is_real_space = this%is_real_space_x.and. this%is_real_space_y.and.this%is_real_space_z
+#endif
+    end function is_real_space
+
+
+    function is_frequency_space(this) 
+        class(S(wf_tensorial)), intent(inout) :: this
+        logical :: is_frequency_space
+#if(_DIM_==1)
+        is_frequency_space = .not.this%is_real_space_x
+#elif(_DIM_==2)
+        is_frequency_space = .not.(this%is_real_space_x.or. this%is_real_space_y)
+#elif(_DIM_==3)
+        is_frequency_space = .not.(this%is_real_space_x.or. this%is_real_space_y.or.this%is_real_space_z)
+#endif
+    end function is_frequency_space
+
+
+    subroutine set_real_space(this, flag)
+        class(S(wf_tensorial)), intent(inout) :: this
+        logical :: flag 
+        this%is_real_space_x = flag
+#if(_DIM_>=2)        
+        this%is_real_space_y = flag
+#endif        
+#if(_DIM_>=3)        
+        this%is_real_space_z = flag
+#endif        
+    end subroutine set_real_space
+
 
     subroutine set(this, f)
         class(S(wf_tensorial)), intent(inout) :: this
@@ -415,7 +471,7 @@ contains
 #else
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine set
 
 
@@ -428,7 +484,7 @@ contains
 #else
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine set_t
 
@@ -438,7 +494,7 @@ contains
         class(S(wf_tensorial)), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine rset
 
    subroutine rset_t(this, f, t)
@@ -446,7 +502,7 @@ contains
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine rset_t
 
@@ -517,7 +573,7 @@ contains
             stop "E: wave functions not belonging to the same method"
         end if    
        
-        this%is_real_space = source%is_real_space
+        call this%set_real_space(source%is_real_space())
         this%time = source%time
         
 #ifdef _REAL_
@@ -663,53 +719,45 @@ contains
         call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
                      trim(this%m%dset_name_real), trim(this%m%dset_name_imag))
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
 #endif        
     end subroutine load
 
 
-   subroutine to_real_space(this)
+   subroutine to_real_space_x(this)
         class(S(wf_tensorial)), intent(inout) :: this
 #if(_DIM_==3)        
         integer :: n1, n2, n3
 #endif
-
-        if (.not. this%is_real_space) then
+        if (.not. this%is_real_space_x) then
 !xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)        
            this%u = matmul(this%m%H1, this%uf)
 #elif(_DIM_==2)        
            this%u = matmul(this%m%H1, this%uf)
-           this%u = matmul(this%uf, transpose(this%m%H2))
 #elif(_DIM_==3)        
            n1 = this%m%nf1max - this%m%nf1min + 1
            n2 = this%m%nf2max - this%m%nf2min + 1
            n3 = this%m%nf3max - this%m%nf3min + 1
            this%u = reshape( matmul(this%m%H1, reshape(this%uf, (/ n1, n2*n3 /) )), (/ n1, n2, n3 /) )
-           this%u = reshape(reshape( matmul(this%m%H2,reshape( &
-                            reshape(this%uf, (/ n2, n1, n3 /), order=(/ 2,1,3 /) ) , (/ n2, n1*n3 /) )), &
-                            (/ n2, n1, n3 /) ), (/n1, n2, n3 /), order=(/ 2, 1, 3 /) )
-           this%u = reshape( matmul(reshape(this%uf, (/ n1*n2, n3 /) ), transpose(this%m%H3)), (/ n1, n2, n3 /) ) 
 #endif
 !xxx$OMP END PARALLEL WORKSHARE 
-           this%is_real_space = .true.
-        end if     
-    end subroutine to_real_space
+        endif   
+        this%is_real_space_x = .true.
+   end subroutine to_real_space_x
 
-    
-    subroutine to_frequency_space(this)
+
+   subroutine to_frequency_space_x(this)
         class(S(wf_tensorial)), intent(inout) :: this
 #if(_DIM_==3)        
         integer :: n1, n2, n3
 #endif
-
-        if (this%is_real_space) then
+        if (this%is_real_space_x) then
 !xxx$OMP PARALLEL WORKSHARE 
 #if(_DIM_==1)        
            this%u = matmul(transpose(this%m%H1), this%m%g%weights_x*this%uf)
 #elif(_DIM_==2)        
            this%u = matmul(transpose(this%m%H1),spread(this%m%g%weights_x, 2, this%m%g%n2max-this%m%g%n2min+1)*this%uf)
-           this%u = matmul(spread(this%m%g%weights_y, 1, this%m%g%n1max-this%m%g%n1min+1)*this%uf, this%m%H2)
 #elif(_DIM_==3)        
            n1 = this%m%nf1max - this%m%nf1min + 1
            n2 = this%m%nf2max - this%m%nf2min + 1
@@ -717,18 +765,119 @@ contains
            this%u = reshape( matmul(transpose(this%m%H1), &
                reshape(this%uf, (/ n1, n2*n3 /) )*spread(this%m%g%weights_x, 2, n2*n3) &
                ), (/ n1, n2, n3 /) )
+#endif
+!xxx$OMP END PARALLEL WORKSHARE 
+        end if     
+        this%is_real_space_x = .false.
+   end subroutine to_frequency_space_x
+
+
+#if(_DIM_>=2)
+
+   subroutine to_real_space_y(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+#if(_DIM_==3)        
+        integer :: n1, n2, n3
+#endif
+        if (.not. this%is_real_space_y) then
+!xxx$OMP PARALLEL WORKSHARE 
+#if(_DIM_==2)        
+           this%u = matmul(this%uf, transpose(this%m%H2))
+#elif(_DIM_==3)        
+           n1 = this%m%nf1max - this%m%nf1min + 1
+           n2 = this%m%nf2max - this%m%nf2min + 1
+           n3 = this%m%nf3max - this%m%nf3min + 1
+           this%u = reshape(reshape( matmul(this%m%H2,reshape( &
+                            reshape(this%uf, (/ n2, n1, n3 /), order=(/ 2,1,3 /) ) , (/ n2, n1*n3 /) )), &
+                            (/ n2, n1, n3 /) ), (/n1, n2, n3 /), order=(/ 2, 1, 3 /) )
+#endif
+!xxx$OMP END PARALLEL WORKSHARE 
+        endif   
+        this%is_real_space_y = .true.
+   end subroutine to_real_space_y
+
+
+   subroutine to_frequency_space_y(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+#if(_DIM_==3)        
+        integer :: n1, n2, n3
+#endif
+        if (this%is_real_space_y) then
+!xxx$OMP PARALLEL WORKSHARE 
+#if(_DIM_==2)        
+           this%u = matmul(spread(this%m%g%weights_y, 1, this%m%g%n1max-this%m%g%n1min+1)*this%uf, this%m%H2)
+#elif(_DIM_==3)        
+           n1 = this%m%nf1max - this%m%nf1min + 1
+           n2 = this%m%nf2max - this%m%nf2min + 1
+           n3 = this%m%nf3max - this%m%nf3min + 1
            this%u = reshape(reshape( matmul(transpose(this%m%H2), &
                reshape( reshape(this%uf, (/ n2, n1, n3 /), order=(/ 2,1,3 /) ) , (/ n2, n1*n3 /) ) &
                   * spread(this%m%g%weights_y, 2, n1*n3) &
                ),  (/ n2, n1, n3 /) ), (/ n1, n2, n3 /), order=(/ 2, 1, 3 /) ) 
+#endif
+!xxx$OMP END PARALLEL WORKSHARE 
+        end if     
+        this%is_real_space_y = .false.
+   end subroutine to_frequency_space_y
+   
+#endif
+
+#if(_DIM_==3)
+   subroutine to_real_space_z(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+        integer :: n1, n2, n3
+        if (.not. this%is_real_space_z) then
+           n1 = this%m%nf1max - this%m%nf1min + 1
+           n2 = this%m%nf2max - this%m%nf2min + 1
+           n3 = this%m%nf3max - this%m%nf3min + 1
+           this%u = reshape( matmul(reshape(this%uf, (/ n1*n2, n3 /) ), transpose(this%m%H3)), (/ n1, n2, n3 /) ) 
+        endif   
+        this%is_real_space_z = .true.
+   end subroutine to_real_space_z
+
+
+   subroutine to_frequency_space_z(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+        integer :: n1, n2, n3
+        if (this%is_real_space_z) then
+!xxx$OMP PARALLEL WORKSHARE 
+           n1 = this%m%nf1max - this%m%nf1min + 1
+           n2 = this%m%nf2max - this%m%nf2min + 1
+           n3 = this%m%nf3max - this%m%nf3min + 1
            this%u = reshape( matmul( &
                reshape(this%uf, (/ n1*n2, n3 /) )*spread(this%m%g%weights_z, 1, n1*n2), &
                this%m%H3), (/ n1, n2, n3 /) ) 
-#endif
 !xxx$OMP END PARALLEL WORKSHARE 
-           this%is_real_space = .false.
         end if     
-    end subroutine to_frequency_space
+        this%is_real_space_z = .false.
+   end subroutine to_frequency_space_z
+
+#endif
+   
+
+   subroutine to_real_space(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+        call this%to_real_space_x
+#if(_DIM_>=2)        
+        call this%to_real_space_y
+#endif
+#if(_DIM_>=3)        
+        call this%to_real_space_z
+#endif
+   end subroutine to_real_space
+
+
+   subroutine to_frequency_space(this)
+        class(S(wf_tensorial)), intent(inout) :: this
+        call this%to_frequency_space_x
+#if(_DIM_>=2)        
+        call this%to_frequency_space_y
+#endif
+#if(_DIM_>=3)        
+        call this%to_frequency_space_z
+#endif
+   end subroutine to_frequency_space
+
 
 
     function norm_in_frequency_space(this) result(norm)

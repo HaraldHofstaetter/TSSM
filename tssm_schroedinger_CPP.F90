@@ -4715,7 +4715,8 @@ contains
 #endif       
        ! initial value, better choices !??
        this%u = 1.0_prec
-       this%is_real_space = .true.
+       call this%set_real_space(.true.)
+
 
        call psi_old%copy(this)
 

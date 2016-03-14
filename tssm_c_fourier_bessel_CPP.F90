@@ -326,7 +326,7 @@ contains
         logical :: ans
 
         call c_f_pointer(psi, psip)
-        ans = psip%is_real_space
+        ans = psip%is_real_space()
     end function c_is_real_space_wf
 
     subroutine c_to_real_space_wf(psi) &

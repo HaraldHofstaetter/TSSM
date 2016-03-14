@@ -131,6 +131,8 @@ module _MODULE_
     type, extends(_WAVE_FUNCTION_) ::  _WF_ 
         class(_METHOD_), pointer :: m 
 
+        logical :: is_real_space_0 = .true.
+
 #ifdef _REAL_
         real(kind=prec), pointer  :: up(:)
         complex(kind=prec), pointer  :: ucp(:)
@@ -165,6 +167,8 @@ module _MODULE_
 
     contains
         procedure :: create_plans
+        procedure :: is_real_space 
+        procedure :: set_real_space 
         procedure :: to_real_space
         procedure :: to_frequency_space
         procedure :: propagate_A
@@ -539,29 +543,29 @@ contains
 
 #ifdef _REAL_
         this%plan_forward = fftw_plan_many_dft_r2c(1, dft_dim, howmany, &   ! rank, *n, howmany,
-                                               this%up, &                   ! *in, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *inembed, istride, idist,
-                                               this%ucp, &                  ! *out, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *onembed, ostride, odist,
-                                               fftw_planning_rigor)         ! flags
+                                               this%up, &               ! *in, 
+                                               dft_dim, howmany, 1, &   ! *inembed, istride, idist,
+                                               this%ucp, &              ! *out, 
+                                               dft_dim, howmany, 1, &   ! *onembed, ostride, odist,
+                                               fftw_planning_rigor)     ! flags
         this%plan_backward = fftw_plan_many_dft_c2r(1, dft_dim, howmany, &  ! rank, *n, howmany,
-                                               this%ucp, &                  ! *in, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *inembed, istride, idist,
-                                               this%up, &                   ! *out, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *onembed, ostride, odist,
-                                               fftw_planning_rigor)         ! flags
+                                               this%ucp, &              ! *in, 
+                                               dft_dim, howmany, 1, &   ! *inembed, istride, idist,
+                                               this%up, &               ! *out, 
+                                               dft_dim, howmany, 1, &   ! *onembed, ostride, odist,
+                                               fftw_planning_rigor)     ! flags
 #else
-        this%plan_forward = fftw_plan_many_dft(1, dft_dim, howmany, &       ! rank, *n, howmany,
-                                               this%up, &                   ! *in, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *inembed, istride, idist,
-                                               this%up, &                   ! *out, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *onembed, ostride, odist,
+        this%plan_forward = fftw_plan_many_dft(1, dft_dim, howmany, &   ! rank, *n, howmany,
+                                               this%up, &               ! *in, 
+                                               dft_dim, howmany, 1, &   ! *inembed, istride, idist,
+                                               this%up, &               ! *out, 
+                                               dft_dim, howmany, 1, &   ! *onembed, ostride, odist,
                                                FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
-        this%plan_backward = fftw_plan_many_dft(1, dft_dim, howmany, &      ! rank, *n, howmany,
-                                               this%up, &                   ! *in, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *inembed, istride, idist,
-                                               this%up, &                   ! *out, 
-                                               dft_dim, this%m%g%nr, 1, &   ! *onembed, ostride, odist,
+        this%plan_backward = fftw_plan_many_dft(1, dft_dim, howmany, &  ! rank, *n, howmany,
+                                               this%up, &               ! *in, 
+                                               dft_dim, howmany, 1, &   ! *inembed, istride, idist,
+                                               this%up, &               ! *out, 
+                                               dft_dim, howmany, 1, &   ! *onembed, ostride, odist,
                                                FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
 #endif            
 
@@ -570,13 +574,33 @@ contains
     end subroutine create_plans
 
 
+    function is_real_space(this) 
+        class(_WF_), intent(inout) :: this
+        logical :: is_real_space
+        is_real_space = this%is_real_space_0
+    end function is_real_space
+
+
+    function is_frequency_space(this) 
+        class(_WF_), intent(inout) :: this
+        logical :: is_frequency_space
+        is_frequency_space = .not.this%is_real_space_0
+    end function is_frequency_space 
+
+
+    subroutine set_real_space(this, flag)
+        class(_WF_), intent(inout) :: this
+        logical :: flag 
+        this%is_real_space_0 = flag
+    end subroutine set_real_space
+
 
     subroutine to_real_space(this)
         class(_WF_), intent(inout) :: this
         integer :: m, m1
         real(kind=prec), parameter :: pi2 = 2.0_prec*3.1415926535897932384626433832795028841971693993751_prec
 
-        if (.not. this%is_real_space) then
+        if (.not. this%is_real_space()) then
 !$OMP PARALLEL DO PRIVATE(m, m1)
             do m = this%m%nfthetamin, this%m%nfthetamax
                 m1 = m
@@ -617,7 +641,7 @@ contains
             call fftw_execute_dft(this%plan_backward, this%up, this%up)
 #endif
 #endif
-           this%is_real_space = .true.
+           call this%set_real_space(.true.)
         end if
     end subroutine to_real_space
 
@@ -628,7 +652,7 @@ contains
         real(kind=prec) :: f
         real(kind=prec), parameter :: pi2 = 2.0_prec*3.1415926535897932384626433832795028841971693993751_prec
 
-        if (this%is_real_space) then
+        if (this%is_real_space()) then
 #ifdef _MPI_
 #ifdef _REAL_
         !TODO
@@ -679,7 +703,7 @@ contains
 #endif
             end do    
 !$OMP END PARALLEL DO            
-           this%is_real_space = .false.
+           call this%set_real_space(.false.)
         end if    
     end subroutine to_frequency_space
    
@@ -1081,7 +1105,7 @@ contains
         call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
                      trim(this%m%dset_name_real), trim(this%m%dset_name_imag))
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
 #endif        
 
     end subroutine load
@@ -1095,7 +1119,7 @@ contains
 #else
         call this%m%g%set_complex_gridfun(this%u, f)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine set
 
 
@@ -1108,7 +1132,7 @@ contains
 #else
         call this%m%g%set_t_complex_gridfun(this%u, f, t)
 #endif        
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine set_t
 
@@ -1119,7 +1143,7 @@ contains
         class(_WF_), intent(inout) :: this
         real(kind=prec), external :: f
         call this%m%g%rset_complex_gridfun(this%u, f)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
     end subroutine rset
 
     subroutine rset_t(this, f, t)
@@ -1127,7 +1151,7 @@ contains
         real(kind=prec), external :: f
         real(kind=prec), intent(in) :: t
         call this%m%g%rset_t_complex_gridfun(this%u, f, t)
-        this%is_real_space = .true.
+        call this%set_real_space(.true.)
         this%time = t 
     end subroutine rset_t
 
@@ -1190,10 +1214,10 @@ contains
             stop "E: wave functions not belonging to the same method"
         end if    
 
-        this%is_real_space = source%is_real_space
+        call this%set_real_space(source%is_real_space())
         this%time = source%time
         
-        if (this%is_real_space) then
+        if (this%is_real_space()) then
 #ifndef _OPENMP
             this%u = source%u
 #else
