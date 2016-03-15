@@ -3,42 +3,16 @@
 #include <stdint.h>
 #include <quadmath.h> 
 
-#if 1
-typedef union
-{
-    __float128 value;
-
-    struct{
-        uint64_t u0;
-        uint64_t u1;
-    } words64;
-
+typedef struct {
+    uint32_t _d[4];
 } myfloat128;
 
-typedef union
-{
-    __complex128 value;
-
-    struct{
-        uint64_t u0;
-        uint64_t u1;
-        uint64_t u2;
-        uint64_t u3;
-    } words64;
-
+typedef struct {
+    uint32_t _d[8];
 } mycomplex128;
 
+#define T(mytype, x) (*((mytype*)&(x)))
 
-#define F(x) (x.value)
-
-#else
-
-typedef __float128  myfloat128;
-typedef __complex128  mycomplex128;
-
-#define F(x) (x)
-
-#endif
 
 #ifdef _QUADPRECISION_
 #ifdef _REAL_
@@ -90,12 +64,12 @@ void* W(new)(int nx, myfloat128 xmin, myfloat128 xmax,
 #endif
                         int boundary_conditions)
 {
-    return   S(new)(nx, F(xmin), F(xmax), 
+    return   S(new)(nx, T(__float128, xmin), T(__float128, xmax), 
 #if(_DIM_>=2)
-                              ny, F(ymin), F(ymax), 
+                              ny, T(__float128, ymin), T(__float128, ymax), 
 #endif
 #if(_DIM_>=3)
-                              nz, F(zmin), F(zmax), 
+                              nz, T(__float128, zmin), T(__float128, zmax), 
 #endif
                               boundary_conditions);
 }
@@ -145,43 +119,43 @@ void W(to_frequency_space_wf)(void *psi)
 void S(set_time_wf)(void *psi, __float128 t);
 void W(set_time_wf)(void *psi, myfloat128 t)
 {
-    S(set_time_wf)(psi, F(t));
+    S(set_time_wf)(psi, T(__float128, t));
 }  
 
 __float128 S(get_time_wf)(void *psi);
 myfloat128 W(get_time_wf)(void *psi)
 {
-    myfloat128 res;
-    F(res) = S(get_time_wf)(psi);
-    return res;
+    __float128 res;
+    res = S(get_time_wf)(psi);
+    return T(myfloat128, res);
 }  
 
 
 void S(propagate_time_wf)(void *psi, __float128 dt);
 void W(propagate_time_wf)(void *psi, myfloat128 dt)
 {
-    S(propagate_time_wf)(psi, F(dt));
+    S(propagate_time_wf)(psi, T(__float128, dt));
 }    
 
 
 void S(propagate_A_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
 void W(propagate_A_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
-    S(propagate_A_wf)(psi, F(dt));
+    S(propagate_A_wf)(psi, T(_COMPLEX_OR_REAL_, dt));
 }    
 
 
 void S(propagate_B_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
 void W(propagate_B_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
-    S(propagate_B_wf)(psi, F(dt));
+    S(propagate_B_wf)(psi, T(_COMPLEX_OR_REAL_, dt));
 }    
 
 
 void S(propagate_C_wf)(void *psi, _COMPLEX_OR_REAL_ dt);
 void W(propagate_C_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ dt)
 {
-    S(propagate_C_wf)(psi, F(dt));
+    S(propagate_C_wf)(psi, T(_COMPLEX_OR_REAL_, dt));
 }
 
 
@@ -190,7 +164,7 @@ void S(add_apply_A_wf)(void *this, void *other,
 void W(add_apply_A_wf)(void *this, void *other,
                   _WRAPPED_COMPLEX_OR_REAL_ coefficient)
 {
-    S(add_apply_A_wf)(this, other, F(coefficient));
+    S(add_apply_A_wf)(this, other, T(_COMPLEX_OR_REAL_, coefficient));
 }    
 
 
@@ -218,50 +192,50 @@ void W(copy_wf)(void *psi, void *source)
 __float128 S(norm_wf)(void *psi);
 myfloat128 W(norm_wf)(void *psi)
 {
-    myfloat128 res;
-    F(res) = S(norm_wf)(psi);
-    return res;
+    __float128 res;
+    res = S(norm_wf)(psi);
+    return T(myfloat128, res);
 }    
 
 
 __float128 S(norm_in_frequency_space_wf)(void *psi);
 myfloat128 W(norm_in_frequency_space_wf)(void *psi)
 {
-    myfloat128 res;
-    F(res) = S(norm_in_frequency_space_wf)(psi);
-    return res;
+    __float128 res;
+    res = S(norm_in_frequency_space_wf)(psi);
+    return T(myfloat128, res);
 }
 
 
 __float128 S(normalize_wf)(void *psi);
 myfloat128 W(normalize_wf)(void *psi)
 {
-    myfloat128 res;
-    F(res) = S(normalize_wf)(psi);
-    return res;
+    __float128 res;
+    res = S(normalize_wf)(psi);
+    return T(myfloat128, res);
 }  
 
 
 __float128 S(distance_wf)(void* psi1, void* psi2);
 myfloat128 W(distance_wf)(void* psi1, void* psi2)
 {
-    myfloat128 res;
-    F(res) = S(distance_wf)(psi1, psi2);
-    return res;
+    __float128 res;
+    res = S(distance_wf)(psi1, psi2);
+    return T(myfloat128, res);
 }    
 
 
 void S(scale_wf)(void *psi, _COMPLEX_OR_REAL_ factor);
 void W(scale_wf)(void *psi, _WRAPPED_COMPLEX_OR_REAL_ factor)
 {
-     S(scale_wf)(psi, F(factor));
+     S(scale_wf)(psi, T(_COMPLEX_OR_REAL_, factor));
 }     
 
 
 void S(axpy_wf)(void *this, void *other, _COMPLEX_OR_REAL_ factor);
 void W(axpy_wf)(void *this, void *other, _WRAPPED_COMPLEX_OR_REAL_ factor)
 {
-    S(axpy_wf)(this, other, F(factor));
+    S(axpy_wf)(this, other, T(_COMPLEX_OR_REAL_, factor));
 }
 
 
@@ -296,18 +270,18 @@ int W(get_nx)(void *m)
 __float128 S(get_xmin)(void *m);
 myfloat128 W(get_xmin)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_xmin)(m);
-    return res;
+    __float128 res;
+    res = S(get_xmin)(m);
+    return T(myfloat128, res);
 }
 
 
 __float128 S(get_xmax)(void *m);
 myfloat128 W(get_xmax)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_xmax)(m);
-    return res;
+    __float128 res;
+    res = S(get_xmax)(m);
+    return T(myfloat128, res);
 }
 
 
@@ -322,18 +296,18 @@ int W(get_ny)(void *m)
 __float128 S(get_ymin)(void *m);
 myfloat128 W(get_ymin)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_ymin)(m);
-    return res;
+    __float128 res;
+    res = S(get_ymin)(m);
+    return T(myfloat128, res);
 }
 
 
 __float128 S(get_ymax)(void *m);
 myfloat128 W(get_ymax)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_ymax)(m);
-    return res;
+    __float128 res;
+    res = S(get_ymax)(m);
+    return T(myfloat128, res);
 }
 #endif
 
@@ -349,18 +323,18 @@ int W(get_nz)(void *m)
 __float128 S(get_zmin)(void *m);
 myfloat128 W(get_zmin)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_zmin)(m);
-    return res;
+    __float128 res;
+    res = S(get_zmin)(m);
+    return T(myfloat128, res);
 }
 
 
 __float128 S(get_zmax)(void *m);
 myfloat128 W(get_zmax)(void *m)
 {
-    myfloat128 res;
-    F(res) = S(get_zmax)(m);
-    return res;
+    __float128 res;
+    res = S(get_zmax)(m);
+    return T(myfloat128, res);
 }
 #endif
 
@@ -376,10 +350,9 @@ void W(rset_wf)(void *psi, myfloat128 (*f)(myfloat128))
     */   
     __float128 ff(__float128 x)
     {
-        myfloat128 res, xx;
-        F(xx) = x;
-        res = f(xx);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x));
+        return T(__float128, res);
     }
     S(rset_wf)(psi, ff);
 }    
@@ -389,11 +362,9 @@ void W(rset_t_wf)(void *psi, myfloat128 (*f)(myfloat128, myfloat128))
 {
     __float128 ff(__float128 x, __float128 t)
     {
-        myfloat128 res, xx, tt;
-        F(xx) = x;
-        F(tt) = t;
-        res = f(xx, tt);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x), T(myfloat128, t));
+        return T(__float128, res);
     }
     S(rset_t_wf)(psi, ff);
 }
@@ -404,11 +375,9 @@ void W(rset_wf)(void *psi, myfloat128 (*f)(myfloat128, myfloat128))
 {
     __float128 ff(__float128 x, __float128 y)
     {
-        myfloat128 res, xx, yy;
-        F(xx) = x;
-        F(yy) = y;
-        res = f(xx, yy);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x), T(myfloat128, y));
+        return T(__float128, res);
     }
     S(rset_wf)(psi, ff);
 }    
@@ -420,12 +389,9 @@ void W(rset_t_wf)(void *psi, myfloat128 (*f)(myfloat128,
 {
     __float128 ff(__float128 x, __float128 y, __float128 t)
     {
-        myfloat128 res, xx, yy, tt;
-        F(xx) = x;
-        F(yy) = y;
-        F(tt) = t;
-        res = f(xx, yy, tt);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, t));
+        return T(__float128, res);
     }
     S(rset_t_wf)(psi, ff);
 }
@@ -438,12 +404,9 @@ void W(rset_wf)(void *psi, myfloat128 (*f)(myfloat128,
 {
     __float128 ff(__float128 x, __float128 y, __float128 z)
     {
-        myfloat128 res, xx, yy, zz;
-        F(xx) = x;
-        F(yy) = y;
-        F(zz) = z;
-        res = f(xx, yy, zz);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, z));
+        return T(__float128, res);
     }
     S(rset_wf)(psi, ff);
 }    
@@ -455,13 +418,9 @@ void W(rset_t_wf)(void *psi, myfloat128 (*f)(myfloat128,
 {
     __float128 ff(__float128 x, __float128 y, __float128 z, __float128 t)
     {
-        myfloat128 res, xx, yy, zz, tt;
-        F(xx) = x;
-        F(yy) = y;
-        F(zz) = z;
-        F(tt) = t;
-        res = f(xx, yy, zz, tt);
-        return F(res);
+        myfloat128 res;
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, z), T(myfloat128, t));
+        return T(__float128, res);
     }
     S(rset_t_wf)(psi, ff);
 }
@@ -479,10 +438,8 @@ void  W(set_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx;
-        F(xx) = x;
-        res = f(xx);
-        return F(res);
+        res = f(T(myfloat128, x));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_wf)(psi, ff);
 }    
@@ -495,11 +452,8 @@ void  W(set_t_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x, __float128 t)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx, tt;
-        F(xx) = x;
-        F(tt) = t;
-        res = f(xx, tt);
-        return F(res);
+        res = f(T(myfloat128, x), T(myfloat128, t));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_t_wf)(psi, ff);
 }
@@ -513,11 +467,8 @@ void  W(set_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x, __float128 y)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx, yy;
-        F(xx) = x;
-        F(yy) = y;
-        res = f(xx, yy);
-        return F(res);
+        res = f(T(myfloat128, x), T(myfloat128, y));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_wf)(psi, ff);
 }    
@@ -530,12 +481,8 @@ void  W(set_t_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x, __float128 y, __float128 t)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx, yy, tt;
-        F(xx) = x;
-        F(yy) = y;
-        F(tt) = t;
-        res = f(xx, yy, tt);
-        return F(res);
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, t));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_t_wf)(psi, ff);
 }
@@ -549,12 +496,8 @@ void  W(set_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x, __float128 y, __float128 z)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx, yy, zz;
-        F(xx) = x;
-        F(yy) = y;
-        F(zz) = z;
-        res = f(xx, yy, zz);
-        return F(res);
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, z));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_wf)(psi, ff);
 }    
@@ -567,13 +510,8 @@ void  W(set_t_wf)(void *psi,
     _COMPLEX_OR_REAL_ ff(__float128 x, __float128 y, __float128 z, __float128 t)
     {
         _WRAPPED_COMPLEX_OR_REAL_ res;
-        myfloat128 xx, yy, zz, tt;
-        F(xx) = x;
-        F(yy) = y;
-        F(zz) = z;
-        F(tt) = t;
-        res = f(xx, yy, zz, tt);
-        return F(res);
+        res = f(T(myfloat128, x), T(myfloat128, y), T(myfloat128, z), T(myfloat128, t));
+        return T(_COMPLEX_OR_REAL_, res);
     }
     S(set_t_wf)(psi, ff);
 }

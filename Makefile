@@ -19,7 +19,6 @@ ARCHFILES = Makefile Makefile.common Makefile.system \
             tssm_hermite.F90 tssm_hermite_common.F90 tssm_hermite_CPP.F90 \
             tssm_polar.F90 tssm_polar_CPP.F90 \
             tssm_generalized_laguerre.F90 tssm_generalized_laguerre_common.F90 tssm_generalized_laguerre_CPP.F90 \
-            tssm_c_generalized_laguerre_CPP.F90 \
             tssm_schroedinger.F90  tssm_schroedinger_CPP.F90 \
             tssm_c_schroedinger_CPP.F90 \
             tssm_fourier_bessel_common.F90 \
