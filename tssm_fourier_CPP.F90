@@ -35,8 +35,10 @@
 #define fftw_execute_r2r fftwq_execute_r2r
 #define fftw_destroy_plan fftwq_destroy_plan
 #define fftw_free fftwq_free
+#define fftw_plan_many_dft fftwq_plan_many_dft
 #define fftw_plan_guru_dft fftwq_plan_guru_dft
 #define fftw_plan_guru_r2r fftwq_plan_guru_r2r
+#define fftw_iodim fftwq_iodim
 #endif 
 
 #ifdef _QUADPRECISION_
