@@ -18,6 +18,12 @@
 #define S0(x,y)  x ## _gen_laguerre_hermite_ ## y ## d 
 #endif
 #endif
+#elif defined(_ROTATING_)
+#ifdef _REAL_
+#define S0(x,y)  x ## _rotating_real_ ## y ## d 
+#else
+#define S0(x,y)  x ## _rotating_ ## y ## d 
+#endif
 #else
 #ifdef _REAL_
 #define S0(x,y)  x ## _real_ ## y ## d 
@@ -213,13 +219,20 @@ contains
 #if(_DIM_>=3)
                    nz, zmin, zmax, &
 #endif
+#ifdef _ROTATING_
+                   Omega, &
+#endif                   
                    hbar, mass, &
                    potential, with_potential, &
 #ifndef _REAL_        
                    potential_t, with_potential_t, &
                    potential_t_derivative, with_potential_t_derivative, &
 #endif                   
-                   cubic_coupling, boundary_conditions) & 
+                   cubic_coupling & 
+#ifndef _ROTATING_
+                   ,boundary_conditions &
+#endif                   
+                   ) & 
         result(this) bind(c, name=SC(new_schroedinger))
         use iso_c_binding
         type(c_ptr) :: this 
@@ -235,6 +248,9 @@ contains
         real(kind=prec),  value :: zmin 
         real(kind=prec),  value :: zmax
         integer, value :: nz
+#endif
+#ifdef _ROTATING_
+        real(kind=prec),  value :: Omega
 #endif
         real(kind=prec), value  :: hbar 
         real(kind=prec), value  :: mass 
@@ -252,18 +268,27 @@ contains
         logical, value  :: with_potential_t_derivative
 #endif        
         real(kind=prec), value  :: cubic_coupling 
+#ifndef _ROTATING_
         integer, value :: boundary_conditions
+#endif        
 
         type(S(schroedinger)), pointer :: m
         allocate( m )
         m = S(schroedinger)(nx, xmin, xmax, &
 #if(_DIM_>=2)
-                                ny, ymin, ymax, &
+                            ny, ymin, ymax, &
 #endif
 #if(_DIM_>=3)
-                                nz, zmin, zmax, &
+                            nz, zmin, zmax, &
 #endif
-            hbar, mass, cubic_coupling=cubic_coupling, boundary_conditions=boundary_conditions) 
+#ifdef _ROTATING_
+                            Omega, &
+#endif                   
+            hbar, mass, cubic_coupling=cubic_coupling &
+#ifndef _ROTATING_
+            ,boundary_conditions=boundary_conditions &
+#endif                   
+            ) 
         this =  c_loc(m)
         if (with_potential) then
             call c_set_potential(this, potential)          
@@ -351,6 +376,17 @@ contains
         ans = psip%is_real_space()
     end function c_is_real_space_wf
 
+    function c_is_frequency_space_wf(psi) &
+        result(ans) bind(c, name=SC(is_frequency_space_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%is_frequency_space()
+    end function c_is_frequency_space_wf
+
     subroutine c_to_real_space_wf(psi) &
         bind(c, name=SC(to_real_space_wf_schroedinger)) 
         use iso_c_binding
@@ -370,6 +406,139 @@ contains
         call c_f_pointer(psi, psip)
         call psip%to_frequency_space
     end subroutine c_to_frequency_space_wf
+
+#ifdef _ROTATING_
+    function c_is_real_space_x_wf(psi) &
+        result(ans) bind(c, name=SC(is_real_space_x_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%is_real_space_x
+    end function c_is_real_space_x_wf
+
+    function c_is_frequency_space_x_wf(psi) &
+        result(ans) bind(c, name=SC(is_frequency_space_x_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = .not.psip%is_real_space_x
+    end function c_is_frequency_space_x_wf
+
+    subroutine c_to_real_space_x_wf(psi) &
+        bind(c, name=SC(to_real_space_x_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_real_space_x
+    end subroutine c_to_real_space_x_wf
+  
+    subroutine c_to_frequency_space_x_wf(psi) & 
+        bind(c, name=SC(to_frequency_space_x_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_frequency_space_x
+    end subroutine c_to_frequency_space_x_wf
+
+#if(_DIM_>=2)
+    function c_is_real_space_y_wf(psi) &
+        result(ans) bind(c, name=SC(is_real_space_y_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%is_real_space_y
+    end function c_is_real_space_y_wf
+
+    function c_is_frequency_space_y_wf(psi) &
+        result(ans) bind(c, name=SC(is_frequency_space_y_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = .not.psip%is_real_space_y
+    end function c_is_frequency_space_y_wf
+
+    subroutine c_to_real_space_y_wf(psi) &
+        bind(c, name=SC(to_real_space_y_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_real_space_y
+    end subroutine c_to_real_space_y_wf
+  
+    subroutine c_to_frequency_space_y_wf(psi) & 
+        bind(c, name=SC(to_frequency_space_y_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_frequency_space_y
+    end subroutine c_to_frequency_space_y_wf
+
+#endif
+#if(_DIM_>=3)
+    function c_is_real_space_z_wf(psi) &
+        result(ans) bind(c, name=SC(is_real_space_z_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = psip%is_real_space_z
+    end function c_is_real_space_z_wf
+
+    function c_is_frequency_space_z_wf(psi) &
+        result(ans) bind(c, name=SC(is_frequency_space_z_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+        logical :: ans
+
+        call c_f_pointer(psi, psip)
+        ans = .not.psip%is_real_space_z
+    end function c_is_frequency_space_z_wf
+
+    subroutine c_to_real_space_z_wf(psi) &
+        bind(c, name=SC(to_real_space_z_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_real_space_z
+    end subroutine c_to_real_space_z_wf
+  
+    subroutine c_to_frequency_space_z_wf(psi) & 
+        bind(c, name=SC(to_frequency_space_z_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi 
+        type(S(wf_schroedinger)), pointer :: psip
+
+        call c_f_pointer(psi, psip)
+        call psip%to_frequency_space_z
+    end subroutine c_to_frequency_space_z_wf
+
+#endif
+#endif
 
     subroutine c_set_time_wf(psi, t) &
         bind(c, name=SC(set_time_wf_schroedinger)) 
@@ -454,6 +623,22 @@ contains
         call c_f_pointer(wf, wfp)
         call psip%propagate_B_derivative(wfp, dt)
     end subroutine c_propagate_B_derivative_wf
+
+#ifdef _ROTATING_
+    subroutine c_propagate_C_derivative_wf(psi, wf, dt) & 
+        bind(c, name=SC(propagate_C_derivative_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        type(c_ptr), value :: wf
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        type(S(wf_schroedinger)), pointer :: psip
+        type(S(wf_schroedinger)), pointer :: wfp 
+
+        call c_f_pointer(psi, psip)
+        call c_f_pointer(wf, wfp)
+        call psip%propagate_C_derivative(wfp, dt)
+    end subroutine c_propagate_C_derivative_wf
+#endif
 #endif    
     
     subroutine c_propagate_C_wf(psi, dt) & 
@@ -481,6 +666,21 @@ contains
         call thisp%add_apply_A(otherp, coefficient)
     end subroutine c_add_apply_A_wf
 
+#ifdef _ROTATING_
+    subroutine c_add_apply_C_wf(this, other, coefficient) &
+        bind(c, name=SC(add_apply_C_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: this
+        type(c_ptr), value :: other 
+        _COMPLEX_OR_REAL_(kind=prec), value :: coefficient
+        type(S(wf_schroedinger)), pointer :: thisp
+        type(S(wf_schroedinger)), pointer :: otherp
+
+        call c_f_pointer(this, thisp)
+        call c_f_pointer(other, otherp)
+        call thisp%add_apply_C(otherp, coefficient)
+    end subroutine c_add_apply_C_wf
+#endif
 
     subroutine c_save_wf(psi, filename, filename_length) &
         bind(c, name=SC(save_wf_schroedinger)) 
@@ -844,6 +1044,8 @@ contains
         call c_f_pointer(m, mp)
         omega_r = mp%omega_r
     end function c_get_omega_r   
+
+#elif defined(_LAGUERRE_)||defined(_ROTATING_)
 
    function c_get_Omega(m) &
         result(Omega) bind(c, name=SC(get_Omega_schroedinger))

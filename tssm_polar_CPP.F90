@@ -168,6 +168,7 @@ module _MODULE_
     contains
         procedure :: create_plans
         procedure :: is_real_space 
+        procedure :: is_frequency_space 
         procedure :: set_real_space 
         procedure :: to_real_space
         procedure :: to_frequency_space

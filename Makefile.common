@@ -29,6 +29,7 @@ OBJS = tssm_common.o tssm_base_complex.o tssm_base_real.o tssm_base.o \
        tssm_fourier_bessel_common.o tssm_fourier_bessel_2d.o tssm_fourier_bessel_real_2d.o tssm_fourier_bessel.o    \
        tssm_schroedinger_1d.o tssm_schroedinger_2d.o tssm_schroedinger_3d.o \
        tssm_schroedinger_real_1d.o tssm_schroedinger_real_2d.o tssm_schroedinger_real_3d.o \
+       tssm_schroedinger_rotating_2d.o tssm_schroedinger_rotating_3d.o \
        tssm_schroedinger_hermite_1d.o tssm_schroedinger_hermite_2d.o tssm_schroedinger_hermite_3d.o \
        tssm_schroedinger_hermite_real_1d.o tssm_schroedinger_hermite_real_2d.o tssm_schroedinger_hermite_real_3d.o \
        tssm_schroedinger_generalized_laguerre_2d.o tssm_schroedinger_generalized_laguerre_hermite_3d.o \
@@ -36,6 +37,7 @@ OBJS = tssm_common.o tssm_base_complex.o tssm_base_real.o tssm_base.o \
        tssm_schroedinger.o \
        tssm_c_schroedinger_1d.o tssm_c_schroedinger_2d.o tssm_c_schroedinger_3d.o \
        tssm_c_schroedinger_real_1d.o tssm_c_schroedinger_real_2d.o tssm_c_schroedinger_real_3d.o \
+       tssm_c_schroedinger_rotating_2d.o tssm_c_schroedinger_rotating_3d.o \
        tssm_c_schroedinger_hermite_1d.o tssm_c_schroedinger_hermite_2d.o tssm_c_schroedinger_hermite_3d.o \
        tssm_c_schroedinger_hermite_real_1d.o tssm_c_schroedinger_hermite_real_2d.o tssm_c_schroedinger_hermite_real_3d.o \
        tssm_c_schroedinger_generalized_laguerre_2d.o tssm_c_schroedinger_generalized_laguerre_hermite_3d.o \
@@ -373,6 +375,20 @@ tssm_schroedinger_real_3d.o: tssm_schroedinger_real_3d.f90
 
 ##
 
+tssm_schroedinger_rotating_2d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_ROTATING_ -D_DIM_=2 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_rotating_2d.f90
+
+tssm_schroedinger_rotating_2d.o: tssm_schroedinger_rotating_2d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_rotating_2d.f90 -I$(HDF5_INCLUDE) -o tssm_schroedinger_rotating_2d.o
+
+tssm_schroedinger_rotating_3d.f90: ../tssm_schroedinger_CPP.F90
+	$(CPP) -D_ROTATING_ -D_DIM_=3 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_rotating_3d.f90
+
+tssm_schroedinger_rotating_3d.o: tssm_schroedinger_rotating_3d.f90
+	$(FC) $(FOPTS) -c tssm_schroedinger_rotating_3d.f90 -I$(HDF5_INCLUDE)  -o tssm_schroedinger_rotating_3d.o
+
+##
+
 tssm_schroedinger_hermite_1d.f90: ../tssm_schroedinger_CPP.F90
 	$(CPP) -D_HERMITE_ -D_DIM_=1 ../tssm_schroedinger_CPP.F90 > tssm_schroedinger_hermite_1d.f90
 
@@ -622,7 +638,19 @@ tssm_c_schroedinger_f128wrapper_real_2d.o: ../tssm_c_schroedinger_f128wrapper_CP
 
 tssm_c_schroedinger_f128wrapper_real_3d.o: ../tssm_c_schroedinger_f128wrapper_CPP.c
 	$(CC) $(COPTS) -D_REAL_ -D_DIM_=3 -c ../tssm_c_schroedinger_f128wrapper_CPP.c -o tssm_c_schroedinger_f128wrapper_real_3d.o
+##
 
+tssm_c_schroedinger_rotating_2d.f90: ../tssm_c_schroedinger_CPP.F90
+	$(CPP) -D_ROTATING_ -D_DIM_=2 ../tssm_c_schroedinger_CPP.F90 > tssm_c_schroedinger_rotating_2d.f90
+
+tssm_c_schroedinger_rotating_2d.o: tssm_c_schroedinger_rotating_2d.f90
+	$(FC) $(FOPTS) -c tssm_c_schroedinger_rotating_2d.f90 -o tssm_c_schroedinger_rotating_2d.o
+
+tssm_c_schroedinger_rotating_3d.f90: ../tssm_c_schroedinger_CPP.F90
+	$(CPP) -D_ROTATING_ -D_DIM_=3 ../tssm_c_schroedinger_CPP.F90 > tssm_c_schroedinger_rotating_3d.f90
+
+tssm_c_schroedinger_rotating_3d.o: tssm_c_schroedinger_rotating_3d.f90
+	$(FC) $(FOPTS) -c tssm_c_schroedinger_rotating_3d.f90  -o tssm_c_schroedinger_rotating_3d.o
 ##
 
 tssm_c_schroedinger_hermite_1d.f90: ../tssm_c_schroedinger_CPP.F90

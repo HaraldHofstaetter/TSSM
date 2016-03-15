@@ -124,6 +124,7 @@ module S(tssm_tensorial)
 
     contains
         procedure :: is_real_space 
+        procedure :: is_frequency_space 
         procedure :: set_real_space 
         procedure :: to_real_space
         procedure :: to_frequency_space

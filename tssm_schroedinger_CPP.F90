@@ -32,6 +32,12 @@
 #else
 #define S0(x,y)  x ## _hermite_ ## y ## D 
 #endif
+#elif defined(_ROTATING_)
+#ifdef _REAL_
+#define S0(x,y)  x ## _rotating_real_ ## y ## D 
+#else
+#define S0(x,y)  x ## _rotating_ ## y ## D 
+#endif
 #else
 #define _FOURIER_
 #ifdef _REAL_
@@ -104,6 +110,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     type, extends(SB(hermite)) :: S(schroedinger)
 #elif defined(_LAGUERRE_)
     type, extends(SB(generalized_laguerre)) :: S(schroedinger)
+#elif defined(_ROTATING_)
+    type, extends(SB(fourier_rotating)) :: S(schroedinger)
 #else
     type, extends(SB(fourier)) :: S(schroedinger)
 #endif
@@ -123,6 +131,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #if(_DIM_>=3)
         real(kind=prec) :: omega_z = 1.0_prec 
 #endif
+#elif defined(_ROTATING_)
+!        real(kind=prec) :: Omega = 0.0_prec 
 #endif
         real(kind=prec) :: cubic_coupling = 0.0_prec
 #if(_DIM_==1)
@@ -231,6 +241,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     type, extends(SB(wf_hermite)) :: S(wf_schroedinger)
 #elif defined(_LAGUERRE_)
     type, extends(SB(wf_generalized_laguerre)) :: S(wf_schroedinger)
+#elif defined(_ROTATING_)
+    type, extends(SB(wf_fourier_rotating)) :: S(wf_schroedinger)
 #else
     type, extends(SB(wf_fourier)) :: S(wf_schroedinger)
 #endif
@@ -243,6 +255,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #endif
         procedure :: imaginary_time_propagate_A
         procedure :: imaginary_time_propagate_B
+        procedure :: imaginary_time_propagate_C
         procedure :: add_apply_B
         procedure :: kinetic_energy
         procedure :: potential_energy
@@ -286,7 +299,9 @@ contains
 #elif(_DIM_==3)
                nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, &
 #endif
-
+#endif
+#if defined(_ROTATING_)
+               Omega, &
 #endif
                hbar, mass, potential, &
 #ifndef _REAL_        
@@ -333,6 +348,9 @@ contains
         integer, intent(in) :: nz
 #endif
 #endif
+#if defined(_ROTATING_)
+        real(kind=prec), intent(in) :: Omega
+#endif
         real(kind=prec), intent(in), optional :: hbar 
         real(kind=prec), intent(in), optional :: mass 
         real(kind=prec), external, optional   :: potential 
@@ -376,6 +394,14 @@ contains
         this%SB(generalized_laguerre) = SB(generalized_laguerre)&
                   (ntheta, nfr, f*omega_r, Omega, nz, f*omega_z)
 #endif
+#elif defined(_ROTATING_)
+        this%Omega = Omega
+        !TODO: scaling of Omega w.r.t. hbar, mass!!!
+#if(_DIM_==2)
+        this%SB(fourier_rotating) = SB(fourier_rotating)(nx, xmin, xmax, ny, ymin, ymax, Omega)
+#elif(_DIM_==3)
+        this%SB(fourier_rotating) = SB(fourier_rotating)(nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax, Omega)
+#endif
 #else 
 #if(_DIM_==1)
         this%SB(fourier) = SB(fourier)(nx, xmin, xmax, boundary_conditions)
@@ -417,6 +443,8 @@ contains
         call this%SB(hermite)%finalize()
 #elif defined(_LAGUERRE_)
         call this%SB(generalized_laguerre)%finalize()
+#elif defined(_ROTATING_)
+        call this%SB(fourier_rotating)%finalize()
 #else
         call this%SB(fourier)%finalize()
 #endif
@@ -449,6 +477,14 @@ contains
 #else
         this%SB(wf_generalized_laguerre) = SB(wf_generalized_laguerre)(m, &
                                               coefficient=cmplx(0_prec, m%hbar/m%mass, kind=prec))
+#endif
+#elif defined(_ROTATING_)
+! TODO: nondefault values for hbar, omega
+#ifdef _REAL_
+        this%SB(wf_fourier_rotating) = SB(wf_fourier_rotating)(m, coefficient=m%hbar/(2.0_prec*m%mass))
+#else
+        this%SB(wf_fourier_rotating) = SB(wf_fourier_rotating)(m, &
+                                          coefficient=cmplx(0.0_prec, m%hbar/(2.0_prec*m%mass), kind=prec))
 #endif
 #else
 #ifdef _REAL_
@@ -715,7 +751,6 @@ contains
 
 
 
-
     subroutine imaginary_time_propagate_A(this, dt)
         class(S(wf_schroedinger)), intent(inout) :: this
         _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
@@ -725,6 +760,17 @@ contains
         call this%propagate_A(dt*cmplx(0.0_prec,-1.0_prec, kind=prec)) 
 #endif
     end subroutine imaginary_time_propagate_A
+
+
+    subroutine imaginary_time_propagate_C(this, dt)
+        class(S(wf_schroedinger)), intent(inout) :: this
+        _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+#ifdef _REAL_
+        call this%propagate_C(dt) 
+#else
+        call this%propagate_C(dt*cmplx(0.0_prec,-1.0_prec, kind=prec)) 
+#endif
+    end subroutine imaginary_time_propagate_C
 
 
     subroutine selfconsistent_nonlinear_step(this, dt, dt1, eps, max_iters) 
@@ -1365,12 +1411,13 @@ contains
         use, intrinsic :: iso_c_binding, only: c_loc
         class(S(schroedinger)), intent(inout) :: this
         if (.not.associated(this%tmp)) return
-#if defined(_FOURIER_)
-        call fftw_destroy_plan(this%tmp%plan_forward)
-        call fftw_destroy_plan(this%tmp%plan_backward)
-#endif
-        !call fftw_free(c_loc(this%tmp%up))
-        call fftw_free(c_loc(this%tmp%up(1)))
+        call this%tmp%finalize
+!#if defined(_FOURIER_)
+!        call fftw_destroy_plan(this%tmp%plan_forward)
+!        call fftw_destroy_plan(this%tmp%plan_backward)
+!#endif
+!        !call fftw_free(c_loc(this%tmp%up))
+!        call fftw_free(c_loc(this%tmp%up(1)))
         deallocate( this%tmp )
         this%tmp => null()
     end subroutine finalize_tmp
@@ -1549,25 +1596,32 @@ contains
         complex(kind=prec), pointer :: ufc(:,:,:)
 #endif
         real(kind=prec), pointer :: ev(:)
+#if defined(_ROTATING_)
+        real(kind=prec), pointer :: evd(:)
+        real(kind=prec), pointer :: nodes(:)
+#endif
         integer :: j
 #endif        
 
         select type (m=>this%m); class is (S(schroedinger))
 
+#ifndef _ROTATING_
         call this%to_frequency_space
+#endif
+
 #ifdef _REAL_
 #if defined(_HERMITE_)
 #if(_DIM_==1)
 #ifndef _OPENMP
-        h = sum(this%m%eigenvalues1 &
+        h = sum(m%eigenvalues1 &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(lbound(this%uf,1)+this%m%jf(j-1):lbound(this%uf,1)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+            uf => this%uf(lbound(this%uf,1)+m%jf(j-1):lbound(this%uf,1)+m%jf(j)-1)
+            ev => m%eigenvalues1(lbound(m%eigenvalues1,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues1,1)+m%jf(j)-1)
             h = h +  sum(ev &
                      * uf**2 )
         end do
@@ -1575,40 +1629,40 @@ contains
 #endif
 #elif(_DIM_==2)
 #ifndef _OPENMP
-        h = sum( (spread(this%m%eigenvalues1,2, this%m%nf2max-this%m%nf2min+1) &
-                + spread(this%m%eigenvalues2,1, this%m%nf1max-this%m%nf1min+1)) &
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                + spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
-            h = h + sum( (spread(this%m%eigenvalues1,2, this%m%jf(j)-this%m%jf(j-1)) &
-                       + spread(ev,1, this%m%nf1max-this%m%nf1min+1)) &
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+                       + spread(ev,1, m%nf1max-m%nf1min+1)) &
                        * uf**2 )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #elif(_DIM_==3)
 #ifndef _OPENMP
-        h = sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues3, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues3, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
-            h = h + sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(ev, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
                   * uf**2 )
         end do
 !$OMP END PARALLEL DO 
@@ -1619,78 +1673,81 @@ contains
 
 #if(_DIM_==2)
 #ifndef _OPENMP
-        h = sum( (spread(this%m%eigenvalues_r,2, this%m%nfthetamax-this%m%nfthetamin+1) &
-                + spread(this%m%eigenvalues_theta,1, this%m%nfrmax-this%m%nfrmin+1)) &
+        h = sum( (spread(m%eigenvalues_r,2, m%nfthetamax-m%nfthetamin+1) &
+                + spread(m%eigenvalues_theta,1, m%nfrmax-m%nfrmin+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
-            h = h + sum( (spread(this%m%eigenvalues_r,2, this%m%jf(j)-this%m%jf(j-1)) &
-                       + spread(ev,1, this%m%nfrmax-this%m%nfrmin+1)) &
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues_theta(lbound(m%eigenvalues_theta,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues_theta,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues_r,2, m%jf(j)-m%jf(j-1)) &
+                       + spread(ev,1, m%nfrmax-m%nfrmin+1)) &
                        * uf**2 )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #elif(_DIM_==3)
 #ifndef _OPENMP
-        h = sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
-               + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
-               + spread(spread(this%m%eigenvalues_theta, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+        h = sum((spread(spread(m%eigenvalues_r, 2,m%nfzmax-m%nfzmin+1), 3,m%nfthetamax-m%nfthetamin+1) &
+               + spread(spread(m%eigenvalues_z, 1,m%nfrmax-m%nfrmin+1), 3,m%nfthetamax-m%nfthetamin+1) &
+               + spread(spread(m%eigenvalues_theta, 1,m%nfrmax-m%nfrmin+1), 2,m%nfzmax-m%nfzmin+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
-            h = h + sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(ev, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues_theta(lbound(m%eigenvalues_theta,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues_theta,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues_r, 2,m%nfzmax-m%nfzmin+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(m%eigenvalues_z, 1,m%nfrmax-m%nfrmin+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(ev, 1,m%nfrmax-m%nfrmin+1), 2,m%nfzmax-m%nfzmin+1)) &
                   * uf**2 )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #endif
 
+#elif defined(_ROTATING_)
+!TODO
+
 #else
-        select case(this%m%boundary_conditions)
+        select case(m%boundary_conditions)
         case(periodic) 
-        this%m%eigenvalues1(this%m%nf1max) = 0.5_prec * this%m%eigenvalues1(this%m%nf1max)
+        m%eigenvalues1(m%nf1max) = 0.5_prec * m%eigenvalues1(m%nf1max)
 #if(_DIM_==1)
 #ifndef _OPENMP
-        h = 2.0_prec*sum(this%m%eigenvalues1 * (real(this%ufc,prec)**2 + aimag(this%ufc)**2) ) 
+        h = 2.0_prec*sum(m%eigenvalues1 * (real(this%ufc,prec)**2 + aimag(this%ufc)**2) ) 
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, ufc, ev) REDUCTION(+:h)
         do j=1,n_threads
-            ufc => this%ufc(lbound(this%ufc,1)+this%m%jf(j-1):lbound(this%ufc,1)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+            ufc => this%ufc(lbound(this%ufc,1)+m%jf(j-1):lbound(this%ufc,1)+m%jf(j)-1)
+            ev => m%eigenvalues1(lbound(m%eigenvalues1,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues1,1)+m%jf(j)-1)
             h = h + 2.0_prec*sum(ev * (real(ufc,prec)**2 + aimag(ufc)**2) ) 
         end do
 !$OMP END PARALLEL DO 
 #endif 
 #elif(_DIM_==2)
 #ifndef _OPENMP
-        h = 2.0_prec*sum( (spread(this%m%eigenvalues1,2, this%m%nf2max-this%m%nf2min+1) &
-                + spread(this%m%eigenvalues2,1, this%m%nf1max-this%m%nf1min+1)) &
+        h = 2.0_prec*sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                + spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1)) &
             * (real(this%ufc,prec)**2 + aimag(this%ufc)**2) ) 
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, ufc, ev) REDUCTION(+:h)
         do j=1,n_threads
-            ufc => this%ufc(:,lbound(this%ufc,2)+this%m%jf(j-1):lbound(this%ufc,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
-        h = h + 2.0_prec*sum( (spread(this%m%eigenvalues1,2, this%m%jf(j)-this%m%jf(j-1) ) &
-                             + spread(ev,1, this%m%nf1max-this%m%nf1min+1)) &
+            ufc => this%ufc(:,lbound(this%ufc,2)+m%jf(j-1):lbound(this%ufc,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+        h = h + 2.0_prec*sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1) ) &
+                             + spread(ev,1, m%nf1max-m%nf1min+1)) &
                              * (real(ufc,prec)**2 + aimag(ufc)**2) ) 
         end do
 !$OMP END PARALLEL DO 
@@ -1698,39 +1755,39 @@ contains
 #elif(_DIM_==3)
 #ifndef _OPENMP
         h = 2.0_prec &
-          *sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-             + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-             + spread(spread(this%m%eigenvalues3, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1))& 
+          *sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+             + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+             + spread(spread(m%eigenvalues3, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1))& 
             * (real(this%ufc,prec)**2 + aimag(this%ufc)**2) ) 
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, ufc, ev) REDUCTION(+:h)
         do j=1,n_threads
-            ufc => this%ufc(:,:,lbound(this%ufc,3)+this%m%jf(j-1):lbound(this%ufc,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
+            ufc => this%ufc(:,:,lbound(this%ufc,3)+m%jf(j-1):lbound(this%ufc,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
             h = h +  2.0_prec &
-          *sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), 3,  this%m%jf(j)-this%m%jf(j-1)) &
-             + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), 3, this%m%jf(j)-this%m%jf(j-1) ) &
-             + spread(spread(ev, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1))& 
+          *sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,  m%jf(j)-m%jf(j-1)) &
+             + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3, m%jf(j)-m%jf(j-1) ) &
+             + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1))& 
             * (real(ufc,prec)**2 + aimag(ufc)**2) ) 
         end do
 !$OMP END PARALLEL DO 
 #endif 
 #endif
-        this%m%eigenvalues1(this%m%nf1max) = 2.0_prec * this%m%eigenvalues1(this%m%nf1max)
+        m%eigenvalues1(m%nf1max) = 2.0_prec * m%eigenvalues1(m%nf1max)
         case(dirichlet, neumann)
 #if(_DIM_==1)
 #ifndef _OPENMP
-        h = sum(this%m%eigenvalues1 &
+        h = sum(m%eigenvalues1 &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(lbound(this%uf,1)+this%m%jf(j-1):lbound(this%uf,1)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+            uf => this%uf(lbound(this%uf,1)+m%jf(j-1):lbound(this%uf,1)+m%jf(j)-1)
+            ev => m%eigenvalues1(lbound(m%eigenvalues1,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues1,1)+m%jf(j)-1)
             h = h +  sum(ev &
                      * uf**2 )
         end do
@@ -1738,40 +1795,40 @@ contains
 #endif
 #elif(_DIM_==2)
 #ifndef _OPENMP
-        h = sum( (spread(this%m%eigenvalues1,2, this%m%nf2max-this%m%nf2min+1) &
-                + spread(this%m%eigenvalues2,1, this%m%nf1max-this%m%nf1min+1)) &
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                + spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
-            h = h + sum( (spread(this%m%eigenvalues1,2, this%m%jf(j)-this%m%jf(j-1)) &
-                       + spread(ev,1, this%m%nf1max-this%m%nf1min+1)) &
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+                       + spread(ev,1, m%nf1max-m%nf1min+1)) &
                        * uf**2 )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #elif(_DIM_==3)
 #ifndef _OPENMP
-        h = sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues3, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues3, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
             * this%uf**2 )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
-            h = h + sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(ev, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
                   * uf**2 )
         end do
 !$OMP END PARALLEL DO 
@@ -1784,58 +1841,172 @@ contains
 #if defined(_LAGUERRE_)
 #if(_DIM_==2)
 #ifndef _OPENMP
-        h = sum( (spread(this%m%eigenvalues_r,2, this%m%nfthetamax-this%m%nfthetamin+1) &
-                + spread(this%m%eigenvalues_theta,1, this%m%nfrmax-this%m%nfrmin+1)) &
+        h = sum( (spread(m%eigenvalues_r,2, m%nfthetamax-m%nfthetamin+1) &
+                + spread(m%eigenvalues_theta,1, m%nfrmax-m%nfrmin+1)) &
                 * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
-            h = h + sum( (spread(this%m%eigenvalues_r,2, this%m%jf(j)-this%m%jf(j-1)) &
-                       + spread(ev,1, this%m%nfrmax-this%m%nfrmin+1)) &
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues_theta(lbound(m%eigenvalues_theta,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues_theta,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues_r,2, m%jf(j)-m%jf(j-1)) &
+                       + spread(ev,1, m%nfrmax-m%nfrmin+1)) &
                        * (real(uf,prec)**2 + aimag(uf)**2) )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #elif(_DIM_==3)
 #ifndef _OPENMP
-        h = sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
-               + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), 3,this%m%nfthetamax-this%m%nfthetamin+1) &
-               + spread(spread(this%m%eigenvalues_theta, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+        h = sum((spread(spread(m%eigenvalues_r, 2,m%nfzmax-m%nfzmin+1), 3,m%nfthetamax-m%nfthetamin+1) &
+               + spread(spread(m%eigenvalues_z, 1,m%nfrmax-m%nfrmin+1), 3,m%nfthetamax-m%nfthetamin+1) &
+               + spread(spread(m%eigenvalues_theta, 1,m%nfrmax-m%nfrmin+1), 2,m%nfzmax-m%nfzmin+1)) &
                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues_theta(lbound(this%m%eigenvalues_theta,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues_theta,1)+this%m%jf(j)-1)
-            h = h + sum((spread(spread(this%m%eigenvalues_r, 2,this%m%nfzmax-this%m%nfzmin+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(this%m%eigenvalues_z, 1,this%m%nfrmax-this%m%nfrmin+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(ev, 1,this%m%nfrmax-this%m%nfrmin+1), 2,this%m%nfzmax-this%m%nfzmin+1)) &
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues_theta(lbound(m%eigenvalues_theta,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues_theta,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues_r, 2,m%nfzmax-m%nfzmin+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(m%eigenvalues_z, 1,m%nfrmax-m%nfrmin+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(ev, 1,m%nfrmax-m%nfrmin+1), 2,m%nfzmax-m%nfzmin+1)) &
                   * (real(uf,prec)**2 + aimag(uf)**2) )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #endif
+
+#elif defined(_ROTATING_)
+  ! operator A
+        call this%to_frequency_space_x
+        call this%to_real_space_y
+
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                 +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                             1, m%nf1max-m%nf1min+1)  &
+                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
+                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, nodes) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
+                                      lbound(m%g%nodes_y,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+              +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
+                       *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
+                       * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+        call this%to_frequency_space_z
+#ifndef _OPENMP
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+                + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                          2,m%nf2max-m%nf2min+1) &
+                + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                          1, m%nf1max-m%nf1min+1)  &
+                          *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                          3, m%nf3max-m%nf3min+1) ) &
+               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
+                       + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                                1, m%nf1max-m%nf1min+1)  &
+                                *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+  ! operator C
+        call this%to_real_space_x
+        call this%to_frequency_space_y
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
+                    +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
+                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf, ev, evd) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            evd => m%eigenvalues2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
+                                      lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
+                                         
+            h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
+                        +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                                  2, m%jf(j)-m%jf(j-1))  &
+                        *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
+                       * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+#ifndef _OPENMP
+        h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+                   + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                             2,m%nf2max-m%nf2min+1) &
+                   + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                             3, m%nf3max-m%nf3min+1) ) &
+               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
+                                2,m%nf2max-m%nf2min+1) &
+                       + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                                2, m%nf2max-m%nf2min+1)  &
+                               *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * (real(uf,prec)**2 + aimag(uf)**2) )
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+
 #else
 
 #if(_DIM_==1)
 #ifndef _OPENMP
-        h = sum(this%m%eigenvalues1 &
+        h = sum(m%eigenvalues1 &
             * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(lbound(this%uf,1)+this%m%jf(j-1):lbound(this%uf,1)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+            uf => this%uf(lbound(this%uf,1)+m%jf(j-1):lbound(this%uf,1)+m%jf(j)-1)
+            ev => m%eigenvalues1(lbound(m%eigenvalues1,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues1,1)+m%jf(j)-1)
             h = h +  sum(ev &
                   * (real(uf,prec)**2 + aimag(uf)**2) )
         end do
@@ -1843,40 +2014,40 @@ contains
 #endif
 #elif(_DIM_==2)
 #ifndef _OPENMP
-        h = sum( (spread(this%m%eigenvalues1,2, this%m%nf2max-this%m%nf2min+1) &
-                + spread(this%m%eigenvalues2,1, this%m%nf1max-this%m%nf1min+1)) &
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                + spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1)) &
                 * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
-            h = h + sum( (spread(this%m%eigenvalues1,2, this%m%jf(j)-this%m%jf(j-1)) &
-                       + spread(ev,1, this%m%nf1max-this%m%nf1min+1)) &
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+                       + spread(ev,1, m%nf1max-m%nf1min+1)) &
                        * (real(uf,prec)**2 + aimag(uf)**2) )
         end do
 !$OMP END PARALLEL DO 
 #endif
 #elif(_DIM_==3)
 #ifndef _OPENMP
-        h = sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), 3,this%m%nf3max-this%m%nf3min+1) &
-               + spread(spread(this%m%eigenvalues3, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+               + spread(spread(m%eigenvalues3, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
-            uf => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
-            ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
-                                         lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
-            h = h + sum((spread(spread(this%m%eigenvalues1, 2,this%m%nf2max-this%m%nf2min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(this%m%eigenvalues2, 1,this%m%nf1max-this%m%nf1min+1), &
-                                       3,this%m%jf(j)-this%m%jf(j-1)) &
-                  + spread(spread(ev, 1,this%m%nf1max-this%m%nf1min+1), 2,this%m%nf2max-this%m%nf2min+1)) &
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                       3,m%jf(j)-m%jf(j-1)) &
+                  + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1)) &
                   * (real(uf,prec)**2 + aimag(uf)**2) )
         end do
 !$OMP END PARALLEL DO 
@@ -1900,7 +2071,7 @@ contains
 #elif(_DIM_==3)
             E_kin =  -0.5_prec*m%hbar**2/m%mass * h * m%g%dx*m%g%dy*m%g%dz/(m%g%nx*m%g%ny*m%g%nz) 
 #endif
-            select case(this%m%boundary_conditions)
+            select case(m%boundary_conditions)
             case(periodic)
             case(dirichlet, neumann)
                 E_kin = E_kin/(2**_DIM_)
@@ -3770,7 +3941,7 @@ contains
         obs = obs*m%g%dtheta
 
 #else
-        select case(this%m%boundary_conditions)
+        select case(m%boundary_conditions)
         case(periodic, dirichlet)
         case(neumann) ! for summation exlude first index in each dimension 
             if (n1==0) n1 = 1 
@@ -3878,6 +4049,9 @@ contains
 
        m%tmp%u = 0.0_prec
        call this%add_apply_A(m%tmp)
+#if defined(_ROTATING_)
+       call this%add_apply_C(m%tmp)
+#endif       
        call this%add_apply_B(m%tmp)
        call this%to_real_space
        call m%tmp%to_real_space
