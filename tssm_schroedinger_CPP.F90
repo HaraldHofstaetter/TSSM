@@ -142,6 +142,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 #elif(_DIM_==3)
         real(kind=prec), pointer :: V(:,:,:) => null()
 #endif
+        procedure(potential_interface), pointer, nopass :: potential => null()
+        procedure(c_potential_interface), pointer, nopass :: c_potential => null()
 #ifndef _REAL_
 #if(_DIM_==1)
         real(kind=prec), pointer :: V_t(:) => null() ! temporary storage for time-dependent potential 
@@ -160,7 +162,9 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
 
     contains
         procedure :: finalize => finalize_method
+        procedure :: evaluate_potential
         procedure :: set_potential
+        procedure :: set_c_potential
 #ifndef _REAL_        
         procedure :: evaluate_potential_t
         procedure :: set_potential_t
@@ -179,8 +183,56 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
     end type
 #endif    
 
-#ifndef _REAL_
     abstract interface
+#if(_DIM_==1)
+        function potential_interface(x) 
+#elif(_DIM_==2)
+        function potential_interface(x,y) 
+#elif(_DIM_==3)
+        function potential_interface(x,y,z) 
+#endif            
+            import prec
+#if(_DIM_==1)
+            real(kind=prec), intent(in) :: x
+#elif(_DIM_==2)
+            real(kind=prec), intent(in) :: x,y
+#elif(_DIM_==3)
+            real(kind=prec), intent(in) :: x,y,z
+#endif            
+            real(kind=prec) :: potential_interface
+        end function potential_interface
+
+#if(_DIM_==1)
+        function c_potential_interface(x) bind(c) 
+#elif(_DIM_==2)
+        function c_potential_interface(x,y) bind(c) 
+#elif(_DIM_==3)
+        function c_potential_interface(x,y,z) bind(c) 
+#endif            
+#ifdef _QUADPRECISION_
+           import wrapped_float128
+           type(wrapped_float128), value :: x
+#if(_DIM_>=2)
+           type(wrapped_float128), value :: y
+#endif               
+#if(_DIM_>=3)
+           type(wrapped_float128), value :: z
+#endif               
+           type(wrapped_float128) :: c_potential_interface 
+#else
+            import prec
+#if(_DIM_==1)
+            real(kind=prec), value :: x
+#elif(_DIM_==2)
+            real(kind=prec), value :: x,y
+#elif(_DIM_==3)
+            real(kind=prec), value :: x,y,z
+#endif            
+            real(kind=prec) :: c_potential_interface
+#endif            
+        end function c_potential_interface
+
+#ifndef _REAL_
 #if(_DIM_==1)
         function potential_t_interface(x,t) 
 #elif(_DIM_==2)
@@ -229,8 +281,8 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
             real(kind=prec) :: c_potential_t_interface
 #endif            
         end function c_potential_t_interface
-    end interface
 #endif
+    end interface
 
     interface S(schroedinger)
         module procedure new_method 
@@ -519,6 +571,18 @@ contains
         call this%g%set_real_gridfun(this%V, f)
     end subroutine set_potential
 
+    subroutine set_c_potential(this, f)
+       use iso_c_binding
+        class(S(schroedinger)), intent(inout) :: this
+        type(c_funptr), intent(in) :: f
+
+        call c_f_procpointer(f, this%c_potential)
+        if (.not.associated(this%V)) then
+            call this%g%allocate_real_gridfun(this%V)
+        end if
+        call this%evaluate_potential
+    end subroutine set_c_potential
+
 #ifndef _REAL_
     subroutine set_potential_t(this, f, is_derivative)
         class(S(schroedinger)), intent(inout) :: this
@@ -532,50 +596,79 @@ contains
     end subroutine set_potential_t
 
     subroutine set_c_potential_t(this, f, is_derivative)
+       use iso_c_binding
         class(S(schroedinger)), intent(inout) :: this
+        type(c_funptr), intent(in) :: f
         logical, optional :: is_derivative
-        interface 
-#if(_DIM_==1)
-           function f(x, t) bind(c)
-#elif(_DIM_==2)
-           function f(x, y, t) bind(c)
-#elif(_DIM_==3)
-           function f(x, y, z, t) bind(c)
-#endif          
-#ifdef _QUADPRECISION_
-               import wrapped_float128
-               type(wrapped_float128), value :: t
-               type(wrapped_float128), value :: x
-#if(_DIM_>=2)
-               type(wrapped_float128), value :: y
-#endif               
-#if(_DIM_>=3)
-               type(wrapped_float128), value :: z
-#endif               
-               type(wrapped_float128) :: f 
-#else
 
-               import prec
-               real(kind=prec), value :: t
-               real(kind=prec), value :: x
-#if(_DIM_>=2)
-               real(kind=prec), value :: y
-#endif               
-#if(_DIM_>=3)
-               real(kind=prec), value :: z
-#endif               
-               real(kind=prec) :: f 
-#endif               
-           end function f
-        end interface 
         if (present(is_derivative).and.is_derivative) then
-            this%c_potential_t_derivative => f
+            call c_f_procpointer(f, this%c_potential_t_derivative)
         else
-            this%c_potential_t => f
+            call c_f_procpointer(f, this%c_potential_t)
         end if            
     end subroutine set_c_potential_t
+#endif
 
 
+    subroutine evaluate_potential(this)
+        class(S(schroedinger)), intent(inout) :: this
+        procedure(c_potential_interface), pointer :: c_potential  
+
+        if (associated(this%c_potential)) then
+            c_potential => this%c_potential 
+            call this%g%set_real_gridfun(this%V, eval_c_potential)
+            return 
+        end if    
+        if (associated(this%potential)) then
+            call this%g%set_real_gridfun(this%V, this%potential)
+        end if    
+    contains
+#if(_DIM_==1)    
+        function eval_c_potential(x)
+            real(kind=prec), intent(in) :: x
+            real(kind=prec) :: eval_c_potential
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,res
+            xx = transfer(x, xx)
+            res = c_potential(xx)
+            eval_c_potential = transfer(res,eval_c_potential)
+#else
+            eval_c_potential = c_potential(x)
+#endif            
+        end function eval_c_potential
+#elif(_DIM_==2)    
+        function eval_c_potential(x,y)
+            real(kind=prec), intent(in) :: x,y
+            real(kind=prec) :: eval_c_potential
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,yy,res
+            xx = transfer(x, xx)
+            yy = transfer(x, yy)
+            res = c_potential(xx,yy)
+            eval_c_potential = transfer(res,eval_c_potential)
+#else
+            eval_c_potential = c_potential(x,y)
+#endif            
+        end function eval_c_potential
+#elif(_DIM_==3)    
+        function eval_c_potential(x,y,z)
+            real(kind=prec), intent(in) :: x,y,z
+            real(kind=prec) :: eval_c_potential
+#ifdef _QUADPRECISION_
+            type(wrapped_float128) :: xx,yy,zz,res
+            xx = transfer(x, xx)
+            yy = transfer(x, yy)
+            zz = transfer(z, zz)
+            res = c_potential(xx,yy,zz)
+#else
+            eval_c_potential = c_potential(x,y,z)
+#endif        
+        end function eval_c_potential
+#endif        
+    end subroutine evaluate_potential
+
+
+#ifndef _REAL_
     subroutine evaluate_potential_t(this, time, is_derivative)
         class(S(schroedinger)), intent(inout) :: this
         logical, optional :: is_derivative
@@ -649,6 +742,7 @@ contains
 #endif        
     end subroutine evaluate_potential_t
 #endif
+
 
     subroutine save_potential(this, filename)
 #ifdef _NO_HDF5_

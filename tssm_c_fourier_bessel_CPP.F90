@@ -107,7 +107,7 @@ contains
 
     subroutine c_finalize(m)  bind(c, name=SC(finalize))
         use iso_c_binding
-        type(c_ptr) :: m
+        type(c_ptr), value :: m
         type(_METHOD_), pointer :: mp
 
         call c_f_pointer(m, mp)
@@ -273,7 +273,7 @@ contains
         result(np) bind(c, name=SC(get_L))
         use iso_c_binding
         type(c_ptr), value :: m 
-        type(c_ptr)  :: np
+        type(c_ptr) :: np
         integer, intent(out)  :: dim(_DIM_+1)
         type(_METHOD_), pointer :: mp
 
@@ -309,7 +309,7 @@ contains
     subroutine c_finalize_wf(psi) &
         bind(c, name=SC(finalize_wf))
         use iso_c_binding
-        type(c_ptr) :: psi 
+        type(c_ptr), value :: psi 
         type(_WF_), pointer :: psip
 
         call c_f_pointer(psi, psip)
@@ -572,7 +572,7 @@ contains
         result(up) bind(c, name=SC(get_data_wf))
         use iso_c_binding
         type(c_ptr), value :: psi 
-        type(c_ptr)  :: up
+        type(c_ptr) :: up
         integer, intent(out)  :: dim(_DIM_)
         type(_WF_), pointer :: psip
 

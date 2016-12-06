@@ -110,15 +110,15 @@ contains
 #endif
         real(kind=prec), value  :: hbar 
         real(kind=prec), value  :: mass 
-        real(kind=prec), external, bind(c) :: potential 
+        type(c_funptr), value :: potential 
         logical, value  :: with_potential
 #ifndef _REAL_        
 #ifdef _QUADPRECISION_
-        type(wrapped_float128), external, bind(c) :: potential_t 
-        type(wrapped_float128), external, bind(c) :: potential_t_derivative
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #else
-        real(kind=prec), external, bind(c) :: potential_t 
-        real(kind=prec), external, bind(c) :: potential_t_derivative
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #endif        
         logical, value  :: with_potential_t
         logical, value  :: with_potential_t_derivative
@@ -174,15 +174,20 @@ contains
 #endif
         real(kind=prec), value  :: hbar 
         real(kind=prec), value  :: mass 
-        real(kind=prec), external, bind(c) :: potential 
+        !real(kind=prec), external, bind(c) :: potential 
+        type(c_funptr), value :: potential
         logical, value  :: with_potential
 #ifndef _REAL_        
 #ifdef _QUADPRECISION_
-        type(wrapped_float128), external, bind(c) :: potential_t 
-        type(wrapped_float128), external, bind(c) :: potential_t_derivative
+        !type(wrapped_float128), external, bind(c) :: potential_t 
+        !type(wrapped_float128), external, bind(c) :: potential_t_derivative
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #else
-        real(kind=prec), external, bind(c) :: potential_t 
-        real(kind=prec), external, bind(c) :: potential_t_derivative
+        !real(kind=prec), external, bind(c) :: potential_t 
+        !real(kind=prec), external, bind(c) :: potential_t_derivative
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #endif        
         logical, value  :: with_potential_t
         logical, value  :: with_potential_t_derivative
@@ -254,15 +259,20 @@ contains
 #endif
         real(kind=prec), value  :: hbar 
         real(kind=prec), value  :: mass 
-        real(kind=prec), external, bind(c) :: potential 
+        !real(kind=prec), external, bind(c) :: potential 
+        type(c_funptr), value :: potential
         logical, value  :: with_potential
 #ifndef _REAL_        
 #ifdef _QUADPRECISION_
-        type(wrapped_float128), external, bind(c) :: potential_t 
-        type(wrapped_float128), external, bind(c) :: potential_t_derivative 
+        !type(wrapped_float128), external, bind(c) :: potential_t 
+        !type(wrapped_float128), external, bind(c) :: potential_t_derivative 
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #else
-        real(kind=prec), external, bind(c) :: potential_t 
-        real(kind=prec), external, bind(c) :: potential_t_derivative 
+        !real(kind=prec), external, bind(c) :: potential_t 
+        !real(kind=prec), external, bind(c) :: potential_t_derivative 
+        type(c_funptr), value :: potential_t 
+        type(c_funptr), value :: potential_t_derivative 
 #endif        
         logical, value  :: with_potential_t
         logical, value  :: with_potential_t_derivative
@@ -309,7 +319,7 @@ contains
     subroutine c_finalize(m) &
         bind(c, name=SC(finalize_schroedinger))
         use iso_c_binding
-        type(c_ptr) :: m
+        type(c_ptr), value :: m
         type(S(schroedinger)), pointer :: mp
 
         call c_f_pointer(m, mp)
@@ -357,7 +367,7 @@ contains
     subroutine c_finalize_wf(psi)  &
         bind(c, name=SC(finalize_wf_schroedinger))
         use iso_c_binding
-        type(c_ptr) :: psi 
+        type(c_ptr), value :: psi 
         type(S(wf_schroedinger)), pointer :: psip
 
         call c_f_pointer(psi, psip)
@@ -777,7 +787,7 @@ contains
         result(up) bind(c, name=SC(get_data_wf_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: psi 
-        type(c_ptr)  :: up
+        type(c_ptr) :: up
         integer, intent(out)  :: dim(_DIM_)
         type(S(wf_schroedinger)), pointer :: psip
 
@@ -1162,7 +1172,7 @@ contains
         result(np) bind(c, name=SC(get_H_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
-        type(c_ptr)  :: np
+        type(c_ptr) :: np
         integer, intent(out)  :: dim(2)
         integer, value :: which
         type(S(schroedinger)), pointer :: mp
@@ -1210,7 +1220,7 @@ contains
         result(np) bind(c, name=SC(get_L))
         use iso_c_binding
         type(c_ptr), value :: m 
-        type(c_ptr)  :: np
+        type(c_ptr) :: np
         integer, intent(out)  :: dim(3)
         type(S(schroedinger)), pointer :: mp
 
@@ -1240,7 +1250,7 @@ contains
         result(np) bind(c, name=SC(get_H_z_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
-        type(c_ptr)  :: np
+        type(c_ptr) :: np
         integer, intent(out)  :: dim(2)
         type(S(schroedinger)), pointer :: mp
 
@@ -1505,58 +1515,16 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! schroedinger specific methods !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+   
     subroutine c_set_potential(m, f) &
         bind(c, name=SC(set_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
         type(S(schroedinger)), pointer :: mp
-        interface 
-#if(_DIM_==1)
-           function f(x) bind(c)
-#elif(_DIM_==2)
-           function f(x, y) bind(c)
-#elif(_DIM_==3)
-           function f(x, y, z) bind(c)
-#endif           
-               import prec
-               real(kind=prec), value :: x
-#if(_DIM_>=2)
-               real(kind=prec), value :: y
-#endif               
-#if(_DIM_>=3)
-               real(kind=prec), value :: z
-#endif               
-               real(kind=prec) :: f 
-           end function f
-        end interface 
+        type(c_funptr), value :: f 
 
         call c_f_pointer(m, mp)
-        call mp%set_potential(ff)
-   contains
-#if(_DIM_==1)
-        function ff(x) 
-#elif(_DIM_==2)
-        function ff(x, y)
-#elif(_DIM_==3)
-        function ff(x, y, z)
-#endif          
-            real(kind=prec), intent(in) :: x
-#if(_DIM_>=2)
-            real(kind=prec), intent(in) :: y
-#endif               
-#if(_DIM_>=3)
-            real(kind=prec), intent(in) :: z
-#endif               
-            real(kind=prec) :: ff 
-#if(_DIM_==1)
-            ff = f(x)
-#elif(_DIM_==2)
-            ff = f(x, y)
-#elif(_DIM_==3)
-            ff = f(x, y, z)
-#endif
-        end function ff
+        call mp%set_c_potential(f)
     end subroutine c_set_potential
 
 
@@ -1567,40 +1535,7 @@ contains
         type(c_ptr), value :: m 
         type(S(schroedinger)), pointer :: mp
         logical, value :: is_derivative
-        interface 
-#if(_DIM_==1)
-           function f(x, t) bind(c)
-#elif(_DIM_==2)
-           function f(x, y, t) bind(c)
-#elif(_DIM_==3)
-           function f(x, y, z, t) bind(c)
-#endif          
-#ifdef _QUADPRECISION_
-               import wrapped_float128
-               type(wrapped_float128), value :: t
-               type(wrapped_float128), value :: x
-#if(_DIM_>=2)
-               type(wrapped_float128), value :: y
-#endif               
-#if(_DIM_>=3)
-               type(wrapped_float128), value :: z
-#endif               
-               type(wrapped_float128) :: f 
-#else
-               import prec
-               real(kind=prec), value :: t
-               real(kind=prec), value :: x
-#if(_DIM_>=2)
-               real(kind=prec), value :: y
-#endif               
-#if(_DIM_>=3)
-               real(kind=prec), value :: z
-#endif               
-               real(kind=prec) :: f 
-#endif               
-           end function f
-        end interface 
-        !type(c_funptr), value :: f
+        type(c_funptr), value :: f 
 
         call c_f_pointer(m, mp)
         call mp%set_c_potential_t(f, is_derivative=is_derivative)
@@ -1612,7 +1547,7 @@ contains
         result(Vp) bind(c, name=SC(get_potential_schroedinger))
         use iso_c_binding
         type(c_ptr), value :: m 
-        type(c_ptr)  :: Vp
+        type(c_ptr) :: Vp
         integer, intent(out)  :: dim(_DIM_)
         type(S(schroedinger)), pointer :: mp
         call c_f_pointer(m, mp)

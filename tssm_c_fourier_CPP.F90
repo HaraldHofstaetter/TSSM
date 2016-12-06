@@ -92,7 +92,7 @@ contains
     subroutine c_finalize(m) &
         bind(c, name=SC(finalize_fourier))
         use iso_c_binding
-        type(c_ptr) :: m
+        type(c_ptr), value :: m
         type(S(fourier)), pointer :: mp
 
         call c_f_pointer(m, mp)
@@ -139,7 +139,7 @@ contains
     subroutine c_finalize_wf(psi) &
         bind(c, name=SC(finalize_wf_fourier))
         use iso_c_binding
-        type(c_ptr) :: psi 
+        type(c_ptr), value :: psi 
         type(S(wf_fourier)), pointer :: psip
 
         call c_f_pointer(psi, psip)
@@ -374,7 +374,7 @@ contains
         result(up) bind(c, name=SC(get_data_wf_fourier))
         use iso_c_binding
         type(c_ptr), value :: psi 
-        type(c_ptr)  :: up
+        type(c_ptr) :: up
         integer, intent(out)  :: dim(_DIM_)
         type(S(wf_fourier)), pointer :: psip
 

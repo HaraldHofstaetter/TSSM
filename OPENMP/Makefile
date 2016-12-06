@@ -9,7 +9,8 @@ FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
 FC = gfortran 
 FOPTS = -fopenmp -O3 -fPIC
-CPP = cpp-4.9 -std=c89  -D_OPENMP
+#FOPTS = -fopenmp -g -fPIC
+CPP = cpp-4.6 -std=c89  -D_OPENMP
 MAKE_SHARED_LIB = gfortran -fopenmp -shared 
 
 
@@ -52,6 +53,12 @@ FFTW_LIBS = -L$(FFTW_LIB) -lfftw3_omp -lfftw3
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
+
+#ifeq ($(SYSTEM),LINUX) 
+#    HDF5_LIBS =  $(HDF5_LIB)/libhdf5_fortran.so \
+#                 $(HDF5_LIB)/libhdf5.so
+#    FFTW_LIBS = $(FFTW_LIB)/libfftw3.so.3 $(FFTW_LIB)/libfftw3_omp.so.3 
+#endif
 
 ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
     FOPTS = -fopenmp -O3 -fPIC 
