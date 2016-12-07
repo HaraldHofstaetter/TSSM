@@ -10,7 +10,7 @@ HDF5_BASE = $(HOME)
 FC = gfortran 
 FOPTS = -fopenmp -O3 -fPIC
 #FOPTS = -fopenmp -g -fPIC
-CPP = cpp-4.6 -std=c89  -D_OPENMP
+CPP = cpp -std=c89  -D_OPENMP
 MAKE_SHARED_LIB = gfortran -fopenmp -shared 
 
 
@@ -42,6 +42,7 @@ all: shared_lib
 endif
 
 ifeq ($(SYSTEM),LINUX) 
+    CPP = cpp-4.9 -std=c89  -D_OPENMP
 all: shared_lib
 endif   
 
