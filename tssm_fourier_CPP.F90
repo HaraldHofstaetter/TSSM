@@ -200,6 +200,7 @@ module S(tssm_fourier)
         procedure :: norm
         procedure :: norm_in_frequency_space
         procedure :: normalize
+        procedure :: inner_product
         procedure :: distance
         procedure :: axpy
         procedure :: scale
@@ -2590,6 +2591,34 @@ contains
            stop "E: wave functions not belonging to the same method"
         end select
     end subroutine copy
+
+
+    function inner_product(this, wf) result(n)
+        class(S(wf_fourier)), intent(inout) :: this
+        class(_WAVE_FUNCTION_), intent(inout) :: wf
+        _COMPLEX_OR_REAL_(kind=prec) :: n
+        !TODO: implement inner_product in tssm_grid.F90 !!!!
+#if(_DIM_==1)
+        select type (wf)
+        class is (S(wf_fourier))
+        if (.not.associated(wf%m,this%m)) then
+            stop "E: wave functions not belonging to the same method"
+        end if
+
+        call this%to_real_space
+        call wf%to_real_space
+#ifdef _REAL_
+        n = this%m%g%inner_product_real_gridfun(this%u, wf%u)
+#else
+        n = this%m%g%inner_product_complex_gridfun(this%u, wf%u)
+#endif
+        class default
+           stop "E: wave functions not belonging to the same method"
+        end select
+#else
+        print *, "W: inner_product not implemented for dim>=2."
+#endif
+    end function inner_product
 
 
     function distance(this, wf) result(n)

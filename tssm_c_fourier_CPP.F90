@@ -330,6 +330,21 @@ contains
         call c_f_pointer(psi, psip)
         ans = psip%norm_in_frequency_space()
     end function c_norm_in_frequency_space_wf
+
+
+    function c_inner_product_wf(psi, other) &
+        result(ans) bind(c, name=SC(inner_product_wf_fourier))
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        type(c_ptr), value :: other
+        type(S(wf_fourier)), pointer :: psip
+        type(S(wf_fourier)), pointer :: otherp
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        call c_f_pointer(other, otherp)
+        ans = psip%inner_product(otherp)
+   end function c_inner_product_wf
     
 
    function c_normalize_wf(psi) &

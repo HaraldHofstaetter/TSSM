@@ -155,6 +155,7 @@ module S(tssm_tensorial)
         procedure :: norm
         procedure :: norm_in_frequency_space
         procedure :: normalize
+        procedure :: inner_product
         procedure :: distance
         procedure :: axpy
         procedure :: scale
@@ -586,6 +587,34 @@ contains
            stop "E: wave functions not belonging to the same method"
         end select
     end subroutine copy
+    
+
+    function inner_product(this, wf) result(n)                                                                                 
+        class(S(wf_tensorial)), intent(inout) :: this
+        class(_WAVE_FUNCTION_), intent(inout) :: wf
+        _COMPLEX_OR_REAL_(kind=prec) :: n
+        !TODO: implement inner_product in tssm_grid.F90 !!!!
+#if 0
+        select type (wf)
+        class is (S(wf_tensorial))
+        if (.not.associated(wf%m,this%m)) then
+            stop "E: wave functions not belonging to the same method"
+        end if
+
+        call this%to_real_space
+        call wf%to_real_space
+#ifdef _REAL_
+        n = this%m%g%inner_product_real_gridfun(this%u, wf%u)
+#else
+        n = this%m%g%inner_product_complex_gridfun(this%u, wf%u)
+#endif
+        class default
+           stop "E: wave functions not belonging to the same method"
+        end select
+#else
+        print *, "W: inner_product not implemented for tensorial grid."
+#endif
+    end function inner_product
 
 
     function distance(this, wf) result(d)
