@@ -760,6 +760,38 @@ contains
         call c_f_pointer(other, otherp)
         ans = psip%inner_product(otherp)
    end function c_inner_product_wf
+
+
+   function c_potential_matrix_element_wf(psi, other) &
+        result(ans) bind(c, name=SC(potential_matrix_element_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        type(c_ptr), value :: other
+        type(S(wf_schroedinger)), pointer :: psip
+        type(S(wf_schroedinger)), pointer :: otherp
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        call c_f_pointer(other, otherp)
+        ans = psip%potential_matrix_element(otherp)
+   end function c_potential_matrix_element_wf
+
+
+   function c_kinetic_matrix_element_wf(psi, other) &
+        result(ans) bind(c, name=SC(kinetic_matrix_element_wf_schroedinger))
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        type(c_ptr), value :: other
+        type(S(wf_schroedinger)), pointer :: psip
+        type(S(wf_schroedinger)), pointer :: otherp
+        _COMPLEX_OR_REAL_(kind=prec) :: ans
+
+        call c_f_pointer(psi, psip)
+        call c_f_pointer(other, otherp)
+        ans = psip%kinetic_matrix_element(otherp)
+   end function c_kinetic_matrix_element_wf
+
+   
     
 
    function c_normalize_wf(psi) &
