@@ -2187,10 +2187,10 @@ contains
         class(S(wf_schroedinger)), intent(inout) :: this
         class(_WAVE_FUNCTION_), intent(inout) :: wf
         _COMPLEX_OR_REAL_(kind=prec) :: res
-        real(kind=prec) :: h 
+        _COMPLEX_OR_REAL_(kind=prec) :: h 
 #ifdef _MPI_
         integer :: ierr
-        real(kind=prec) :: h1 
+        _COMPLEX_OR_REAL_(kind=prec) :: h1 
 #endif
 #ifdef _OPENMP
 #if(_DIM_==1)            
