@@ -20,8 +20,9 @@ implicit none
 
 contains
 
-function hdf5_open_gridfun(filename) result(file_id)
+function hdf5_open_gridfun(filename, append) result(file_id)
     character(len=*), intent(in) :: filename
+    logical, intent(in), optional :: append
     integer(HID_T) :: file_id       ! File identifier 
 
     integer :: error ! Error flag
@@ -29,13 +30,19 @@ function hdf5_open_gridfun(filename) result(file_id)
 #ifdef _MPI_
     if (this_proc/=0) return
 
-    CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
-    !immediately close and reopen, because
-    !MPI version needs to read from just created file
-    CALL h5fclose_f(file_id, error)
+    if (.not.(present(append).and.append)) then
+        CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+        !immediately close and reopen, because
+        !MPI version needs to read from just created file
+        CALL h5fclose_f(file_id, error)
+    endif 
     CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
 #else
-    CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+    if (present(append).and.append) then
+        CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
+    else
+        CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+    endif
 #endif
 end function hdf5_open_gridfun
 
@@ -97,30 +104,32 @@ end subroutine hdf5_write_complex_gridfun
 
 
 
-subroutine hdf5_save_real_gridfun(g, u, filename, dset_name)
+subroutine hdf5_save_real_gridfun(g, u, filename, dset_name, append)
     class(grid) :: g
     real(prec), intent(inout), target :: u(*)
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: dset_name
+    logical, intent(in), optional :: append
 
     integer(HID_T) :: file_id       ! File identifier 
 
-    file_id = hdf5_open_gridfun(filename)
+    file_id = hdf5_open_gridfun(filename, append)
     call hdf5_write_real_gridfun(file_id, g, u, dset_name)
     call hdf5_close_gridfun(file_id)
 end subroutine hdf5_save_real_gridfun
 
-subroutine hdf5_save_complex_gridfun(g, u, filename, dset_name_real, dset_name_imag)
+subroutine hdf5_save_complex_gridfun(g, u, filename, dset_name_real, dset_name_imag, append)
     use, intrinsic :: iso_c_binding
     class(grid) :: g
     complex(prec), intent(inout), target :: u(*)
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: dset_name_real
     character(len=*), intent(in) :: dset_name_imag
+    logical, intent(in), optional :: append
 
     integer(HID_T) :: file_id       ! File identifier 
 
-    file_id = hdf5_open_gridfun(filename)
+    file_id = hdf5_open_gridfun(filename, append)
     call  hdf5_write_complex_gridfun(file_id, g, u, dset_name_real, dset_name_imag)
     call hdf5_close_gridfun(file_id)
 end subroutine hdf5_save_complex_gridfun

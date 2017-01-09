@@ -2160,10 +2160,24 @@ contains
     end subroutine add_apply_A
 
    
-    subroutine save(this, filename)
+    subroutine save(this, filename, &
+#ifdef _REAL_        
+                    dset_name, &
+#else        
+                    dset_name_real, dset_name_imag, &
+#endif                    
+                    append)
 #ifdef _NO_HDF5_
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name 
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+        logical, intent(in), optional :: append
+
         print *, "W: save not implemented"
 #else
 #ifdef _QUADPRECISION_
@@ -2173,25 +2187,56 @@ contains
 #endif        
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
-        
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name 
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+        logical, intent(in), optional :: append
+       
         call this%to_real_space
 
 #ifdef _REAL_        
-        call hdf5_save_real_gridfun(this%m%g, this%u, filename, trim(this%m%dset_name))
+        if (present(dset_name)) then
+            call hdf5_save_real_gridfun(this%m%g, this%u, filename, dset_name, append)
+        else
+            call hdf5_save_real_gridfun(this%m%g, this%u, filename, trim(this%m%dset_name), append)
+        endif
 #else        
-        call hdf5_save_complex_gridfun(this%m%g, this%u, filename, &
-                     trim(this%m%dset_name_real), trim(this%m%dset_name_imag))
+        if (present(dset_name_real).and.present(dset_name_imag)) then
+             call hdf5_save_complex_gridfun(this%m%g, this%u, filename, &
+                  trim(dset_name_real), trim(dset_name_imag), append)
+        else
+             call hdf5_save_complex_gridfun(this%m%g, this%u, filename, &
+                  trim(this%m%dset_name_real), trim(this%m%dset_name_imag), append)
+        endif
 #endif        
-        call hdf5_write_grid_attributes(this%m%g, filename)
+        if ((.not.present(append)).or.(.not.append)) then
+             call hdf5_write_grid_attributes(this%m%g, filename)
+        endif
 #endif        
     end subroutine save
 
 
 
-    subroutine load(this, filename)
+
+    subroutine load(this, filename, &
+#ifdef _REAL_        
+                    dset_name &
+#else        
+                    dset_name_real, dset_name_imag &
+#endif                    
+                    )
 #ifdef _NO_HDF5_
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name 
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
         print *, "W: load not implemented"
 #else
 #ifdef _QUADPRECISION_
@@ -2201,6 +2246,12 @@ contains
 #endif        
         class(S(wf_fourier)), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name 
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
 #ifdef _QUADPRECISION_
         real(kind=prec), parameter :: eps = epsilon(1.0_8)
 #else        
@@ -2216,9 +2267,17 @@ contains
         type(grid_equidistant_3D) :: g 
 #endif 
 #ifdef _REAL_
-        call hdf5_read_grid_attributes(g, filename, trim(this%m%dset_name))
+        if (present(dset_name)) then
+            call hdf5_read_grid_attributes(g, filename, dset_name)
+        else
+            call hdf5_read_grid_attributes(g, filename, trim(this%m%dset_name))
+        endif
 #else        
-        call hdf5_read_grid_attributes(g, filename, trim(this%m%dset_name_real))
+        if (present(dset_name_real).and.present(dset_name_imag)) then
+            call hdf5_read_grid_attributes(g, filename, dset_name_real)
+        else
+            call hdf5_read_grid_attributes(g, filename, trim(this%m%dset_name_real))
+        endif
 #endif        
 #if(_DIM_==1)
         if (.not.(abs(this%m%g%dx-g%dx)<eps)) then
@@ -2253,10 +2312,19 @@ contains
 #endif
         this%u = 0.0_prec
 #ifdef _REAL_        
+        if (present(dset_name)) then
+        call hdf5_load_real_gridfun(this%m%g, this%u, filename, dset_name, offset=offset)
+        else
         call hdf5_load_real_gridfun(this%m%g, this%u, filename, trim(this%m%dset_name), offset=offset)
+        endif
 #else      
-        call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
+        if (present(dset_name_real).and.present(dset_name_imag)) then
+            call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
+                     dset_name_real, dset_name_imag, offset=offset)
+        else
+            call hdf5_load_complex_gridfun(this%m%g, this%u, filename, & 
                      trim(this%m%dset_name_real), trim(this%m%dset_name_imag), offset=offset)
+        endif
 #endif        
         call this%set_real_space(.true.)
 #endif

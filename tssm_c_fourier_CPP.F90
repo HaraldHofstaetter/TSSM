@@ -293,6 +293,49 @@ contains
         call psip%save(fn)
     end subroutine c_save_wf
 
+    subroutine c_save1_wf(psi, filename, filename_length, &
+                          dset_name, dset_name_length, &
+#ifndef _REAL_
+                          dset_name_imag, dset_name_imag_length, &
+#endif
+                          append )  bind(c, name=SC(save1_wf_fourier)) 
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        integer(c_int), intent(in), value :: filename_length
+        character(kind=c_char), dimension(filename_length), intent(in):: filename
+        integer(c_int), intent(in), value :: dset_name_length
+        character(kind=c_char), dimension(dset_name_length), intent(in):: dset_name
+#ifndef _REAL_
+        integer(c_int), intent(in), value :: dset_name_imag_length
+        character(kind=c_char), dimension(dset_name_imag_length), intent(in):: dset_name_imag
+#endif
+        logical, intent(in), value :: append
+        character(len=filename_length, kind=c_char) :: fn 
+        character(len=dset_name_length, kind=c_char) :: dn 
+#ifndef _REAL_
+        character(len=dset_name_imag_length, kind=c_char) :: dn_imag 
+#endif
+        type(S(wf_fourier)), pointer :: psip
+        integer :: j
+        call c_f_pointer(psi, psip)
+        do j=1,filename_length
+            fn(j:j) = filename(j)
+        end do
+        do j=1,dset_name_length
+            dn(j:j) = dset_name(j)
+        end do
+#ifndef _REAL_
+        do j=1,dset_name_imag_length
+            dn_imag(j:j) = dset_name_imag(j)
+        end do
+#endif
+#ifdef _REAL_
+        call psip%save(fn, dn, append)
+#else
+        call psip%save(fn, dn, dn_imag, append)
+#endif
+    end subroutine c_save1_wf
+
     subroutine c_load_wf(psi, filename, filename_length) &
         bind(c, name=SC(load_wf_fourier)) 
         use iso_c_binding
@@ -308,6 +351,49 @@ contains
         end do
         call psip%load(fn)
     end subroutine c_load_wf
+
+    subroutine c_load1_wf(psi, filename, filename_length, &
+                          dset_name, dset_name_length &
+#ifndef _REAL_
+                          , dset_name_imag, dset_name_imag_length &
+#endif
+                         ) bind(c, name=SC(load1_wf_fourier))
+        use iso_c_binding
+        type(c_ptr), value :: psi
+        integer(c_int), intent(in), value :: filename_length
+        character(kind=c_char), dimension(filename_length), intent(in):: filename
+        integer(c_int), intent(in), value :: dset_name_length
+        character(kind=c_char), dimension(dset_name_length), intent(in):: dset_name
+#ifndef _REAL_
+        integer(c_int), intent(in), value :: dset_name_imag_length
+        character(kind=c_char), dimension(dset_name_imag_length), intent(in):: dset_name_imag
+#endif
+        character(len=filename_length, kind=c_char) :: fn
+        character(len=dset_name_length, kind=c_char) :: dn 
+#ifndef _REAL_
+        character(len=dset_name_imag_length, kind=c_char) :: dn_imag 
+#endif
+        type(S(wf_fourier)), pointer :: psip
+        integer :: j
+        call c_f_pointer(psi, psip)
+        do j=1,filename_length
+            fn(j:j) = filename(j)
+        end do
+        do j=1,dset_name_length
+            dn(j:j) = dset_name(j)
+        end do
+#ifndef _REAL_
+        do j=1,dset_name_imag_length
+            dn_imag(j:j) = dset_name_imag(j)
+        end do
+#endif
+#ifdef _REAL_
+        call psip%load(fn, dn)
+#else
+        call psip%load(fn, dn, dn_imag)
+#endif
+    end subroutine c_load1_wf
+
 
     function c_norm_wf(psi) &
         result(ans) bind(c, name=SC(norm_wf_fourier))

@@ -38,8 +38,8 @@ module S(tssm_base)
 !        procedure(proagate_AB_interface), deferred :: propagate_B
 !        procedure(to_rf_space_interface), deferred :: to_real_space 
 !        procedure(to_rf_space_interface), deferred :: to_frequency_space 
-        procedure(save_load_interface), deferred :: save
-        procedure(save_load_interface), deferred :: load
+        procedure(save_interface), deferred :: save
+        procedure(load_interface), deferred :: load
         procedure(norm_interface), deferred :: norm
         procedure(distance_interface), deferred :: distance
         procedure(normalize_interface), deferred :: normalize
@@ -61,11 +61,41 @@ module S(tssm_base)
             class(_WAVE_FUNCTION_), intent(inout) :: this
             _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
         end subroutine proagate_AB_interface
-        subroutine save_load_interface(this, filename)
+        subroutine save_interface(this, filename, &
+#ifdef _REAL_        
+                    dset_name, &
+#else        
+                    dset_name_real, dset_name_imag, &
+#endif                    
+                    append)
             import  _WAVE_FUNCTION_ 
             class(_WAVE_FUNCTION_), intent(inout) :: this
             character(len=*), intent(in) :: filename
-        end subroutine save_load_interface
+#ifdef _REAL_        
+            character(len=*), intent(in), optional :: dset_name
+#else        
+            character(len=*), intent(in), optional :: dset_name_real
+            character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+            logical, intent(in), optional :: append
+        end subroutine save_interface
+        subroutine load_interface(this, filename, &
+#ifdef _REAL_        
+                    dset_name &
+#else        
+                    dset_name_real, dset_name_imag &
+#endif                    
+                    )
+            import  _WAVE_FUNCTION_ 
+            class(_WAVE_FUNCTION_), intent(inout) :: this
+            character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+            character(len=*), intent(in), optional :: dset_name
+#else        
+            character(len=*), intent(in), optional :: dset_name_real
+            character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+        end subroutine load_interface
         subroutine set_interface(this, f)
             import _WAVE_FUNCTION_, prec 
             class(_WAVE_FUNCTION_), intent(inout) :: this

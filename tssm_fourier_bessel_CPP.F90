@@ -229,10 +229,23 @@ contains
 
 
 
-    subroutine save(this, filename)
+    subroutine save(this, filename, &
+#ifdef _REAL_        
+                    dset_name, &
+#else        
+                    dset_name_real, dset_name_imag, &
+#endif                    
+                    append)
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+        logical, intent(in), optional :: append
         print *, "W: save not implemented"
 #else
 #ifdef _QUADPRECISION_
@@ -242,6 +255,13 @@ contains
 #endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
+        logical, intent(in), optional :: append
         !TODO
 
         call this%_BASE_WF_%save(filename)
@@ -257,10 +277,22 @@ contains
     end subroutine save
 
 
-   subroutine load(this, filename)
+    subroutine load(this, filename, &
+#ifdef _REAL_        
+                    dset_name &
+#else        
+                    dset_name_real, dset_name_imag &
+#endif                    
+                    )
 #ifdef _NO_HDF5_
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
         print *, "W: load not implemented"
 #else
 #ifdef _QUADPRECISION_
@@ -270,6 +302,12 @@ contains
 #endif        
         class(_WF_), intent(inout) :: this
         character(len=*), intent(in) :: filename
+#ifdef _REAL_        
+        character(len=*), intent(in), optional :: dset_name
+#else        
+        character(len=*), intent(in), optional :: dset_name_real
+        character(len=*), intent(in), optional :: dset_name_imag
+#endif                    
 #ifdef _QUADPRECISION_
         real(kind=prec), parameter :: eps = epsilon(1.0_8)
 #else        
