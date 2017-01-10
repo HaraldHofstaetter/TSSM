@@ -145,6 +145,7 @@ module S(tssm_schroedinger) ! (Nonlinear) Schroedinger
         procedure(potential_interface), pointer, nopass :: potential => null()
         procedure(c_potential_interface), pointer, nopass :: c_potential => null()
 #ifndef _REAL_
+        _COMPLEX_OR_REAL_(kind=prec) :: time_potential_evaluated = -1.73456923567e20
 #if(_DIM_==1)
         real(kind=prec), pointer :: V_t(:) => null() ! temporary storage for time-dependent potential 
 #elif(_DIM_==2)
@@ -485,7 +486,6 @@ contains
         if (present(potential_t_derivative)) then
             call this%set_potential_t(potential_t_derivative, is_derivative=.true.) 
         end if
-        call this%g%allocate_real_gridfun(this%V_t)
 #endif        
     end function new_method
 
@@ -590,6 +590,9 @@ contains
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
         logical, optional :: is_derivative
+        if (.not.associated(this%V_t)) then
+            call this%g%allocate_real_gridfun(this%V_t)
+        end if
         if (present(is_derivative).and.is_derivative) then
             this%potential_t_derivative => f
         else
@@ -602,6 +605,9 @@ contains
         class(S(schroedinger)), intent(inout) :: this
         type(c_funptr), intent(in) :: f
         logical, optional :: is_derivative
+        if (.not.associated(this%V_t)) then
+            call this%g%allocate_real_gridfun(this%V_t)
+        end if
 
         if (present(is_derivative).and.is_derivative) then
             call c_f_procpointer(f, this%c_potential_t_derivative)
@@ -676,6 +682,12 @@ contains
         logical, optional :: is_derivative
         real(kind=prec) :: time
         procedure(c_potential_t_interface), pointer :: c_potential_t  
+
+        if (this%time_potential_evaluated==time) then
+            return
+        end if
+
+        this%time_potential_evaluated = time
 
         if (present(is_derivative).and.is_derivative) then
             if (associated(this%c_potential_t_derivative)) then
@@ -2764,6 +2776,7 @@ contains
         integer :: j
 #endif        
 
+        E_pot = 0.0_prec
 
         select type (m=>this%m); class is (S(schroedinger))
 
@@ -2773,12 +2786,12 @@ contains
 #if defined(_HERMITE_)
 #ifndef _OPENMP
 #if(_DIM_==1)
-          E_pot = sum(m%g%weights_x &
+          E_pot = E_pot + sum(m%g%weights_x &
 #elif(_DIM_==2)
-          E_pot = sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+          E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
                       *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
 #elif(_DIM_==3)
-          E_pot = sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+          E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
 #endif
@@ -2788,7 +2801,6 @@ contains
                      *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )
 #endif 
 #else
-          E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V, w) REDUCTION(+:E_pot)
           do j=1,n_threads
 #if(_DIM_==1)
@@ -2826,9 +2838,9 @@ contains
 
 #ifndef _OPENMP
 #if(_DIM_==2)
-    E_pot = sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+    E_pot = E_pot + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
 #elif(_DIM_==3)
-    E_pot = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+    E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
@@ -2837,7 +2849,6 @@ contains
                      *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*m%g%dtheta
 #endif 
 #else
-          E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
           do j=1,n_threads
 #if(_DIM_==2)
@@ -2874,12 +2885,11 @@ contains
             case(periodic, dirichlet)
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V * this%u**2) * dV 
+                E_pot = E_pot + sum(m%V * this%u**2) * dV 
 #else
-                E_pot = sum(m%V * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
+                E_pot = E_pot + sum(m%V * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
 #endif 
 #else
-          E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
           do j=1,n_threads
 #if(_DIM_==1)
@@ -2906,12 +2916,11 @@ contains
                 nv1 = lbound(m%V,1) + n1 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:) * this%u(n1:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:) * this%u(n1:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
+                E_pot = E_pot + sum(m%V(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
@@ -2931,13 +2940,12 @@ contains
                 nv2 = lbound(m%V,2) + n2 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
+                E_pot = E_pot + sum(m%V(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
                                             +aimag(this%u(n1:,n2:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
@@ -2959,13 +2967,12 @@ contains
                 nv3 = lbound(m%V,3) + n3 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
+                E_pot = E_pot + sum(m%V(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
                                                  +aimag(this%u(n1:,n2:,n3:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
@@ -2981,15 +2988,228 @@ contains
 #endif
             end select      
 #endif
+
+        end if    
+
+#ifndef _REAL_        
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+            call m%evaluate_potential_t(real(this%time, kind=prec))
+            call this%to_real_space
+
+#if defined(_HERMITE_)
+#ifndef _OPENMP
+#if(_DIM_==1)
+          E_pot = E_pot + sum(m%g%weights_x &
+#elif(_DIM_==2)
+          E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+                      *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+          E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u**2) )
+#else
+                     *m%V_t *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V, w) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+                w => m%g%weights_x(lbound(m%g%weights_x,1)+m%g%jj(j-1):lbound(m%g%weights_x,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+                w => m%g%weights_y(lbound(m%g%weights_y,1)+m%g%jj(j-1):lbound(m%g%weights_y,1)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+                w => m%g%weights_z(lbound(m%g%weights_z,1)+m%g%jj(j-1):lbound(m%g%weights_z,1)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==1)
+                E_pot = E_pot + sum(w &
+#elif(_DIM_==2)
+                E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%jj(j)-m%g%jj(j-1)) &
+                      *spread(w, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(w, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+#elif defined(_LAGUERRE_)
+
+#ifndef _OPENMP
+#if(_DIM_==2)
+    E_pot = E_pot + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+#elif(_DIM_==3)
+    E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+               *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u**2) )*m%g%dtheta
+#else
+                     *m%V_t *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*m%g%dtheta
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==2)
+                E_pot = E_pot + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )*m%g%dtheta
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+
+#else
+#if(_DIM_==1)
+            dV = m%g%dx 
+#elif(_DIM_==2)
+            dV = m%g%dx * m%g%dy 
+#elif(_DIM_==3)
+            dV = m%g%dx * m%g%dy * m%g%dz
+#endif
+            select case(m%boundary_conditions)
+            case(periodic, dirichlet)
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t * this%u**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif
+#ifdef _REAL_
+                E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+            case(neumann) ! for summation exlude first index in each dimension 
+#if(_DIM_==1)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:) * this%u(n1:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
+                      V => m%V_t(max(nv1,lbound(m%V_t,1)+m%g%jj(j-1)):lbound(m%V_t,1)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#elif(_DIM_==2)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                n2 = 1;  if (m%g%n2min==0) n2 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
+                                            +aimag(this%u(n1:,n2:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,max(nv2,lbound(m%V_t,2)+m%g%jj(j-1)):lbound(m%V_t,2)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#elif(_DIM_==3)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                n2 = 1;  if (m%g%n2min==0) n2 = 2
+                n3 = 1;  if (m%g%n3min==0) n3 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+                nv3 = lbound(m%V_t,3) + n3 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
+                                                 +aimag(this%u(n1:,n2:,n3:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,nv2:,max(nv3,lbound(m%V_t,3)+m%g%jj(j-1)):lbound(m%V_t,3)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#endif
+            end select      
+#endif
+
+        end if    
+#endif            
       
 #ifdef _MPI_
-            call MPI_Reduce(E_pot, h, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-            E_pot = h
-            call MPI_Bcast(E_pot, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+        call MPI_Reduce(E_pot, h, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+        E_pot = h
+        call MPI_Bcast(E_pot, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
 #endif            
-        else
-            E_pot = 0.0_prec
-        end if    
 
         class default
            stop "E: wrong spectral method for schroedinger wave function"
@@ -3036,7 +3256,6 @@ contains
         if (.not.associated(wf%m,this%m)) then
             stop "E: wave functions not belonging to the same method"
         end if    
-        
 
         if (associated(m%V)) then
            call this%to_real_space
@@ -3045,12 +3264,12 @@ contains
 #if defined(_HERMITE_)
 #ifndef _OPENMP
 #if(_DIM_==1)
-          res = sum(m%g%weights_x &
+          res = res + sum(m%g%weights_x &
 #elif(_DIM_==2)
-          res = sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+          res = res + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
                       *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
 #elif(_DIM_==3)
-          res = sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+          res = res + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
 #endif
@@ -3060,7 +3279,6 @@ contains
                      *m%V *(conjg(this%u)*wf%u) )
 #endif 
 #else
-          res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2, V, w) REDUCTION(+:res)
           do j=1,n_threads
 #if(_DIM_==1)
@@ -3101,9 +3319,9 @@ contains
 
 #ifndef _OPENMP
 #if(_DIM_==2)
-    res = sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+    res = res + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
 #elif(_DIM_==3)
-    res = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+    res = res + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
 #endif
 #ifdef _REAL_
@@ -3112,7 +3330,6 @@ contains
                      *m%V *(conjg(this%u)*wf%u) )*m%g%dtheta
 #endif 
 #else
-          res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2,  V) REDUCTION(+:res)
           do j=1,n_threads
 #if(_DIM_==2)
@@ -3151,12 +3368,11 @@ contains
             case(periodic, dirichlet)
 #ifndef _OPENMP
 #ifdef _REAL_
-                res = sum(m%V * this%u*wf%u) * dV 
+                res = res + sum(m%V * this%u*wf%u) * dV 
 #else
-                res = sum(m%V * conjg(this%u)*wf%u) * dV 
+                res = res + sum(m%V * conjg(this%u)*wf%u) * dV 
 #endif 
 #else
-          res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
           do j=1,n_threads
 #if(_DIM_==1)
@@ -3186,12 +3402,11 @@ contains
                 nv1 = lbound(m%V,1) + n1 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                res = sum(m%V(nv1:) * this%u(n1:)*wf%u(n1:)) * dV 
+                res = res + sum(m%V(nv1:) * this%u(n1:)*wf%u(n1:)) * dV 
 #else
-                res = sum(m%V(nv1:) * conjg(this%u(n1:))*wf%u(n1:)) * dV 
+                res = res + sum(m%V(nv1:) * conjg(this%u(n1:))*wf%u(n1:)) * dV 
 #endif 
 #else
-                res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
                 do j=1,n_threads
                       u1 => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
@@ -3212,12 +3427,11 @@ contains
                 nv2 = lbound(m%V,2) + n2 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                res = sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)*wf%u(n1:,n2:)) * dV 
+                res = res + sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)*wf%u(n1:,n2:)) * dV 
 #else
-                res = sum(m%V(nv1:,nv2:) * conjg(this%u(n1:,n2:))*wf%u(n1:,n2:)) * dV 
+                res = res + sum(m%V(nv1:,nv2:) * conjg(this%u(n1:,n2:))*wf%u(n1:,n2:)) * dV 
 #endif 
 #else
-                res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
                 do j=1,n_threads
                       u1 => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
@@ -3240,12 +3454,11 @@ contains
                 nv3 = lbound(m%V,3) + n3 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                res = sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)*wf%u(n1:,n2:,n3:)) * dV 
+                res = res + sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)*wf%u(n1:,n2:,n3:)) * dV 
 #else
-                res = sum(m%V(nv1:,nv2:,nv3:) * conjg(this%u(n1:,n2:,n3:))*wf%u(n1:,n2:,n3:)) * dV 
+                res = res + sum(m%V(nv1:,nv2:,nv3:) * conjg(this%u(n1:,n2:,n3:))*wf%u(n1:,n2:,n3:)) * dV 
 #endif 
 #else
-                res = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u1, u2,  V) REDUCTION(+:res)
                 do j=1,n_threads
                       u1 => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
@@ -3262,15 +3475,237 @@ contains
 #endif
             end select      
 #endif
+        end if    
+
+#ifndef _REAL_        
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+           call m%evaluate_potential_t(real(this%time, kind=prec))
+
+           call this%to_real_space
+           call wf%to_real_space
+
+#if defined(_HERMITE_)
+#ifndef _OPENMP
+#if(_DIM_==1)
+          res = res + sum(m%g%weights_x &
+#elif(_DIM_==2)
+          res = res + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+                      *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+          res = res + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u*wf%u) )
+#else
+                     *m%V_t *(conjg(this%u)*wf%u) )
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2, V, w) REDUCTION(+:res)
+          do j=1,n_threads
+#if(_DIM_==1)
+                u1 => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                u2 => wf%u(lbound(wf%u,1)+m%g%jj(j-1):lbound(wf%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+                w => m%g%weights_x(lbound(m%g%weights_x,1)+m%g%jj(j-1):lbound(m%g%weights_x,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+                w => m%g%weights_y(lbound(m%g%weights_y,1)+m%g%jj(j-1):lbound(m%g%weights_y,1)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+                w => m%g%weights_z(lbound(m%g%weights_z,1)+m%g%jj(j-1):lbound(m%g%weights_z,1)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==1)
+                res = res + sum(w &
+#elif(_DIM_==2)
+                res = res + sum(spread(m%g%weights_x, 2, m%g%jj(j)-m%g%jj(j-1)) &
+                      *spread(w, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+                res = res + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(w, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *V *(u1*u2) )
+#else
+                     *V *(conjg(u1)*u2) )
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+#elif defined(_LAGUERRE_)
+
+#ifndef _OPENMP
+#if(_DIM_==2)
+    res = res + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+#elif(_DIM_==3)
+    res = res + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+               *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u*wf%u) )*m%g%dtheta
+#else
+                     *m%V_t *(conjg(this%u)*wf%u) )*m%g%dtheta
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2,  V) REDUCTION(+:res)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==2)
+                res = res + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) &
+#elif(_DIM_==3)
+                res = res + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *V *(u1*u2) )*m%g%dtheta
+#else
+                     *V *(conjg(u1)*u2) )*m%g%dtheta
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+
+#else
+#if(_DIM_==1)
+            dV = m%g%dx 
+#elif(_DIM_==2)
+            dV = m%g%dx * m%g%dy 
+#elif(_DIM_==3)
+            dV = m%g%dx * m%g%dy * m%g%dz
+#endif
+            select case(m%boundary_conditions)
+            case(periodic, dirichlet)
+#ifndef _OPENMP
+#ifdef _REAL_
+                res = res + sum(m%V_t * this%u*wf%u) * dV 
+#else
+                res = res + sum(m%V_t * conjg(this%u)*wf%u) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
+          do j=1,n_threads
+#if(_DIM_==1)
+                u1 => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                u2 => wf%u(lbound(wf%u,1)+m%g%jj(j-1):lbound(wf%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u1 => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                u2 => wf%u(:,lbound(wf%u,2)+m%g%jj(j-1):lbound(wf%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u1 => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                u2 => wf%u(:,:,lbound(wf%u,3)+m%g%jj(j-1):lbound(wf%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif
+#ifdef _REAL_
+                res = res + sum(V * u1*u2) * dV 
+#else
+                res = res + sum(V * conjg(u1)*u2) * dV 
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+            case(neumann) ! for summation exlude first index in each dimension 
+#if(_DIM_==1)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                res = res + sum(m%V_t(nv1:) * this%u(n1:)*wf%u(n1:)) * dV 
+#else
+                res = res + sum(m%V_t(nv1:) * conjg(this%u(n1:))*wf%u(n1:)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
+                do j=1,n_threads
+                      u1 => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
+                      u2 => wf%u(max(n1,lbound(wf%u,1)+m%g%jj(j-1)):lbound(wf%u,1)+m%g%jj(j)-1)
+                      V => m%V_t(max(nv1,lbound(m%V_t,1)+m%g%jj(j-1)):lbound(m%V_t,1)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      res = res + sum(V * u1*u2) * dV 
+#else
+                      res = res + sum(V * conjg(u1)*u2) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#elif(_DIM_==2)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                n2 = 1;  if (m%g%n2min==0) n2 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                res = res + sum(m%V_t(nv1:,nv2:) * this%u(n1:,n2:)*wf%u(n1:,n2:)) * dV 
+#else
+                res = res + sum(m%V_t(nv1:,nv2:) * conjg(this%u(n1:,n2:))*wf%u(n1:,n2:)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2, V) REDUCTION(+:res)
+                do j=1,n_threads
+                      u1 => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
+                      u2 => wf%u(n1:,max(n2,lbound(wf%u,2)+m%g%jj(j-1)):lbound(wf%u,2)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,max(nv2,lbound(m%V_t,2)+m%g%jj(j-1)):lbound(m%V_t,2)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      res = res + sum(V * u1*u2) * dV 
+#else
+                      res = res + sum(V * conjg(u1)*u2) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#elif(_DIM_==3)
+                n1 = 1;  if (m%g%n1min==0) n1 = 2
+                n2 = 1;  if (m%g%n2min==0) n2 = 2
+                n3 = 1;  if (m%g%n3min==0) n3 = 2
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+                nv3 = lbound(m%V_t,3) + n3 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                res = res + sum(m%V_t(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)*wf%u(n1:,n2:,n3:)) * dV 
+#else
+                res = res + sum(m%V_t(nv1:,nv2:,nv3:) * conjg(this%u(n1:,n2:,n3:))*wf%u(n1:,n2:,n3:)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u1, u2,  V) REDUCTION(+:res)
+                do j=1,n_threads
+                      u1 => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
+                      u2 => wf%u(n1:,n2:,max(n3,lbound(wf%u,3)+m%g%jj(j-1)):lbound(wf%u,3)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,nv2:,max(nv3,lbound(m%V_t,3)+m%g%jj(j-1)):lbound(m%V_t,3)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      res = res + sum(V * u1*u2) * dV 
+#else
+                      res = res + sum(V * conjg(u1)*u2) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+#endif
+            end select      
+#endif
+        end if
+#endif            
       
 #ifdef _MPI_
-            call MPI_Reduce(res, h, 1, MPI_DOUBLE_COMPLEX, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-            res = h
-            call MPI_Bcast(res, 1, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
+        call MPI_Reduce(res, h, 1, MPI_DOUBLE_COMPLEX, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+        res = h
+        call MPI_Bcast(res, 1, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
 #endif            
-        else
-            res = 0.0_prec
-        end if    
         
         class default
            stop "E: wave functions not belonging to the same method"
@@ -4118,16 +4553,21 @@ contains
 !$OMP END PARALLEL DO
 #endif 
 #endif
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+           call m%evaluate_potential_t(real(this%time, kind=prec))
+        endif
+#endif        
 
         if (associated(m%V)) then
 #ifndef _OPENMP
 #if(_DIM_==1)
-          E_pot = sum(m%g%weights_x &
+          E_pot = E_pot + sum(m%g%weights_x &
 #elif(_DIM_==2)
-          E_pot = sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+          E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
                       *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
 #elif(_DIM_==3)
-          E_pot = sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+          E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
                      *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
 #endif
@@ -4137,7 +4577,6 @@ contains
                      *m%V *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )
 #endif 
 #else
-          E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V, w) REDUCTION(+:E_pot)
           do j=1,n_threads
 #if(_DIM_==1)
@@ -4172,6 +4611,61 @@ contains
 !$OMP END PARALLEL DO
 #endif 
         endif
+
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+#ifndef _OPENMP
+#if(_DIM_==1)
+          E_pot = E_pot + sum(m%g%weights_x &
+#elif(_DIM_==2)
+          E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1) &
+                      *spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+          E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) &
+                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u**2) )
+#else
+                     *m%V_t *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V, w) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==1)
+                u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+                w => m%g%weights_x(lbound(m%g%weights_x,1)+m%g%jj(j-1):lbound(m%g%weights_x,1)+m%g%jj(j)-1)
+#elif(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+                w => m%g%weights_y(lbound(m%g%weights_y,1)+m%g%jj(j-1):lbound(m%g%weights_y,1)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+                w => m%g%weights_z(lbound(m%g%weights_z,1)+m%g%jj(j-1):lbound(m%g%weights_z,1)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==1)
+                E_pot = E_pot + sum(w &
+#elif(_DIM_==2)
+                E_pot = E_pot + sum(spread(m%g%weights_x, 2, m%g%jj(j)-m%g%jj(j-1)) &
+                      *spread(w, 1, m%g%n1max-m%g%n1min+1) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(m%g%weights_x, 2, m%g%n2max-m%g%n2min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(m%g%weights_y, 1, m%g%n1max-m%g%n1min+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                     *spread(spread(w, 1, m%g%n1max-m%g%n1min+1), 2, m%g%n2max-m%g%n2min+1) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )
+#endif 
+          end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
 
         if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
@@ -4318,13 +4812,12 @@ contains
 !$OMP END PARALLEL DO
 #endif 
 #endif
-        E_pot = 0.0_prec
         if (associated(m%V)) then
 #ifndef _OPENMP
 #if(_DIM_==2)
-           E_pot = sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+           E_pot = E_pot + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
 #elif(_DIM_==3)
-           E_pot = sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+           E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
                     *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) & 
 #endif
 #ifdef _REAL_
@@ -4358,6 +4851,48 @@ contains
 !$OMP END PARALLEL DO
 #endif 
         endif
+
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+#ifndef _OPENMP
+#if(_DIM_==2)
+           E_pot = E_pot + sum( spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1)  &
+#elif(_DIM_==3)
+           E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%n2max-m%g%n2min+1), 3, m%g%n3max-m%g%n3min+1) &
+                    *spread(spread(m%g%weights_z, 1, m%g%n1max-m%g%n1min+1), 3, m%g%n3max-m%g%n3min+1) & 
+#endif
+#ifdef _REAL_
+                     *m%V_t *(this%u**2) )*m%g%dtheta
+#else
+                     *m%V_t *(real(this%u,kind=prec)**2 +aimag(this%u)**2) )*m%g%dtheta
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+          do j=1,n_threads
+#if(_DIM_==2)
+                u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif 
+#if(_DIM_==2)
+                E_pot = E_pot + sum(spread(m%g%weights_r, 2, m%g%jj(j)-m%g%jj(j-1)) &
+#elif(_DIM_==3)
+                E_pot = E_pot + sum(spread(spread(m%g%weights_r, 2, m%g%nzmax-m%g%nzmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+                                   *spread(spread(m%g%weights_z, 1, m%g%nrmax-m%g%nrmin+1), 3, m%g%jj(j)-m%g%jj(j-1)) &
+#endif
+#ifdef _REAL_
+                     *V *(u**2) )*m%g%dtheta
+#else
+                     *V *(real(u,kind=prec)**2 +aimag(u)**2) )*m%g%dtheta
+#endif 
+
+          end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
 
         E_int = 0.0_prec
         if (m%cubic_coupling/=0_prec) then
@@ -4515,12 +5050,11 @@ contains
             if (associated(m%V)) then
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V * this%u**2) * dV 
+                E_pot = E_pot + sum(m%V * this%u**2) * dV 
 #else
-                E_pot = sum(m%V * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
+                E_pot = E_pot + sum(m%V * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
 #if(_DIM_==1)
@@ -4542,6 +5076,38 @@ contains
 !$OMP END PARALLEL DO
 #endif 
             endif  
+
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t * this%u**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t * (real(this%u, prec)**2+aimag(this%u)**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+#if(_DIM_==1)
+                      u => this%u(lbound(this%u,1)+m%g%jj(j-1):lbound(this%u,1)+m%g%jj(j)-1)
+                      V => m%V_t(lbound(m%V_t,1)+m%g%jj(j-1):lbound(m%V_t,1)+m%g%jj(j)-1)
+      #elif(_DIM_==2)
+                      u => this%u(:,lbound(this%u,2)+m%g%jj(j-1):lbound(this%u,2)+m%g%jj(j)-1)
+                      V => m%V_t(:,lbound(m%V_t,2)+m%g%jj(j-1):lbound(m%V_t,2)+m%g%jj(j)-1)
+#elif(_DIM_==3)
+                      u => this%u(:,:,lbound(this%u,3)+m%g%jj(j-1):lbound(this%u,3)+m%g%jj(j)-1)
+                      V => m%V_t(:,:,lbound(m%V_t,3)+m%g%jj(j-1):lbound(m%V_t,3)+m%g%jj(j)-1)
+#endif
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
             if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
 #ifdef _REAL_
@@ -4577,12 +5143,11 @@ contains
                 nv1 = lbound(m%V,1) + n1 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:) * this%u(n1:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:) * this%u(n1:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
+                E_pot = E_pot + sum(m%V(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
@@ -4596,6 +5161,30 @@ contains
 !$OMP END PARALLEL DO
 #endif 
             endif  
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+                nv1 = lbound(m%V_t,1) + n1 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:) * this%u(n1:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:) * (real(this%u(n1:), prec)**2+aimag(this%u(n1:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(max(n1,lbound(this%u,1)+m%g%jj(j-1)):lbound(this%u,1)+m%g%jj(j)-1)
+                      V => m%V_t(max(nv1,lbound(m%V_t,1)+m%g%jj(j-1)):lbound(m%V_t,1)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
             if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
 #ifdef _REAL_
@@ -4623,13 +5212,12 @@ contains
                 nv2 = lbound(m%V,2) + n2 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
+                E_pot = E_pot + sum(m%V(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
                                             +aimag(this%u(n1:,n2:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
@@ -4643,6 +5231,32 @@ contains
 !$OMP END PARALLEL DO
 #endif 
             endif  
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:) * this%u(n1:,n2:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:) * (real(this%u(n1:,n2:), prec)**2 &
+                                            +aimag(this%u(n1:,n2:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(n1:,max(n2,lbound(this%u,2)+m%g%jj(j-1)):lbound(this%u,2)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,max(nv2,lbound(m%V_t,2)+m%g%jj(j-1)):lbound(m%V_t,2)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
             if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
 #ifdef _REAL_
@@ -4672,26 +5286,52 @@ contains
                 nv3 = lbound(m%V,3) + n3 - 1
 #ifndef _OPENMP
 #ifdef _REAL_
-                E_pot = sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
+                E_pot = E_pot + sum(m%V(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
 #else
-                E_pot = sum(m%V(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
+                E_pot = E_pot + sum(m%V(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
                                                  +aimag(this%u(n1:,n2:,n3:))**2)) * dV 
 #endif 
 #else
-                E_pot = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
                 do j=1,n_threads
                       u => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
                       V => m%V(nv1:,nv2:,max(nv3,lbound(m%V,3)+m%g%jj(j-1)):lbound(m%V,3)+m%g%jj(j)-1)
 #ifdef _REAL_
-                      E_pot = E_pot + sum(V * u**2) * dV 
+                      E_pot = E_pot + E_pot + sum(V * u**2) * dV 
 #else
-                      E_pot = E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+                      E_pot = E_pot + E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
 #endif 
                 end do
 !$OMP END PARALLEL DO
 #endif 
             endif  
+#ifndef _REAL_
+        if (associated(m%potential_t).or.associated(m%c_potential_t)) then
+                nv1 = lbound(m%V_t,1) + n1 - 1
+                nv2 = lbound(m%V_t,2) + n2 - 1
+                nv3 = lbound(m%V_t,3) + n3 - 1
+#ifndef _OPENMP
+#ifdef _REAL_
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:,nv3:) * this%u(n1:,n2:,n3:)**2) * dV 
+#else
+                E_pot = E_pot + sum(m%V_t(nv1:,nv2:,nv3:) * (real(this%u(n1:,n2:,n3:), prec)**2 &
+                                                 +aimag(this%u(n1:,n2:,n3:))**2)) * dV 
+#endif 
+#else
+!$OMP PARALLEL DO PRIVATE(j, u, V) REDUCTION(+:E_pot)
+                do j=1,n_threads
+                      u => this%u(n1:,n2:,max(n3,lbound(this%u,3)+m%g%jj(j-1)):lbound(this%u,3)+m%g%jj(j)-1)
+                      V => m%V_t(nv1:,nv2:,max(nv3,lbound(m%V_t,3)+m%g%jj(j-1)):lbound(m%V_t,3)+m%g%jj(j)-1)
+#ifdef _REAL_
+                      E_pot = E_pot + E_pot + sum(V * u**2) * dV 
+#else
+                      E_pot = E_pot + E_pot + sum(V * (real(u, prec)**2+aimag(u)**2)) * dV 
+#endif 
+                end do
+!$OMP END PARALLEL DO
+#endif 
+        endif
+#endif 
             if (m%cubic_coupling/=0_prec) then
 #ifndef _OPENMP
 #ifdef _REAL_
