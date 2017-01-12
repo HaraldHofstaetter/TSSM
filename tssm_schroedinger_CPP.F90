@@ -2623,7 +2623,7 @@ contains
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
-               * conjg(this%uf)*wg%uf)
+               * conjg(this%uf)*wf%uf)
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) REDUCTION(+:h)
         do j=1,n_threads
