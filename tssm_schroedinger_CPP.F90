@@ -486,6 +486,9 @@ contains
         if (present(potential_t_derivative)) then
             call this%set_potential_t(potential_t_derivative, is_derivative=.true.) 
         end if
+        call this%g%allocate_real_gridfun(this%V_t)
+! Note: this%V_t is always needed as temporary storage (even if no time-dependent potential
+! is defined), see propagate_B, propagate_B_prepare.
 #endif        
     end function new_method
 
@@ -590,9 +593,6 @@ contains
         class(S(schroedinger)), intent(inout) :: this
         real(kind=prec), external :: f
         logical, optional :: is_derivative
-        if (.not.associated(this%V_t)) then
-            call this%g%allocate_real_gridfun(this%V_t)
-        end if
         if (present(is_derivative).and.is_derivative) then
             this%potential_t_derivative => f
         else
@@ -605,9 +605,6 @@ contains
         class(S(schroedinger)), intent(inout) :: this
         type(c_funptr), intent(in) :: f
         logical, optional :: is_derivative
-        if (.not.associated(this%V_t)) then
-            call this%g%allocate_real_gridfun(this%V_t)
-        end if
 
         if (present(is_derivative).and.is_derivative) then
             call c_f_procpointer(f, this%c_potential_t_derivative)
