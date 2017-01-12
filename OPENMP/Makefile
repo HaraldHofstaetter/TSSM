@@ -1,9 +1,9 @@
 #SYSTEM = LINUX
 #SYSTEM = OSX
-#SYSTEM = VSC3
+SYSTEM = VSC3
 #SYSTEM = MINGW
 
-include ../Makefile.system
+#include ../Makefile.system
 
 FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
@@ -22,9 +22,11 @@ ifeq ($(SYSTEM),VSC3)
     FFTW_BASE = /opt/sw/x86_64/glibc-2.12/ivybridge-ep/fftw/3.3.4/MPI_DP/intel-14.0.2
     HDF5_BASE = /opt/sw/x86_64/glibc-2.12/ivybridge-ep/hdf5/1.8.14/intel-14.0.2
     FC = ifort
-    FOPTS =  -openmp -O3
+    FOPTS =  -openmp -O3 -fPIC
     TSSM = libtssm.a
     TSSM_SHARED_LIB = libtssm.so
+    MAKE_SHARED_LIB = ifort -openmp -shared 
+all: shared_lib
 endif
 
 ifeq ($(SYSTEM),OSX) 
@@ -42,7 +44,7 @@ all: shared_lib
 endif
 
 ifeq ($(SYSTEM),LINUX) 
-    CPP = cpp-4.6 -std=c89  -D_OPENMP
+    CPP = cpp-4.9 -std=c89  -D_OPENMP
 all: shared_lib
 endif   
 
