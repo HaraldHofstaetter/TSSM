@@ -22,7 +22,8 @@ ifeq ($(SYSTEM),VSC3)
     FFTW_BASE = /opt/sw/x86_64/glibc-2.12/ivybridge-ep/fftw/3.3.4/MPI_DP/intel-14.0.2
     HDF5_BASE = /opt/sw/x86_64/glibc-2.12/ivybridge-ep/hdf5/1.8.14/intel-14.0.2
     FC = ifort
-    FOPTS =  -openmp -O3 -fPIC
+    #FOPTS =  -openmp -O3 -fPIC
+    FOPTS =  -openmp -g -fPIC
     TSSM = libtssm.a
     TSSM_SHARED_LIB = libtssm.so
     MAKE_SHARED_LIB = ifort -openmp -shared 
