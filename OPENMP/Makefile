@@ -8,7 +8,7 @@ SYSTEM = VSC3
 FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
 FC = gfortran 
-FOPTS = -fopenmp -O3 -fPIC
+FOPTS = -fopenmp -O3 -fPIC -ffast-math
 #FOPTS = -fopenmp -g -fPIC
 CPP = cpp -std=c89  -D_OPENMP
 MAKE_SHARED_LIB = gfortran -fopenmp -shared 
