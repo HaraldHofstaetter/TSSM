@@ -186,6 +186,7 @@ module S(tssm_fourier)
         procedure :: propagate_A
         procedure :: propagate_A_derivative
         procedure :: add_apply_A
+        procedure :: add_phi_A
         procedure :: save
         procedure :: load
         procedure :: set
@@ -2158,6 +2159,213 @@ contains
 #endif
         end select
     end subroutine add_apply_A
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine add_phi_A(this, wf, dt, n, coefficient)
+        use phi_functions, only: phi
+        class(S(wf_fourier)), intent(inout) :: this
+        class(_WAVE_FUNCTION_), intent(inout) :: wf 
+        _COMPLEX_OR_REAL_(kind=prec), intent(in) :: dt
+        integer, intent(in) :: n
+        _COMPLEX_OR_REAL_(kind=prec), intent(in), optional :: coefficient
+        _COMPLEX_OR_REAL_(kind=prec) :: C 
+
+#ifdef _OPENMP
+#if(_DIM_==1)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf1(:)
+        complex(kind=prec), pointer :: ufc1(:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf2(:)
+        complex(kind=prec), pointer :: ufc2(:)
+#elif(_DIM_==2)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf1(:,:)
+        complex(kind=prec), pointer :: ufc1(:,:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf2(:,:)
+        complex(kind=prec), pointer :: ufc2(:,:)
+#elif(_DIM_==3)            
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf1(:,:,:)
+        complex(kind=prec), pointer :: ufc1(:,:,:)
+        _COMPLEX_OR_REAL_(kind=prec), pointer :: uf2(:,:,:)
+        complex(kind=prec), pointer :: ufc2(:,:,:)
+#endif
+        real(kind=prec), pointer :: ev(:)
+        complex(kind=prec), pointer :: evc(:)
+        integer :: j
+#endif        
+        
+
+        select type (wf)
+        class is (S(wf_fourier))
+        
+        if (.not.associated(wf%m,this%m)) then
+            stop "E: wave functions not belonging to the same method"
+        end if    
+
+        if (coefficient==0) then
+            return
+        end if    
+
+        call this%to_frequency_space
+        call wf%to_frequency_space
+
+#if(_DIM_==1)
+#ifdef _REAL_        
+        select case(this%m%boundary_conditions) 
+        case (periodic)
+#ifndef _OPENMP            
+            wf%ufc = wf%ufc + coefficient*phi((dt*this%coefficient)*this%m%eigenvalues1, n)*this%ufc 
+#else
+!$OMP PARALLEL DO PRIVATE(j, ufc1, ufc2, ev) 
+            do j=1,n_threads
+                ufc1 => wf%ufc(lbound(wf%ufc,1)+this%m%jf(j-1):lbound(wf%ufc,1)+this%m%jf(j)-1)
+                ufc2 => this%ufc(lbound(this%ufc,1)+this%m%jf(j-1):lbound(this%ufc,1)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+                ufc1 = ufc1 + coefficient*phi((dt*this%coefficient)*ev, n)*ufc2
+            end do
+!$OMP END PARALLEL DO
+#endif
+        case (dirichlet, neumann)
+#endif
+#ifndef _OPENMP            
+            wf%uf = wf%uf + coefficient*this%m%eigenvalues1*this%uf
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) 
+            do j=1,n_threads
+                uf1 => wf%uf(lbound(wf%uf,1)+this%m%jf(j-1):lbound(wf%uf,1)+this%m%jf(j)-1)
+                uf2 => this%uf(lbound(this%uf,1)+this%m%jf(j-1):lbound(this%uf,1)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues1(lbound(this%m%eigenvalues1,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues1,1)+this%m%jf(j)-1)
+                uf1 = uf1 + coefficient*phi((dt*this%coefficient)*ev, n)*uf2
+            end do
+!$OMP END PARALLEL DO 
+#endif
+#ifdef _REAL_        
+        end select
+#endif
+#elif(_DIM_==2)
+#ifdef _REAL_        
+        select case(this%m%boundary_conditions) 
+        case (periodic)
+#ifndef _OPENMP            
+            wf%ufc = wf%ufc + coefficient*phi((dt*this%coefficient)*( &
+                spread(this%m%eigenvalues1, 2, this%m%nf2max-this%m%nf2min+1) &
+               +spread(this%m%eigenvalues2, 1, this%m%nf1max-this%m%nf1min+1) &
+               ), n) * this%ufc
+#else
+!$OMP PARALLEL DO PRIVATE(j, ufc1, ufc2, ev) 
+            do j=1,n_threads
+                ufc1 => wf%ufc(:,lbound(wf%ufc,2)+this%m%jf(j-1):lbound(wf%ufc,2)+this%m%jf(j)-1)
+                ufc2 => this%ufc(:,lbound(this%ufc,2)+this%m%jf(j-1):lbound(this%ufc,2)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
+                ufc1 = ufc1 + coefficient*phi((dt*this%coefficient)*( &
+                     spread(this%m%eigenvalues1, 2,  this%m%jf(j)-this%m%jf(j-1)) &
+                    +spread(ev, 1, this%m%nf1max-this%m%nf1min+1) &
+                    ), n) * ufc2
+            end do
+!$OMP END PARALLEL DO 
+#endif
+        case (dirichlet, neumann)
+#endif
+#ifndef _OPENMP            
+            wf%uf = wf%uf + coefficient*phi((dt*this%coefficient)*( &
+                spread(this%m%eigenvalues1,2, this%m%nf2max-this%m%nf2min+1) &
+               +spread(this%m%eigenvalues2,1, this%m%nf1max-this%m%nf1min+1) &
+               ), n) * this%uf
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) 
+            do j=1,n_threads
+                uf1 => wf%uf(:,lbound(wf%uf,2)+this%m%jf(j-1):lbound(wf%uf,2)+this%m%jf(j)-1)
+                uf2 => this%uf(:,lbound(this%uf,2)+this%m%jf(j-1):lbound(this%uf,2)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues2(lbound(this%m%eigenvalues2,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues2,1)+this%m%jf(j)-1)
+                uf1 = uf1 + coefficient*phi((dt*this%coefficient)*( &
+                     spread(this%m%eigenvalues1, 2,  this%m%jf(j)-this%m%jf(j-1)) &                      
+                    +spread(ev, 1, this%m%nf1max-this%m%nf1min+1) & 
+                    ), n) * uf2
+            end do
+!$OMP END PARALLEL DO 
+#endif
+#ifdef _REAL_        
+        end select
+#endif
+#elif(_DIM_==3)
+#ifdef _REAL_        
+        select case(this%m%boundary_conditions) 
+        case (periodic)
+#ifndef _OPENMP            
+            wf%ufc = wf%ufc + coefficient*phi((dt*this%coefficient)*( &
+                 spread(spread(this%m%eigenvalues1, 2, this%m%nf2max-this%m%nf2min+1), &
+                                3, this%m%nf3max-this%m%nf3min+1) &
+                +spread(spread(this%m%eigenvalues2, 1, this%m%nf1max-this%m%nf1min+1), &
+                                3, this%m%nf3max-this%m%nf3min+1) &
+                +spread(spread(this%m%eigenvalues3, 1, this%m%nf1max-this%m%nf1min+1), &
+                                2, this%m%nf2max-this%m%nf2min+1) &
+               ), n) * this%ufc
+#else
+!$OMP PARALLEL DO PRIVATE(j, ufc1, ufc2, ev) 
+            do j=1,n_threads
+                ufc1 => wf%ufc(:,:,lbound(wf%ufc,3)+this%m%jf(j-1):lbound(wf%ufc,3)+this%m%jf(j)-1)
+                ufc2 => this%ufc(:,:,lbound(this%ufc,3)+this%m%jf(j-1):lbound(this%ufc,3)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
+                ufc1 = ufc1 + coefficient*phi((dt*this%coefficient)*( &
+                     spread(spread(this%m%eigenvalues1, &
+                                2, this%m%nf2max-this%m%nf2min+1), &
+                                3, this%m%jf(j)-this%m%jf(j-1)) &
+                    +spread(spread(this%m%eigenvalues2, &
+                                1, this%m%nf1max-this%m%nf1min+1), &
+                                3, this%m%jf(j)-this%m%jf(j-1)) &
+                    +spread(spread(ev, &
+                                1, this%m%nf1max-this%m%nf1min+1), &
+                                2, this%m%nf2max-this%m%nf2min+1) &
+                    ), n) * ufc2
+            end do
+!$OMP END PARALLEL DO 
+#endif
+        case (dirichlet, neumann)
+#endif
+#ifndef _OPENMP  
+            wf%uf = wf%uf + coefficient*phi((dt*this%coefficient)*( &
+                 spread(spread(this%m%eigenvalues1, 2, this%m%nf2max-this%m%nf2min+1), &
+                                3, this%m%nf3max-this%m%nf3min+1) &
+                +spread(spread(this%m%eigenvalues2, 1, this%m%nf1max-this%m%nf1min+1), &
+                                3, this%m%nf3max-this%m%nf3min+1) &
+                +spread(spread(this%m%eigenvalues3, 1, this%m%nf1max-this%m%nf1min+1), &
+                                2, this%m%nf2max-this%m%nf2min+1) &
+               ), n) * this%uf
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) 
+            do j=1,n_threads
+                uf1 => wf%uf(:,:,lbound(wf%uf,3)+this%m%jf(j-1):lbound(wf%uf,3)+this%m%jf(j)-1)
+                uf2 => this%uf(:,:,lbound(this%uf,3)+this%m%jf(j-1):lbound(this%uf,3)+this%m%jf(j)-1)
+                ev => this%m%eigenvalues3(lbound(this%m%eigenvalues3,1)+this%m%jf(j-1):&
+                                           lbound(this%m%eigenvalues3,1)+this%m%jf(j)-1)
+                uf1 = uf1 + coefficient*phi((dt*this%coefficient)*( &
+                     spread(spread(this%m%eigenvalues1, &
+                                2, this%m%nf2max-this%m%nf2min+1), &
+                                3, this%m%jf(j)-this%m%jf(j-1)) &
+                    +spread(spread(this%m%eigenvalues2, &
+                                1, this%m%nf1max-this%m%nf1min+1), &
+                                3, this%m%jf(j)-this%m%jf(j-1)) &
+                    +spread(spread(ev, &
+                                1, this%m%nf1max-this%m%nf1min+1), &
+                                2, this%m%nf2max-this%m%nf2min+1) &
+                    ), n) * uf2
+
+            end do
+!$OMP END PARALLEL DO 
+#endif
+#ifdef _REAL_        
+        end select
+#endif
+#endif
+        end select
+    end subroutine add_phi_A
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
    
     subroutine save(this, filename, &
