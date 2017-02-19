@@ -1,5 +1,5 @@
 module gaussian_module
-    use tssm, only: prec
+    use tssm_base, only: prec
     implicit none 
 
     real(prec) :: hbar = 1_prec
