@@ -276,6 +276,22 @@ contains
         call thisp%add_apply_A(otherp, coefficient)
     end subroutine c_add_apply_A_wf
 
+    subroutine c_add_phi_A_wf(this, other, dt, n, coefficient) &
+        bind(c, name=SC(add_phi_A_wf_fourier)) 
+        use iso_c_binding
+        type(c_ptr), value :: this
+        type(c_ptr), value :: other 
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        integer, value :: n
+        _COMPLEX_OR_REAL_(kind=prec), value :: coefficient
+        type(S(wf_fourier)), pointer :: thisp
+        type(S(wf_fourier)), pointer :: otherp
+
+        call c_f_pointer(this, thisp)
+        call c_f_pointer(other, otherp)
+        call thisp%add_phi_A(otherp, dt, n, coefficient)
+    end subroutine c_add_phi_A_wf
+
 
     subroutine c_save_wf(psi, filename, filename_length) &
         bind(c, name=SC(save_wf_fourier)) 

@@ -1,9 +1,9 @@
 #SYSTEM = LINUX
 #SYSTEM = OSX
-SYSTEM = VSC3
+#SYSTEM = VSC3
 #SYSTEM = MINGW
 
-#include ../Makefile.system
+include ../Makefile.system
 
 FFTW_BASE = $(HOME)
 HDF5_BASE = $(HOME)
