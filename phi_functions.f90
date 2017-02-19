@@ -51,14 +51,18 @@ contains
     elemental function cexpm1(z)
         complex(c_double), intent(in) :: z
         complex(c_double) :: cexpm1
-        real(c_double) :: a, b, em1, s, c
+        real(c_double) :: a, b, em1, s, c, h
 
         a = real(z, kind=c_double)
         b = imag(z)
 
         call sincos(b, s, c)
         em1 = dexpm1(a)
-        cexpm1 = cmplx(em1*c - s**2/(1.0_c_double+c), (em1+1.0_c_double)*s)
+        h = c-1.0_c_double
+        if (abs(h)<0.01_c_double) then ! more stable evaluation
+            h = -s**2/(1.0_c_double+c)
+        end if
+        cexpm1 = cmplx(em1*c + h, (em1+1.0_c_double)*s)
     end function cexpm1
 
 
