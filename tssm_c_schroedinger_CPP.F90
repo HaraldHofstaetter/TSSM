@@ -676,6 +676,27 @@ contains
         call thisp%add_apply_A(otherp, coefficient)
     end subroutine c_add_apply_A_wf
 
+#if defined(_HERMITE_)
+#elif defined(_LAGUERRE_)
+#else
+    subroutine c_add_phi_A_wf(this, other, dt, n, coefficient) &
+        bind(c, name=SC(add_phi_A_wf_schroedinger)) 
+        use iso_c_binding
+        type(c_ptr), value :: this
+        type(c_ptr), value :: other 
+        _COMPLEX_OR_REAL_(kind=prec), value :: dt
+        integer, value :: n
+        _COMPLEX_OR_REAL_(kind=prec), value :: coefficient
+        type(S(wf_schroedinger)), pointer :: thisp
+        type(S(wf_schroedinger)), pointer :: otherp
+
+        call c_f_pointer(this, thisp)
+        call c_f_pointer(other, otherp)
+        call thisp%add_phi_A(otherp, dt, n, coefficient)
+    end subroutine c_add_phi_A_wf
+#endif
+
+
 #ifdef _ROTATING_
     subroutine c_add_apply_C_wf(this, other, coefficient) &
         bind(c, name=SC(add_apply_C_wf_schroedinger)) 

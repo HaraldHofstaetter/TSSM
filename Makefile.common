@@ -4,6 +4,7 @@ OBJS = tssm_common.o tssm_base_complex.o tssm_base_real.o tssm_base.o \
        tssm_splitting_schemes.o \
        tssm_grid.o tssm_hdf5.o tssm_hdf5_helper.o \
        tssm_fourier_common.o \
+       phi_functions.o \
        tssm_fourier_1d.o tssm_fourier_2d.o tssm_fourier_3d.o \
        tssm_fourier_real_1d.o tssm_fourier_real_2d.o tssm_fourier_real_3d.o \
        tssm_multicomponent_fourier_1d.o tssm_multicomponent_fourier_2d.o tssm_multicomponent_fourier_3d.o \
@@ -64,6 +65,9 @@ $(TSSM): $(OBJS)
 
 lapack_dsterf.o: ../lapack_dsterf.f
 	$(FC) $(FOPTS) -c ../lapack_dsterf.f -o lapack_dsterf.o
+
+phi_functions.o: ../phi_functions.f90
+	$(FC) $(FOPTS) -c ../phi_functions.f90 -o phi_functions.o
 
 
 tssm_common.o: ../tssm_common.F90
