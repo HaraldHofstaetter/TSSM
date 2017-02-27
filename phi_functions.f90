@@ -87,7 +87,7 @@ contains
         elseif (n==1) then
             dphi = dexpm1(x)/x
         elseif (n>=2) then
-            dphi = dphi/x
+            dphi = dexpm1(x)/x
             fac_k = 1            
             do k=2,n
                 fac_k = k*fac_k
@@ -120,7 +120,7 @@ contains
         elseif (n==1) then
             cphi = cexpm1(x)/x
         elseif (n>=2) then
-            cphi = cphi/x
+            cphi = cexpm1(x)/x
             fac_k = 1            
             do k=2,n
                 fac_k = k*fac_k
