@@ -62,7 +62,7 @@ contains
         if (abs(h)<0.01_c_double) then ! more stable evaluation
             h = -s**2/(1.0_c_double+c)
         end if
-        cexpm1 = cmplx(em1*c + h, (em1+1.0_c_double)*s)
+        cexpm1 = cmplx(em1*c + h, (em1+1.0_c_double)*s, kind=c_double)
     end function cexpm1
 
 
@@ -78,7 +78,7 @@ contains
             do k=1,n
                 fac_k = k*fac_k
             end do
-            dphi = 1.0_c_double/fac_k
+            dphi = 1.0_c_double/real(fac_k, kind=c_double)
             return 
         end if
 
@@ -89,9 +89,9 @@ contains
         elseif (n>=2) then
             dphi = dexpm1(x)/x
             fac_k = 1            
-            do k=2,n
+            do k=1,n-1
                 fac_k = k*fac_k
-                dphi = (dphi - 1.0_c_double/fac_k)/x
+                dphi = (dphi - 1.0_c_double/real(fac_k, kind=c_double))/x
             end do
         else
           ! expm1 = NaN 
@@ -111,7 +111,7 @@ contains
             do k=1,n
                 fac_k = k*fac_k
             end do
-            cphi = 1.0_c_double/fac_k
+            cphi = 1.0_c_double/real(fac_k, kind=c_double)
             return 
         end if
 
@@ -122,9 +122,9 @@ contains
         elseif (n>=2) then
             cphi = cexpm1(x)/x
             fac_k = 1            
-            do k=2,n
+            do k=1,n-1
                 fac_k = k*fac_k
-                cphi = (cphi - 1.0_c_double/fac_k)/x
+                cphi = (cphi - 1.0_c_double/real(fac_k, kind=c_double))/x
             end do
         else
           ! expm1 = NaN 
