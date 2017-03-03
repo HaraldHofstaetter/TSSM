@@ -71,31 +71,39 @@ contains
         integer, intent(in) :: n
         real(c_double) :: dphi
 
-        integer :: k, fac_k
-
-        if (x==0.0_c_double) then
+        integer :: m, k, fac_k
+    
+        if (n==0) then
+            dphi = exp(x)
+        else if (abs(x)<=0.5) then ! use taylor series
+            if (n==1) then
+                m=15
+            else if (n==2) then
+                m=14
+            else if (n<=5) then
+                m=13
+            else if (n<=8) then
+                m=12
+            else
+                m=11
+            end if
+            dphi = 1.0
+            do k=1,m
+                dphi = dphi*x/real(n+m+1-k, kind=c_double) + 1.0_c_double
+            end do
             fac_k = 1
             do k=1,n
                 fac_k = k*fac_k
             end do
-            dphi = 1.0_c_double/real(fac_k, kind=c_double)
-            return 
-        end if
-
-        if (n==0) then
-            dphi = exp(x)
-        elseif (n==1) then
-            dphi = dexpm1(x)/x
-        elseif (n>=2) then
+            dphi = dphi/real(fac_k, kind=c_double)
+        else ! use recursion formula
             dphi = dexpm1(x)/x
             fac_k = 1            
             do k=1,n-1
                 fac_k = k*fac_k
                 dphi = (dphi - 1.0_c_double/real(fac_k, kind=c_double))/x
             end do
-        else
-          ! expm1 = NaN 
-        endif
+        end if         
     end function
 
 
@@ -104,31 +112,39 @@ contains
         integer, intent(in) :: n
         complex(c_double) :: cphi
 
-        integer :: k, fac_k
-
-        if (x==0.0_c_double) then
+        integer :: m, k, fac_k
+        
+        if (n==0) then
+            cphi = exp(x)
+        else if (abs(x)<=0.5) then ! use taylor series
+            if (n==1) then
+                m=15
+            else if (n==2) then
+                m=14
+            else if (n<=5) then
+                m=13
+            else if (n<=8) then
+                m=12
+            else
+                m=11
+            end if
+            cphi = 1.0
+            do k=1,m
+                cphi = cphi*x/real(n+m+1-k, kind=c_double) + 1.0_c_double
+            end do
             fac_k = 1
             do k=1,n
                 fac_k = k*fac_k
             end do
-            cphi = 1.0_c_double/real(fac_k, kind=c_double)
-            return 
-        end if
-
-        if (n==0) then
-            cphi = exp(x)
-        elseif (n==1) then
-            cphi = cexpm1(x)/x
-        elseif (n>=2) then
+            cphi = cphi/real(fac_k, kind=c_double)
+        else ! use recursion formula        
             cphi = cexpm1(x)/x
             fac_k = 1            
             do k=1,n-1
                 fac_k = k*fac_k
                 cphi = (cphi - 1.0_c_double/real(fac_k, kind=c_double))/x
-            end do
-        else
-          ! expm1 = NaN 
-        endif
+            end do   
+        end if                 
     end function
 
 end module phi_functions
