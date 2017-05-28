@@ -143,6 +143,8 @@ contains
         call fourier_bessel_coeffs(nr, nfr, M, this%g%nodes_r,  this%g%weights_r, this%L, &
                                   this%eigenvalues_r_theta, this%normalization_factors, this%nfthetamin, this%nfthetamax, &
                                   this%boundary_conditions, this%quadrature_formula) 
+        call this%g%compute_nodes_xy
+                                  
     end function new_method 
 
 

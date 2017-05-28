@@ -1,4 +1,4 @@
-#SYSTEM = LINUX
+SYSTEM = LINUX
 #SYSTEM = OSX
 #SYSTEM = VSC3
 #SYSTEM = MINGW
@@ -45,7 +45,7 @@ all: shared_lib
 endif
 
 ifeq ($(SYSTEM),LINUX) 
-    CPP = cpp-4.6 -std=c89  -D_OPENMP
+    CPP = cpp-4.9 -std=c89  -D_OPENMP
 all: shared_lib
 endif   
 

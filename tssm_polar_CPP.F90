@@ -327,7 +327,6 @@ contains
 
         allocate( this%g%nodes_x(this%g%nrmin:this%g%nrmax, this%g%nthetamin:this%g%nthetamax) )
         allocate( this%g%nodes_y(this%g%nrmin:this%g%nrmax, this%g%nthetamin:this%g%nthetamax) )
-        call this%g%compute_nodes_xy
         
         if ((.not.present(separated_eigenvalues)).or.separated_eigenvalues) then
             allocate( this%eigenvalues_r(this%nfrmin:this%nfrmax ) ) 
