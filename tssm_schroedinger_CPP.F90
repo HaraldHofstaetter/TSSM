@@ -5446,7 +5446,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(i1, i2) REDUCTION(+:obs)
         do i2 = n2+o2, m%g%n2max+o2
             do i1 = n1+o1,m%g%n1max+o1
-                obs = obs + f(m%g%nodes_x(i1-o1),m%g%nodes_x(i2-o2)) &
+                obs = obs + f(m%g%nodes_x(i1-o1),m%g%nodes_y(i2-o2)) &
                       *m%g%weights_x(i1-o1)*m%g%weights_y(i2-o2) &
 #ifdef _REAL_
                       *this%u(i1,i2)**2
@@ -5481,7 +5481,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(i1, i2) REDUCTION(+:obs)
         do i2 = n2+o2, m%g%n2max+o2
             do i1 = n1+o1,m%g%n1max+o1
-                obs = obs + f(m%g%nodes_x(i1-o1,i2-o2),m%g%nodes_x(i1-o1,i2-o2)) &
+                obs = obs + f(m%g%nodes_x(i1-o1,i2-o2),m%g%nodes_y(i1-o1,i2-o2)) &
                       *m%g%weights_r(i1-o1) &
 #ifdef _REAL_
                       *this%u(i1,i2)**2
@@ -5496,7 +5496,7 @@ contains
         do i3 = n3+o3, m%g%n3max+o3
           do i2 = n2+o2, m%g%n2max+o2
             do i1 = n1+o1,m%g%n1max+o1
-                obs = obs + f(m%g%nodes_x(i1-o1,i3-o3),m%g%nodes_x(i1-o1,i3-o3), m%g%nodes_z(i2-o2)) &
+                obs = obs + f(m%g%nodes_x(i1-o1,i3-o3),m%g%nodes_y(i1-o1,i3-o3), m%g%nodes_z(i2-o2)) &
                       *m%g%weights_r(i1-o1)*m%g%weights_z(i2-o2) &
 #ifdef _REAL_
                       *this%u(i1,i2,i3)**2
@@ -5540,7 +5540,7 @@ contains
 #elif(_DIM_==2)       
 !$OMP PARALLEL DO PRIVATE(i1, x, i2, y) REDUCTION(+:obs)
         do i2 = n2+o2, m%g%n2max+o2
-            y = m%g%xmin + m%g%dy*(i2-o2)    
+            y = m%g%ymin + m%g%dy*(i2-o2)    
             do i1 = n1+o1,m%g%n1max+o1
                 x = m%g%xmin + m%g%dx*(i1-o1)    
 #ifdef _REAL_
@@ -5557,7 +5557,7 @@ contains
         do i3 = n3+o3, m%g%n3max+o3
            z = m%g%zmin + m%g%dz*(i3-o3)    
            do i2 = n2+o2, m%g%n2max+o2
-                y = m%g%xmin + m%g%dy*(i2-o2)    
+                y = m%g%ymin + m%g%dy*(i2-o2)    
                 do i1 = n1+o1,m%g%n1max+o1
                     x = m%g%xmin + m%g%dx*(i1-o1)    
 #ifdef _REAL_
