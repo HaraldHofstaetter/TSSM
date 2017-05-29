@@ -81,22 +81,20 @@ subroutine gauss_laguerre_scaled(x, w, n, gg, m)
     real(kind=eprec), intent(in) :: gg
     integer, intent(in), optional :: m
 
-    real(kind=eprec), parameter :: pi = 3.1415926535897932384626433832795028841971693993751_eprec
-    real(kind=eprec) :: one_over_gg, pi_over_gg 
+    real(kind=eprec) :: one_over_gg
     integer :: i
 
     one_over_gg = 1.0_eprec/gg
-    pi_over_gg = pi*one_over_gg
 
     if (present(m).and.m/=0) then
         call gauss_laguerre(x, w, n, real(m, kind=eprec))
         do i=1,n
-            w(i) = w(i)*exp(x(i))*pi_over_gg*x(i)**(-m)
+            w(i) = w(i)*exp(x(i))*0.5_eprec*one_over_gg*x(i)**(-m)
         end do
     else
         call gauss_laguerre(x, w, n)
         do i=1,n
-            w(i) = w(i)*exp(x(i))*pi_over_gg
+            w(i) = w(i)*exp(x(i))*0.5_eprec*one_over_gg
         end do
     end if
 
@@ -265,8 +263,7 @@ subroutine generalized_laguerre_scaled_coeffs_eprec(kk, mm, x, w, L, gg)
     do j=0,kk+mm/2
         f_j = exp(-0.5_eprec*gg*x(j)**2)*sqrt_gg_over_pi
         do m=0,mm/2
-            !f_m = f_j*(sqrt_gg*x(j))**m
-            f_m = f_j/sqrt(2.0_prec*pi)*(sqrt_gg*x(j))**m
+            f_m = f_j*(sqrt_gg*x(j))**m
             call laguerre_polynomial(gg*x(j)**2, kk, ll, real(m, kind=eprec))  
             do k=0,kk 
                 L(j,k,m) = f_m*cc(k,m)*ll(k)
