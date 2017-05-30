@@ -121,7 +121,7 @@ contains
         ! default names
         do k = 1, this%nc
             write (s,'(I2.2)') k
-            this%dset_names(k) = "psi" /& ! operator // confuses cpp preprocessor
+            this%dset_names(k) = "psi" /& ! concatenation operator confuses cpp preprocessor
             &/ s 
         end do
 #else        
@@ -130,10 +130,10 @@ contains
         ! default names
         do k = 1, this%nc
             write (s,'(I2.2)') k
-            this%dset_names_real(k) = "psi" /& ! operator // confuses cpp preprocessor
+            this%dset_names_real(k) = "psi" /& ! concatenation operator  confuses cpp preprocessor
             &/ s /&
             &/ "_real"
-            this%dset_names_imag(k) = "psi" /& ! operator // confuses cpp preprocessor
+            this%dset_names_imag(k) = "psi" /& ! concatenation operator confuses cpp preprocessor
             &/ s /&
             &/ "_imag"
         end do
