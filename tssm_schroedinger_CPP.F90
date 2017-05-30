@@ -6099,20 +6099,20 @@ contains
             call tick(calc)
             step = 0
             if (this_proc==0) then
-                write (*,*), "#   #                   t                  dt                norm" & 
-            //"               E_kin               E_pot               E_int               E_tot" & 
+                write (*,*), "#   #                   t                  dt                norm" /& 
+            &/"               E_kin               E_pot               E_int               E_tot" /& 
 #if(_DIM_==1)
-            //"              x_mean               x_dev cumm.time"
+            &/"              x_mean               x_dev cumm.time"
 #elif(_DIM_==2)
-           // "              x_mean               x_dev              y_mean               y_dev" & 
-           // "               r_dev   cummulated time" 
+            &/ "              x_mean               x_dev              y_mean               y_dev" /& 
+            &/ "               r_dev   cummulated time" 
 #elif(_DIM_==3)
-           // "              x_mean               x_dev              y_mean               y_dev" & 
-           // "              z_mean               z_dev               r_dev   cummulated time" 
+            &/ "              x_mean               x_dev              y_mean               y_dev" /& 
+            &/ "              z_mean               z_dev               r_dev   cummulated time" 
 #endif 
-                write (*,*), "#---------------------------------------------------------------------------" &
-                       //"------------------------------------------------------------------" &
-                       //"------------------------------------------------------" 
+                write (*,*), "#---------------------------------------------------------------------------" /&
+                       &/"------------------------------------------------------------------" /&
+                       &/"------------------------------------------------------" 
             end if           
         end if   
 

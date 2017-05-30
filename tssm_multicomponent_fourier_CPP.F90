@@ -121,16 +121,21 @@ contains
         ! default names
         do k = 1, this%nc
             write (s,'(I2.2)') k
-            this%dset_names(k) = "psi" // s 
+            this%dset_names(k) = "psi" /& ! operator // confuses cpp preprocessor
+            &/ s 
         end do
 #else        
-        allocate( this%dset_names_real( this%nc ) )
+        allocate( this%dset_names_real( this%nc ) ) 
         allocate( this%dset_names_imag( this%nc ) )
         ! default names
         do k = 1, this%nc
             write (s,'(I2.2)') k
-            this%dset_names_real(k) = "psi" // s // "_real"
-            this%dset_names_imag(k) = "psi" // s // "_imag"
+            this%dset_names_real(k) = "psi" /& ! operator // confuses cpp preprocessor
+            &/ s /&
+            &/ "_real"
+            this%dset_names_imag(k) = "psi" /& ! operator // confuses cpp preprocessor
+            &/ s /&
+            &/ "_imag"
         end do
 #endif        
         if(.not.associated(this%b)) then

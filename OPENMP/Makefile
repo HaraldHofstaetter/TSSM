@@ -32,7 +32,6 @@ endif
 
 ifeq ($(SYSTEM),OSX) 
     MAKE_SHARED_LIB = gfortran -fopenmp -dynamiclib
-    CPP = cpp -std=c89  -D_OPENMP
     TSSM_SHARED_LIB = libtssm.dylib
 all: shared_lib
 endif   
@@ -45,7 +44,6 @@ all: shared_lib
 endif
 
 ifeq ($(SYSTEM),LINUX) 
-    CPP = cpp-4.9 -std=c89  -D_OPENMP
 all: shared_lib
 endif   
 
@@ -66,11 +64,10 @@ HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
 ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
     FOPTS = -fopenmp -O3 -fPIC 
-    CPP = cpp -std=c89  -D_OPENMP 
     FFTW_INCLUDE = ../../include 
     HDF5_INCLUDE = ../../include 
-    HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_fortran.so.7 \
-                 /usr/lib/x86_64-linux-gnu/libhdf5.so.7
+    HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_serial_fortran.so.10 \
+                 /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.10
     FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3.so.3 
 endif
 
