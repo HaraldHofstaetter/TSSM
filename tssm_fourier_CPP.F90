@@ -778,15 +778,15 @@ contains
             howmany = this%m%g%ny
             this%plan_forward_x = fftw_plan_many_dft(1, dft_dim, howmany, & ! rank, *n, howmany,
                                                this%up, &                   ! *in, 
-                                               dft_dim, 1, this%m%g%ny, &   ! *inembed, istride, idist,
+                                               dft_dim, 1, this%m%g%nx, &   ! *inembed, istride, idist,
                                                this%up, &                   ! *out, 
-                                               dft_dim, 1, this%m%g%ny, &   ! *onembed, ostride, odist,
+                                               dft_dim, 1, this%m%g%nx, &   ! *onembed, ostride, odist,
                                                FFTW_FORWARD, fftw_planning_rigor) ! sign, flags
             this%plan_backward_x = fftw_plan_many_dft(1, dft_dim, howmany, &! rank, *n, howmany,
                                                this%up, &                   ! *in, 
-                                               dft_dim, 1, this%m%g%ny, &   ! *inembed, istride, idist,
+                                               dft_dim, 1, this%m%g%nx, &   ! *inembed, istride, idist,
                                                this%up, &                   ! *out, 
-                                               dft_dim, 1, this%m%g%ny, &   ! *onembed, ostride, odist,
+                                               dft_dim, 1, this%m%g%nx, &   ! *onembed, ostride, odist,
                                                FFTW_BACKWARD, fftw_planning_rigor) ! sign, flags
 
             dft_dim = (/ this%m%g%ny, 0 /)

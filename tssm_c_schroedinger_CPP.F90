@@ -195,6 +195,7 @@ contains
         real(kind=prec), value  :: cubic_coupling 
 
         type(S(schroedinger)), pointer :: m
+
         allocate( m )
         m = S(schroedinger)(ntheta, nfr, omega_r, Omega, &
 #if(_DIM_>=3)
@@ -283,6 +284,7 @@ contains
 #endif        
 
         type(S(schroedinger)), pointer :: m
+
         allocate( m )
         m = S(schroedinger)(nx, xmin, xmax, &
 #if(_DIM_>=2)

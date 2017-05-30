@@ -1994,10 +1994,10 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                 -spread(m%Omega*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
-                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, nodes) REDUCTION(+:h)
@@ -2006,9 +2006,9 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
+              -spread(m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
-                       * (real(uf,prec)**2 + aimag(uf)**2) )
+                       * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%ny
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2018,11 +2018,11 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                - spread(spread(m%Omega*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
-               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
@@ -2033,11 +2033,11 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                       - spread(spread(m%Omega*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
-                  * (real(uf,prec)**2 + aimag(uf)**2) )
+                  * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%ny
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2048,24 +2048,24 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                    +spread(m%Omega*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
-                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+                * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf, ev, evd) REDUCTION(+:h)
         do j=1,n_threads
             uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
             ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
                                          lbound(m%eigenvalues2,1)+m%jf(j)-1)
-            evd => m%eigenvalues2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
+            evd => m%eigenvalues_d2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                        +spread(m%Omega*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
-                       * (real(uf,prec)**2 + aimag(uf)**2) )
+                       * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%nx
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2074,11 +2074,11 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                   + spread(spread(m%Omega*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
-               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )
+               * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
@@ -2089,11 +2089,11 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                       + spread(spread(m%Omega*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
-                  * (real(uf,prec)**2 + aimag(uf)**2) )
+                  * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%nx
         end do
 !$OMP END PARALLEL DO 
 #endif
