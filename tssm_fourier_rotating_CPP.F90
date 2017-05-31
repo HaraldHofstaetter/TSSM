@@ -83,8 +83,13 @@ contains
         allocate( this%eigenvalues_d1(this%nf1min:this%nf1max ) )
         allocate( this%eigenvalues_d2(this%nf2min:this%nf2max ) )
 
-        this%eigenvalues_d1 = sqrt(-2*this%eigenvalues1)
-        this%eigenvalues_d2 = sqrt(-2*this%eigenvalues2)
+        call get_eigenvalues_d(this%eigenvalues_d1, this%g%xmax-this%g%xmin, &
+                     this%g%nx, this%nf1min, this%nf1max, &
+                     this%boundary_conditions)
+        call get_eigenvalues_d(this%eigenvalues_d2, this%g%ymax-this%g%ymin, &
+                             this%g%ny, this%nf2min, this%nf2max, &
+                             this%boundary_conditions)
+
     end function new_method
 
 

@@ -141,6 +141,33 @@ contains
         endif
     end subroutine get_eigenvalues
 
+    subroutine get_eigenvalues_d(lambda, d, n, nmin, nmax, boundary_conditions)
+        real(kind=prec), intent(out) :: lambda(nmin:nmax)
+        real(kind=prec), intent(in) :: d
+        integer, intent(in) :: n, nmin, nmax
+        integer, optional, intent(in):: boundary_conditions 
+        integer :: m,k
+
+        if (present(boundary_conditions).and.((boundary_conditions==dirichlet) &
+            .or.(boundary_conditions==neumann))) then
+            lambda(nmin:nmax) = (/ (real(k, kind=prec), k=nmin, nmax) /)
+            lambda = (-pi/d)*lambda
+        else
+            m = min(n/2, nmax)
+            if (m>=nmin) then
+                lambda(nmin:m) = (/ (real(k, kind=prec), k=nmin-1, m-1) /)
+            end if    
+            m = max(n/2+1, nmin)
+            if (m<=nmax) then
+                lambda(m:nmax) = (/ (real(k, kind=prec), k=m-n-1, nmax-n-1) /)
+            end if    
+            lambda = (-2.0_prec*pi/d) * lambda
+        endif
+    end subroutine get_eigenvalues_d
+
+
+
+
 #ifdef _MPI_
     subroutine get_scrambled_eigenvalues(lambda, d, n, nmin, nmax, alloc_size)
         real(kind=prec), intent(out) :: lambda(nmin:nmax)
