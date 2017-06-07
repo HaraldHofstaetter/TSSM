@@ -1827,7 +1827,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread(2*m%Omega*m%g%nodes_y, &
+                 +spread((2*m%Omega)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
                 * uf**2 )*m%g%ny
@@ -1839,7 +1839,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+              +spread((2*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
                        * uf**2 )*m%g%ny
         end do
@@ -1851,7 +1851,7 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                + spread(spread((2*m%Omega)*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
@@ -1866,7 +1866,7 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                       + spread(spread((2*m%Omega)*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -1881,7 +1881,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    -spread(2*m%Omega*m%g%nodes_x, &
+                    -spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
                 * uf**2 )*m%g%nx
@@ -1895,7 +1895,7 @@ contains
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        -spread(2*m%Omega*m%g%nodes_x, &
+                        -spread((2*m%Omega)*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
                        * uf**2 )*m%g%nx
@@ -1907,7 +1907,7 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                   - spread(spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
@@ -1922,7 +1922,7 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                       - spread(spread((2*m%Omega)*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2105,7 +2105,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread(2*m%Omega*m%g%nodes_y, &
+                 +spread((2*m%Omega)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
                 * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%ny
@@ -2117,7 +2117,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+              +spread((2*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
                        * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%ny
         end do
@@ -2129,7 +2129,7 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                + spread(spread((2*m%Omega)*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
@@ -2144,7 +2144,7 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                       + spread(spread((2*m%Omega)*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2159,7 +2159,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    -spread(2*m%Omega*m%g%nodes_x, &
+                    -spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
                 * (real(this%uf,prec)**2 + aimag(this%uf)**2) )*m%g%nx
@@ -2173,7 +2173,7 @@ contains
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        -spread(2*m%Omega*m%g%nodes_x, &
+                        -spread((2*m%Omega)*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
                        * (real(uf,prec)**2 + aimag(uf)**2) )*m%g%nx
@@ -2185,7 +2185,7 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                   - spread(spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
@@ -2200,7 +2200,7 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                       - spread(spread((2*m%Omega)*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2469,7 +2469,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread(2*m%Omega*m%g%nodes_y, &
+                 +spread((2*m%Omega)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
                 * this%uf*wf%uf )*m%g%ny
@@ -2482,7 +2482,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+              +spread((2*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
                        * uf1*uf2 )*m%g%ny
         end do
@@ -2495,7 +2495,7 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                + spread(spread((2*m%Omega)*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
@@ -2511,7 +2511,7 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                       + spread(spread((2*m%Omega)*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2528,7 +2528,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    -spread(2*m%Omega*m%g%nodes_x, &
+                    -spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
                 * this%uf*wf%uf)*m%g%nx
@@ -2543,7 +2543,7 @@ contains
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        -spread(2*m%Omega*m%g%nodes_x, &
+                        -spread((2*m%Omega)*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
                        * uf1*uf2)*m%g%nx
@@ -2555,7 +2555,7 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                   - spread(spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
@@ -2571,7 +2571,7 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                       - spread(spread((2*m%Omega)*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2764,7 +2764,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread(2*m%Omega*m%g%nodes_y, &
+                 +spread((2*m%Omega)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
                 * conjg(this%uf)*wf%uf )*m%g%ny
@@ -2777,7 +2777,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+              +spread((2*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
                        * conjg(uf1)*uf2 )*m%g%ny
         end do
@@ -2790,7 +2790,7 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                + spread(spread((2*m%Omega)*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
@@ -2806,7 +2806,7 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                       + spread(spread((2*m%Omega)*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
@@ -2823,7 +2823,7 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    -spread(2*m%Omega*m%g%nodes_x, &
+                    -spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
                 * conjg(this%uf)*wf%uf)*m%g%nx
@@ -2838,7 +2838,7 @@ contains
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        -spread(2*m%Omega*m%g%nodes_x, &
+                        -spread((2*m%Omega)*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
                        * conjg(uf1)*uf2)*m%g%nx
@@ -2850,7 +2850,7 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                   - spread(spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
@@ -2866,7 +2866,7 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                       - spread(spread((2*m%Omega)*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &

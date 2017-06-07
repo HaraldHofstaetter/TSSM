@@ -165,7 +165,7 @@ contains
 #if(_DIM_==2)            
 #ifndef _OPENMP
         this%uf = spread(exp((dt*this%coefficient)*m%eigenvalues1),2, m%nf2max-m%nf2min+1) * this%uf
-        this%uf = exp(spread((2*dt*m%Omega)*m%g%nodes_y, &
+        this%uf = exp(spread((2*dt*m%Omega*this%coefficient)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                      *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1)) * this%uf
 #else 
@@ -175,7 +175,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             uf = spread(exp((dt*this%coefficient)*m%eigenvalues1),2, m%jf(j)-m%jf(j-1)) * uf
-            uf = exp(spread((2*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
+            uf = exp(spread((2*dt*m%Omega*this%coefficient)*nodes,1, m%nf1max-m%nf1min+1) & 
                      *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1))) * uf
         end do
 !$OMP END PARALLEL DO 
@@ -186,7 +186,7 @@ contains
                          3, m%nf3max-m%nf3min+1) * this%uf
         this%uf = spread(spread(exp((0.5_prec*dt*this%coefficient)*m%eigenvalues3), 1, m%nf1max-m%nf1min+1), &
                                 2, m%nf2max-m%nf2min+1) * this%uf ! other half in propagate_C
-        this%uf = exp(spread(spread((2*dt*m%Omega)*m%g%nodes_y, &
+        this%uf = exp(spread(spread((2*dt*m%Omega*this%coefficient)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                      *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                          3, m%nf3max-m%nf3min+1)) * this%uf
@@ -202,7 +202,7 @@ contains
             uf = spread(spread(exp((0.5_prec*dt*this%coefficient)*ev), &
                             1, m%nf1max-m%nf1min+1), &
                             2, m%nf2max-m%nf2min+1) * uf
-            uf = exp(spread(spread((2*dt*m%Omega)*m%g%nodes_y, &
+            uf = exp(spread(spread((2*dt*m%Omega*this%coefficient)*m%g%nodes_y, &
                          1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                      3,  m%jf(j)-m%jf(j-1))) * uf 
@@ -248,7 +248,7 @@ contains
 #if(_DIM_==2)            
 #ifndef _OPENMP
         this%uf = spread(exp((dt*this%coefficient)*m%eigenvalues2),1, m%nf1max-m%nf1min+1) * this%uf
-        this%uf = exp(spread((-2*dt*m%Omega)*m%g%nodes_x, &
+        this%uf = exp(spread((-2*dt*m%Omega*this%coefficient)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                      *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) * this%uf
 #else 
@@ -260,7 +260,7 @@ contains
             evd => m%eigenvalues_d2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
             uf = spread(exp((dt*this%coefficient)*ev),1, m%nf1max-m%nf1min+1) * uf
-            uf = exp(spread((-2*dt*m%Omega)*m%g%nodes_x,&
+            uf = exp(spread((-2*dt*m%Omega*this%coefficient)*m%g%nodes_x,&
                              2,m%jf(j)-m%jf(j-1)) & 
                      *spread(evd, 1, m%nf1max-m%nf1min+1)) * uf
         end do
@@ -272,7 +272,7 @@ contains
                          3, m%nf3max-m%nf3min+1) * this%uf
         this%uf = spread(spread(exp((0.5_prec*dt*this%coefficient)*m%eigenvalues3), 1, m%nf1max-m%nf1min+1), &
                                 2, m%nf2max-m%nf2min+1) * this%uf ! other half in propagate_A
-        this%uf = exp(spread(spread((-2*dt*m%Omega)*m%g%nodes_x, &
+        this%uf = exp(spread(spread((-2*dt*m%Omega*this%coefficient)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                      *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                          3, m%nf3max-m%nf3min+1)) * this%uf
@@ -288,7 +288,7 @@ contains
             uf = spread(spread(exp((0.5*dt*this%coefficient)*ev), &
                             1, m%nf1max-m%nf1min+1), &
                             2, m%nf2max-m%nf2min+1) * uf
-            uf = exp(spread(spread((-2*dt*m%Omega)*m%g%nodes_x, &
+            uf = exp(spread(spread((-2*dt*m%Omega*this%coefficient)*m%g%nodes_x, &
                          2, m%nf2max-m%nf2min+1)  &
                  *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                      3,  m%jf(j)-m%jf(j-1))) * uf 
@@ -383,7 +383,6 @@ contains
         Omega = m%Omega
         if (present(coefficient)) then
             C = C*coefficient
-            Omega = Omega*coefficient
         end if    
         if (C==0) then
             return
@@ -413,7 +412,7 @@ contains
 #if(_DIM_==2)            
 #ifndef _OPENMP            
         wf%uf = wf%uf + spread(C*m%eigenvalues1, 2, m%nf2max-m%nf2min+1) * this%uf
-        wf%uf = wf%uf + spread((2*Omega)*m%g%nodes_y, &
+        wf%uf = wf%uf + spread((2*Omega*C)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                        *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) * this%uf
 #else
@@ -424,7 +423,7 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             uf1 = uf1 + spread(C*m%eigenvalues1, 2,  m%jf(j)-m%jf(j-1)) * uf2
-            uf1 = uf1 + spread((2*Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
+            uf1 = uf1 + spread((2*Omega*C)*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) * uf2
             end do
 !$OMP END PARALLEL DO 
@@ -435,7 +434,7 @@ contains
                                 3, m%nf3max-m%nf3min+1) * this%uf
         wf%uf = wf%uf + spread(spread(0.5_prec*C*m%eigenvalues3, 1, m%nf1max-m%nf1min+1), &
                                 2, m%nf2max-m%nf2min+1) * this%uf
-        wf%uf = wf%uf + spread(spread((2*Omega)*m%g%nodes_y, &
+        wf%uf = wf%uf + spread(spread((2*Omega*C)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                      *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                          3, m%nf3max-m%nf3min+1) * this%uf
@@ -452,7 +451,7 @@ contains
             uf1 = uf1 + C*spread(spread(C*ev, &
                             1, m%nf1max-m%nf1min+1), &
                             2, m%nf2max-m%nf2min+1) * uf2
-            uf1 = uf1 + spread(spread((2*Omega)*m%g%nodes_y, &
+            uf1 = uf1 + spread(spread((2*Omega*C)*m%g%nodes_y, &
                          1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                      3,  m%jf(j)-m%jf(j-1)) * uf2
@@ -499,7 +498,6 @@ contains
         Omega = m%Omega
         if (present(coefficient)) then
             C = C*coefficient
-            Omega = Omega*coefficient
         end if    
         if (C==0) then
             return
@@ -529,7 +527,7 @@ contains
 #if(_DIM_==2)            
 #ifndef _OPENMP            
         wf%uf = wf%uf + spread(C*m%eigenvalues2,1, m%nf1max-m%nf1min+1) * this%uf
-        wf%uf = wf%uf + spread((-2*Omega)*m%g%nodes_x, &
+        wf%uf = wf%uf + spread((-2*Omega*C)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                       *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1) * this%uf
 #else
@@ -542,7 +540,7 @@ contains
             evd => m%eigenvalues_d2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
             uf1 = uf1 + spread(C*ev, 1, m%nf1max-m%nf1min+1) * uf2
-            uf1 = uf1 + spread((-2*Omega)*m%g%nodes_x, &
+            uf1 = uf1 + spread((-2*Omega*C)*m%g%nodes_x, &
                              2, m%jf(j)-m%jf(j-1))  &
                       *spread(evd, 1, m%nf1max-m%nf1min+1) * uf2
             end do
@@ -554,7 +552,7 @@ contains
                                 3, m%nf3max-m%nf3min+1) * this%uf
         wf%uf = wf%uf + spread(spread(0.5_prec*m%eigenvalues3, 1, m%nf1max-m%nf1min+1), &
                                 2, m%nf2max-m%nf2min+1) * this%uf
-        wf%uf = wf%uf + spread(spread((-2*Omega)*m%g%nodes_x, &
+        wf%uf = wf%uf + spread(spread((-2*Omega*C)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                      *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                          3, m%nf3max-m%nf3min+1) * this%uf
@@ -571,7 +569,7 @@ contains
             uf1 = uf1 + spread(spread((0.5*C)*ev, &
                             1, m%nf1max-m%nf1min+1), &
                             2, m%nf2max-m%nf2min+1) * uf2
-            uf1 = uf1 + spread(spread((-2*Omega)*m%g%nodes_x, &
+            uf1 = uf1 + spread(spread((-2*Omega*C)*m%g%nodes_x, &
                          2, m%nf2max-m%nf2min+1)  &
                  *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                      3,  m%jf(j)-m%jf(j-1)) * uf2 
