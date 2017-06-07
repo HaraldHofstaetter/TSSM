@@ -1819,7 +1819,118 @@ contains
 #endif
 
 #elif defined(_ROTATING_)
-!TODO
+
+  ! operator A
+        call this%to_frequency_space_x
+        call this%to_real_space_y
+
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                 +spread(2*m%Omega*m%g%nodes_y, &
+                             1, m%nf1max-m%nf1min+1)  &
+                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
+                * uf**2 )*m%g%ny
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, nodes) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
+                                      lbound(m%g%nodes_y,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+                       *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
+                       * uf**2 )*m%g%ny
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+        call this%to_frequency_space_z
+#ifndef _OPENMP
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+                + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                          2,m%nf2max-m%nf2min+1) &
+                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                          1, m%nf1max-m%nf1min+1)  &
+                          *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                          3, m%nf3max-m%nf3min+1) ) &
+               * uf**2 )*m%g%ny
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
+                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                                1, m%nf1max-m%nf1min+1)  &
+                                *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * uf**2 )*m%g%ny
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+  ! operator C
+        call this%to_real_space_x
+        call this%to_frequency_space_y
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
+                    -spread(2*m%Omega*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
+                * uf**2 )*m%g%nx
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf, ev, evd) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            evd => m%eigenvalues_d2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
+                                      lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
+                                         
+            h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
+                        -spread(2*m%Omega*m%g%nodes_x, &
+                                  2, m%jf(j)-m%jf(j-1))  &
+                        *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
+                       * uf**2 )*m%g%nx
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+#ifndef _OPENMP
+        h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+                   + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                             2,m%nf2max-m%nf2min+1) &
+                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                             3, m%nf3max-m%nf3min+1) ) &
+               * uf**2 )*m%g%nx
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
+                                2,m%nf2max-m%nf2min+1) &
+                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                                2, m%nf2max-m%nf2min+1)  &
+                               *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * uf**2 )*m%g%nx
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
 
 #else
         select case(m%boundary_conditions)
@@ -2348,7 +2459,127 @@ contains
 #endif
 
 #elif defined(_ROTATING_)
-!TODO
+
+  ! operator A
+        call this%to_frequency_space_x
+        call this%to_real_space_y
+        call wf%to_frequency_space_x
+        call wf%to_real_space_y
+
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
+                 +spread(2*m%Omega*m%g%nodes_y, &
+                             1, m%nf1max-m%nf1min+1)  &
+                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
+                * this%uf*wf%uf )*m%g%ny
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, nodes) REDUCTION(+:h)
+        do j=1,n_threads
+            uf1 => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            uf2 => wf%uf(:,lbound(wf%uf,2)+m%jf(j-1):lbound(wf%uf,2)+m%jf(j)-1)
+            nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
+                                      lbound(m%g%nodes_y,1)+m%jf(j)-1)
+            h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
+              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
+                       *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
+                       * uf1*uf2 )*m%g%ny
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+        call this%to_frequency_space_z
+        call wf%to_frequency_space_z
+#ifndef _OPENMP
+        h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
+                + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                          2,m%nf2max-m%nf2min+1) &
+                + spread(spread(2*m%Omega*m%g%nodes_y, &
+                          1, m%nf1max-m%nf1min+1)  &
+                          *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                          3, m%nf3max-m%nf3min+1) ) &
+               * this%uf*this%uf)*m%g%ny
+#else
+        h = 0.0_prec
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf1 => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            uf2 => wf%uf(:,:,lbound(wf%uf,3)+m%jf(j-1):lbound(wf%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
+                       + spread(spread(2*m%Omega*m%g%nodes_y, &
+                                1, m%nf1max-m%nf1min+1)  &
+                                *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * uf1*uf2)*m%g%ny
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
+  ! operator C
+        call this%to_real_space_x
+        call this%to_frequency_space_y
+        call wf%to_real_space_x
+        call wf%to_frequency_space_y
+#if(_DIM_==2)
+#ifndef _OPENMP
+        h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
+                    -spread(2*m%Omega*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
+                * this%uf*wf%uf)*m%g%nx
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev, evd) REDUCTION(+:h)
+        do j=1,n_threads
+            uf1 => this%uf(:,lbound(this%uf,2)+m%jf(j-1):lbound(this%uf,2)+m%jf(j)-1)
+            uf2 => wf%uf(:,lbound(wf%uf,2)+m%jf(j-1):lbound(wf%uf,2)+m%jf(j)-1)
+            ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues2,1)+m%jf(j)-1)
+            evd => m%eigenvalues2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
+                                      lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
+                                         
+            h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
+                        -spread(2*m%Omega*m%g%nodes_x, &
+                                  2, m%jf(j)-m%jf(j-1))  &
+                        *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
+                       * uf1*uf2)*m%g%nx
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#elif(_DIM_==3)
+#ifndef _OPENMP
+        h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
+                   + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
+                             2,m%nf2max-m%nf2min+1) &
+                   - spread(spread(2*m%Omega*m%g%nodes_x, &
+                             2, m%nf2max-m%nf2min+1)  &
+                    *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                             3, m%nf3max-m%nf3min+1) ) &
+               * this%uf*wf%uf)*m%g%nx
+#else
+!$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) REDUCTION(+:h)
+        do j=1,n_threads
+            uf1 => this%uf(:,:,lbound(this%uf,3)+m%jf(j-1):lbound(this%uf,3)+m%jf(j)-1)
+            uf2 => wf%uf(:,:,lbound(wf%uf,3)+m%jf(j-1):lbound(wf%uf,3)+m%jf(j)-1)
+            ev => m%eigenvalues3(lbound(m%eigenvalues3,1)+m%jf(j-1):&
+                                         lbound(m%eigenvalues3,1)+m%jf(j)-1)
+            h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), &
+                                3,m%jf(j)-m%jf(j-1)) &
+                       + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
+                                2,m%nf2max-m%nf2min+1) &
+                       - spread(spread(2*m%Omega*m%g%nodes_x, &
+                                2, m%nf2max-m%nf2min+1)  &
+                               *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
+                                3,  m%jf(j)-m%jf(j-1)) ) &
+                  * uf1*uf2 )*m%g%nx
+        end do
+!$OMP END PARALLEL DO 
+#endif
+#endif
 
 #else
         select case(m%boundary_conditions)
@@ -2533,10 +2764,10 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = sum( (spread(m%eigenvalues1,2, m%nf2max-m%nf2min+1) &
-                 +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                 +spread(2*m%Omega*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
-                * conjg(this%uf)*wf%uf )
+                * conjg(this%uf)*wf%uf )*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf1, uf2, nodes) REDUCTION(+:h)
@@ -2546,9 +2777,9 @@ contains
             nodes => m%g%nodes_y(lbound(m%g%nodes_y,1)+m%jf(j-1):&
                                       lbound(m%g%nodes_y,1)+m%jf(j)-1)
             h = h + sum( (spread(m%eigenvalues1,2, m%jf(j)-m%jf(j-1)) &
-              +spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*nodes,1, m%nf1max-m%nf1min+1) & 
+              +spread(2*m%Omega*nodes,1, m%nf1max-m%nf1min+1) & 
                        *spread(m%eigenvalues_d1, 2, m%jf(j)-m%jf(j-1)) ) &
-                       * conjg(uf1)*uf2 )
+                       * conjg(uf1)*uf2 )*m%g%ny
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2559,11 +2790,11 @@ contains
         h = sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), 3,m%nf3max-m%nf3min+1) &
                 + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                           2,m%nf2max-m%nf2min+1) &
-                + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                + spread(spread(2*m%Omega*m%g%nodes_y, &
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
-               * conjg(this%uf)*this%uf)
+               * conjg(this%uf)*this%uf)*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) REDUCTION(+:h)
@@ -2575,11 +2806,11 @@ contains
             h = h + sum((spread(spread(m%eigenvalues1, 2,m%nf2max-m%nf2min+1), &
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(ev, 1,m%nf1max-m%nf1min+1), 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread((cmplx(0.0_prec, -1.0_prec, kind=prec)*m%Omega)*m%g%nodes_y, &
+                       + spread(spread(2*m%Omega*m%g%nodes_y, &
                                 1, m%nf1max-m%nf1min+1)  &
                                 *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
-                  * conjg(uf1)*uf2)
+                  * conjg(uf1)*uf2)*m%g%ny
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2592,10 +2823,10 @@ contains
 #if(_DIM_==2)
 #ifndef _OPENMP
         h = h + sum((spread(m%eigenvalues2,1, m%nf1max-m%nf1min+1) &
-                    +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                    -spread(2*m%Omega*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
-                * conjg(this%uf)*wf%uf)
+                * conjg(this%uf)*wf%uf)*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev, evd) REDUCTION(+:h)
         do j=1,n_threads
@@ -2603,14 +2834,14 @@ contains
             uf2 => wf%uf(:,lbound(wf%uf,2)+m%jf(j-1):lbound(wf%uf,2)+m%jf(j)-1)
             ev => m%eigenvalues2(lbound(m%eigenvalues2,1)+m%jf(j-1):&
                                          lbound(m%eigenvalues2,1)+m%jf(j)-1)
-            evd => m%eigenvalues2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
+            evd => m%eigenvalues_d2(lbound(m%eigenvalues_d2,1)+m%jf(j-1):&
                                       lbound(m%eigenvalues_d2,1)+m%jf(j)-1)
                                          
             h = h + sum((spread(ev,1, m%nf1max-m%nf1min+1) &
-                        +spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                        -spread(2*m%Omega*m%g%nodes_x, &
                                   2, m%jf(j)-m%jf(j-1))  &
                         *spread(evd, 1, m%nf1max-m%nf1min+1) ) &
-                       * conjg(uf1)*uf2)
+                       * conjg(uf1)*uf2)*m%g%nx
         end do
 !$OMP END PARALLEL DO 
 #endif
@@ -2619,11 +2850,11 @@ contains
         h = h + sum((spread(spread(m%eigenvalues2, 1,m%nf1max-m%nf1min+1), 3,m%nf3max-m%nf3min+1) &
                    + spread(spread(0.5_prec*m%eigenvalues3, 1,m%nf1max-m%nf1min+1), &
                              2,m%nf2max-m%nf2min+1) &
-                   + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                   - spread(spread(2*m%Omega*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
-               * conjg(this%uf)*wf%uf)
+               * conjg(this%uf)*wf%uf)*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf1, uf2, ev) REDUCTION(+:h)
         do j=1,n_threads
@@ -2635,11 +2866,11 @@ contains
                                 3,m%jf(j)-m%jf(j-1)) &
                        + spread(spread(0.5_prec*ev, 1,m%nf1max-m%nf1min+1), &
                                 2,m%nf2max-m%nf2min+1) &
-                       + spread(spread((cmplx(0.0_prec, +1.0_prec, kind=prec)*m%Omega)*m%g%nodes_x, &
+                       - spread(spread(2*m%Omega*m%g%nodes_x, &
                                 2, m%nf2max-m%nf2min+1)  &
                                *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                                 3,  m%jf(j)-m%jf(j-1)) ) &
-                  * conjg(uf1)*uf2 )
+                  * conjg(uf1)*uf2 )*m%g%nx
         end do
 !$OMP END PARALLEL DO 
 #endif

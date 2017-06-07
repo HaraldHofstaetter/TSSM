@@ -10,6 +10,8 @@ module tssmq_schroedinger ! (Nonlinear) Schroedinger equation
     use tssmq_schroedinger_real_3D
     use tssmq_schroedinger_rotating_2D
     use tssmq_schroedinger_rotating_3D
+    use tssmq_schroedinger_rotating_real_2D
+    use tssmq_schroedinger_rotating_real_3D
     use tssmq_schroedinger_hermite_1D
     use tssmq_schroedinger_hermite_2D
     use tssmq_schroedinger_hermite_3D
@@ -33,6 +35,8 @@ module tssm_schroedinger ! (Nonlinear) Schroedinger equation
     use tssm_schroedinger_real_3D
     use tssm_schroedinger_rotating_2D
     use tssm_schroedinger_rotating_3D
+    use tssm_schroedinger_rotating_real_2D
+    use tssm_schroedinger_rotating_real_3D
     use tssm_schroedinger_hermite_1D
     use tssm_schroedinger_hermite_2D
     use tssm_schroedinger_hermite_3D
