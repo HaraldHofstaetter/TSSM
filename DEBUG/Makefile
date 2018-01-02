@@ -1,6 +1,6 @@
-#SYSTEM = LINUX
+SYSTEM = LINUX
 #SYSTEM = OSX
-SYSTEM = VSC3
+#SYSTEM = VSC3
 #SYSTEM = MINGW
 
 #include ../Makefile.system
@@ -43,7 +43,7 @@ all: shared_lib
 endif
 
 ifeq ($(SYSTEM),LINUX) 
-    CPP = cpp-4.9 -std=c89
+    CPP = cpp -std=c89
 all: shared_lib
 endif   
 
@@ -56,11 +56,17 @@ HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
 
-#ifeq ($(SYSTEM),LINUX) 
-#    HDF5_LIBS =  $(HDF5_LIB)/libhdf5_fortran.so \
-#                 $(HDF5_LIB)/libhdf5.so
-#    FFTW_LIBS = $(FFTW_LIB)/libfftw3.so.3  
-#endif
+ifeq ($(SYSTEM),LINUX) 
+    FFTW_INCLUDE = ../../include 
+    HDF5_INCLUDE = ../../include 
+    #HDF5_LIBS =  $(HDF5_LIB)/libhdf5_fortran.so \
+    #             $(HDF5_LIB)/libhdf5.so
+    #FFTW_LIBS = $(FFTW_LIB)/libfftw3.so.3 $(FFTW_LIB)/libfftw3_omp.so.3 
+    HDF5_LIBS =  /usr/lib/x86_64-linux-gnu/libhdf5_serial_fortran.so.10 \
+                 /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.10
+    FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3.so.3 
+endif
+
 
 ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
     FOPTS = -g -fPIC 

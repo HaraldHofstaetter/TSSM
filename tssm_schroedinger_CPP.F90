@@ -1830,7 +1830,7 @@ contains
                  +spread((2*m%Omega)*m%g%nodes_y, &
                              1, m%nf1max-m%nf1min+1)  &
                  *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1) ) &
-                * uf**2 )*m%g%ny
+                * this%uf**2 )*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, nodes) REDUCTION(+:h)
@@ -1855,7 +1855,7 @@ contains
                           1, m%nf1max-m%nf1min+1)  &
                           *spread(m%eigenvalues_d1, 2, m%nf2max-m%nf2min+1), &
                           3, m%nf3max-m%nf3min+1) ) &
-               * uf**2 )*m%g%ny
+               * this%uf**2 )*m%g%ny
 #else
         h = 0.0_prec
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
@@ -1884,7 +1884,7 @@ contains
                     -spread((2*m%Omega)*m%g%nodes_x, &
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1)) &
-                * uf**2 )*m%g%nx
+                * this%uf**2 )*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf, ev, evd) REDUCTION(+:h)
         do j=1,n_threads
@@ -1911,7 +1911,7 @@ contains
                              2, m%nf2max-m%nf2min+1)  &
                     *spread(m%eigenvalues_d2, 1, m%nf1max-m%nf1min+1), &
                              3, m%nf3max-m%nf3min+1) ) &
-               * uf**2 )*m%g%nx
+               * this%uf**2 )*m%g%nx
 #else
 !$OMP PARALLEL DO PRIVATE(j, uf, ev) REDUCTION(+:h)
         do j=1,n_threads
