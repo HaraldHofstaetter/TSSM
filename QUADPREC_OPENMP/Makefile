@@ -11,7 +11,7 @@ FC = gfortran
 FOPTS = -fopenmp -O3 -fPIC -D_QUADPRECISION_
 CC = gcc
 COPTS = -fopenmp -O3 -fPIC -D_QUADPRECISION_
-CPP = cpp-4.9 -std=c89  -D_OPENMP -D_QUADPRECISION_
+CPP = cpp -std=c89  -D_OPENMP -D_QUADPRECISION_
 MAKE_SHARED_LIB = gfortran -fopenmp -shared 
 
 
@@ -55,6 +55,10 @@ FFTW_LIBS = -L$(FFTW_LIB) -lfftw3q_omp -lfftw3q -lquadmath -lm
 HDF5_INCLUDE = $(HDF5_BASE)/include
 HDF5_LIB = $(HDF5_BASE)/lib
 HDF5_LIBS = -L$(HDF5_LIB) -lhdf5_fortran -lhdf5
+FFTW_INCLUDE = ../../include 
+FFTW_LIBS = /usr/lib/x86_64-linux-gnu/libfftw3q_omp.so.3 /usr/lib/x86_64-linux-gnu/libfftw3q.so.3 
+
+
 
 ifeq ($(JULIABOX_BUILD),1) # settings for the JuliaBox
     CPP = cpp -std=c89  -D_OPENMP -D_QUADPRECISION_
