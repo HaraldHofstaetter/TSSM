@@ -3484,6 +3484,8 @@ contains
         if (.not.associated(wf%m,this%m)) then
             stop "E: wave functions not belonging to the same method"
         end if    
+        
+        res = 0.0D0
 
         if (associated(m%V)) then
            call this%to_real_space
